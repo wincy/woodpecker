@@ -1,0 +1,31 @@
+body {
+    width: 500px;
+}
+
+.popup {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 80%;
+    margin: 5% 5%;
+    padding: 5% 5%;
+    background-color: #f1f1a1;
+    overflow: hidden;
+}
+
+#punch-box {
+    background-color: #f7f709;
+    margin: 1% 1%;
+    width: 98%;
+    overflow: hidden;
+}
+
+.punch {
+    background-color: #f7f7f9;
+    height: 50px;
+    line-height: 50px;
+    text-align: center;
+    float: left;
+    margin: 1%;
+}
+

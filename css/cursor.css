@@ -1,0 +1,23 @@
+.cursor-fixed {
+    height: 30px;
+    line-height: 30px;
+    float: left;
+    margin: 10px;
+    overflow: hidden;
+    text-align: center;
+}
+
+.cursor-variable {
+    background-color: #f7f7f9;
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    float: left;
+    margin: 10px;
+    overflow: hidden;
+    text-align: center;
+}
+
+.cursor-current {
+    background-color: #e4e4e4;
+}

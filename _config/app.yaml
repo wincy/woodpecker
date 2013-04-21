@@ -1,0 +1,43 @@
+application: woodpecker
+version: 1
+
+handlers:
+ - url: '/.*'
+   script: main.py
+
+# - url: '/user/.*'
+#   script: user.py
+
+# - url: '/.*'
+#   script: not_found.py
+
+ - url: '/index.html'
+   static_file: index.html
+
+ - url: '/woodpecker.manifest'
+   static_file: woodpecker.manifest
+
+ - url: '/favicon.ico'
+   static_file: favicon.ico
+
+ - url: '/js'
+   static_dir: js
+
+ - url: '/css'
+   static_dir: css
+
+ - url: '/img'
+   static_dir: img
+
+services:
+# - mysqldb
+# - memcache
+ - redis
+# - urlfetch
+# - asynctask
+
+modules:
+# - leazy_ext
+# - ipquery
+# - PIL
+# - gd
