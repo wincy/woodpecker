@@ -1,25 +1,19 @@
-function Timestamp(hours, minutes) {
-    var now = new Date();
-    if (typeof hours === "undefined" || hours === null) {
-	hours = now.getHours();
-    }
-    if (typeof minutes === "undefined" || minutes === null) {
-	minutes = now.getMinutes();
-    }
-    now.setHours(hours);
-    now.setMinutes(minutes);
-    this.content = now;
+function Timestamp(container, ts) {
+    this.container = container;
+    this.content = ts;
 }
 
 Timestamp.prototype = {
-    set: function(hours, minutes) {
+    set_hours: function(hours) {
 	this.content.setHours(hours);
+    },
+    set_minutes: function(minutes) {
 	this.content.setMinutes(minutes);
-	return this;
     },
-    render: function() {
-	return sprintf("%02d:%02d", this.content.getHours(), this.content.getMinutes())
-    },
+}
+
+Date.prototype.render = function () {
+    return sprintf("%02d:%02d", this.getHours(), this.getMinutes());
 }
 
 function Task(id) {
@@ -35,6 +29,9 @@ Task.prototype = {
 	      });
     },
     render: function() {
+	if (this.id == null) {
+	    return "";
+	}
 	var task = this.tasks[this.id];
 	var result = task.name;
 	while (task.parent) {
@@ -62,9 +59,10 @@ Comment.prototype = {
     },
 }
 
-function Record(start, end, task, comment) {
-    this.start = new Timestamp();
-    this.end = new Timestamp();
+function Record(container, start, end, task, comment) {
+    this.container = container;
+    this.start = start;
+    this.end = end;
     this.task = new Task(task);
     this.comment = new Comment(comment);
 }
@@ -82,12 +80,19 @@ Record.prototype = {
     set_comment: function(id) {
 	this.comment = new Comment(id);
     },
-    render: function() {
-	return sprintf("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td>",
-		       time_format(this.start),
-		       time_format(this.end),
-		       this.task.render(),
-		       this.comment.render());
+    render: function(timepicker) {
+	var start = $("<td>" + (this.start ? this.start.render() : "") + "</td>");
+	var end = $("<td>" + (this.end ? this.end.render() : "") + "</td>");
+	start.tap(function () {
+	    timepicker.ask("Modify check out", function(ts) {
+		this.start = ts;
+	    });
+	});
+	return $(this.container)
+	    .append(start)
+	    .append(end)
+	    .append("<td>" + this.task.render() + "</td>")
+	    .append("<td>" + this.comment.render() + "</td>");
     },
 }
 
@@ -98,13 +103,91 @@ function Timeline(container) {
 
 Timeline.prototype = {
     check_in: function() {
-	var 
-	$(this.container).push();
+	this.add_check_in(new Date());
     },
     check_out: function() {
+	this.add_check_out(new Date());
+    },
+    add_check_in: function(ts) {
+	var i = 0;
+	while (true) {
+	    console.log(i);
+	    if (i >= this.history.length) {
+		this.history.push(new Record(ts, null, null, null));
+		break;
+	    } else if (this.history[i].start == null) {
+		if (this.history[i].end >= ts) {
+		    this.history[i].start = ts;
+		    break;
+		} else {
+		    i = i + 1;
+		}
+	    } else if (this.history[i].start < ts) {
+		if (this.history[i].end <= ts) {
+		    i = i + 1;
+		} else {
+		    this.history.splice(
+			i + 1, 0, new Record(ts,
+					     this.history[i].end,
+					     this.history[i].task,
+					     this.history[i].comment));
+		    this.history[i].end = null;
+		    break;
+		}
+	    } else if (this.history[i].start == ts) {
+		break;
+	    } else if (this.history[i].start > ts) {
+		this.history.splice(i, 0, new Record(ts, null, null, null));
+		break;
+	    } else {
+		console.log('error');
+	    }
+	}
+	this.render();
+    },
+    add_check_out: function(ts) {
+	console.log(ts);
+	var i = this.history.length - 1;
+	while (true) {
+	    console.log(i);
+	    if (i < 0) {
+		this.history.splice(0, 0, new Record(null, ts, null, null));
+		break;
+	    } else if (this.history[i].end == null) {
+		if (this.history[i].start <= ts) {
+		    this.history[i].end = ts;
+		    break;
+		} else {
+		    i = i - 1;
+		}
+	    } else if (this.history[i].end > ts) {
+		if (this.history[i].start > ts) {
+		    i = i - 1;
+		} else {
+		    this.history.splice(
+			i + 1, 0, new Record(null, this.history[i].end, null, null));
+		    this.history[i].end = ts;
+		    break;
+		}
+	    } else if (this.history[i].end == ts) {
+		break;
+	    } else if (this.history[i].end < ts) {
+		this.history.splice(i, 0, new Record(null, ts, null, null));
+		break;
+	    } else {
+		console.log('error');
+	    }
+	}
+	this.render();
     },
     comment: function() {
     },
     task: function() {
+    },
+    render: function() {
+	$(this.container).empty();
+	for (var i = 0; i < this.history.length; i++) {
+	    $(this.container).append(this.history[i].render());
+	}
     },
 }
