@@ -38,25 +38,25 @@ TimePicker.prototype = {
 			+ buttons[i][1] + '</div>');
 	    switch(buttons[i][0]) {
 	    case "single":
-		elem.tap(function () {
+		elem.click(function () {
 		    cursor.set($(this).text());
 		    cursor.next();
 		});
 		break;
 	    case "minutes":
-		elem.tap(function () {
+		elem.click(function () {
 		    cursor.jump(2).set($(this).text()[1]);
 		    cursor.jump(3).set($(this).text()[2]);
 		    cursor.next();
 		});
 		break;
 	    case "reset":
-		elem.tap(function() {
+		elem.click(function() {
 		    cursor.reset();
 		});
 		break;
 	    case "now":
-		elem.tap(function() {
+		elem.click(function() {
 		    var now = new Date();
 		    cursor.mset(0,
 				[Math.floor(now.getHours() / 10),
@@ -73,7 +73,7 @@ TimePicker.prototype = {
 	var cancel = $('<span class="time-cancel punch span5 offset1">Cancel</span>');
 	var confirm = $('<span class="time-confirm punch span5">OK</span>');
 	asks.append(cancel).append(confirm);
-	cancel.tap(function() {
+	cancel.click(function() {
 	    timepicker.hide();
 	})
 	$(this.container).append(asks);
@@ -88,7 +88,7 @@ TimePicker.prototype = {
 	var timepicker = this;
 	var cursor = this.cursor;
 	$(".timepicker-title", $(this.container)).text(title);
-	$(".time-confirm", $(this.container)).tap(function() {
+	$(".time-confirm", $(this.container)).click(function() {
 	    var hours = parseInt(cursor.mget(0, 2).toArray().join(""));
 	    var minutes = parseInt(cursor.mget(2, 4).toArray().join(""));
 	    var now = new Date();

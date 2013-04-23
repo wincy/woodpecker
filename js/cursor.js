@@ -15,7 +15,7 @@ Cursor.prototype = {
 	    var kls = $.type(parse_tree[i]) == "string" ? "cursor-fixed" : "cursor-variable";
 	    var box = $('<div class="' + kls + '">' + value[i] + '</div>');
 	    if (kls == "cursor-variable") {
-		box.tap(function () {
+		box.click(function () {
 		    csr.jump($(".cursor-variable", $(csr.container)).index(this));
 		});
 	    }

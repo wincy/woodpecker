@@ -83,7 +83,7 @@ Record.prototype = {
     render: function(timepicker) {
 	var start = $("<td>" + (this.start ? this.start.render() : "") + "</td>");
 	var end = $("<td>" + (this.end ? this.end.render() : "") + "</td>");
-	start.tap(function () {
+	start.click(function () {
 	    timepicker.ask("Modify check out", function(ts) {
 		this.start = ts;
 	    });
@@ -113,7 +113,7 @@ Timeline.prototype = {
 	while (true) {
 	    console.log(i);
 	    if (i >= this.history.length) {
-		this.history.push(new Record(ts, null, null, null));
+		this.history.push(new Record(this.container, ts, null, null, null));
 		break;
 	    } else if (this.history[i].start == null) {
 		if (this.history[i].end >= ts) {
@@ -127,7 +127,8 @@ Timeline.prototype = {
 		    i = i + 1;
 		} else {
 		    this.history.splice(
-			i + 1, 0, new Record(ts,
+			i + 1, 0, new Record(this.container,
+					     ts,
 					     this.history[i].end,
 					     this.history[i].task,
 					     this.history[i].comment));
@@ -137,7 +138,7 @@ Timeline.prototype = {
 	    } else if (this.history[i].start == ts) {
 		break;
 	    } else if (this.history[i].start > ts) {
-		this.history.splice(i, 0, new Record(ts, null, null, null));
+		this.history.splice(i, 0, new Record(this.container, ts, null, null, null));
 		break;
 	    } else {
 		console.log('error');
@@ -151,7 +152,7 @@ Timeline.prototype = {
 	while (true) {
 	    console.log(i);
 	    if (i < 0) {
-		this.history.splice(0, 0, new Record(null, ts, null, null));
+		this.history.splice(0, 0, new Record(this.container, null, ts, null, null));
 		break;
 	    } else if (this.history[i].end == null) {
 		if (this.history[i].start <= ts) {
@@ -165,14 +166,14 @@ Timeline.prototype = {
 		    i = i - 1;
 		} else {
 		    this.history.splice(
-			i + 1, 0, new Record(null, this.history[i].end, null, null));
+			i + 1, 0, new Record(this.container, null, this.history[i].end, null, null));
 		    this.history[i].end = ts;
 		    break;
 		}
 	    } else if (this.history[i].end == ts) {
 		break;
 	    } else if (this.history[i].end < ts) {
-		this.history.splice(i, 0, new Record(null, ts, null, null));
+		this.history.splice(i, 0, new Record(this.container, null, ts, null, null));
 		break;
 	    } else {
 		console.log('error');
