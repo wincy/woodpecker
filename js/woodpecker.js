@@ -1,7 +1,15 @@
+function gtime(ts) {
+    var now = new Date();
+    var hours = parseInt(ts.slice(0, 2));
+    var minutes = parseInt(ts.slice(3, 5));
+    now.setHours(hours);
+    now.setMinutes(minutes);
+    return now;
+}
+
 Woodpecker = Ember.Application.create({
-    LOG_TRANSITIONS: true,
+    //    LOG_TRANSITIONS: true,
     ready: function () {
-	console.log('init');
     },
 });
 Woodpecker.ApplicationController = Ember.Controller.extend({
@@ -14,80 +22,233 @@ Woodpecker.ButtonView = Ember.View.extend({
 Woodpecker.PopupView = Ember.View.extend({
     layoutName: 'popup'
 });
-Woodpecker.Record = Ember.ObjectController.extend({
-});
 Woodpecker.TimelineView = Ember.View.extend({
     templateName: "timeline",
 });
-Woodpecker.TimelineController = Ember.ArrayController.create({
+Woodpecker.Timeline = Ember.ArrayController.extend({
     content: [],
-    init: function() {
-	this.pushObject(Woodpecker.Record.create({start: "00:01", end: "00:12"}));
-	this.pushObject(Woodpecker.Record.create({start: "00:21", end: "00:32"}));
-	this.pushObject(Woodpecker.Record.create({start: "00:33", end: "00:45"}));
-    }
+    check_in: function() {
+	this._add_check_in(new Date());
+    },
+    check_out: function() {
+	this._add_check_out(new Date());
+    },
+    add_check_in: function() {
+	Woodpecker.timepicker.removeObserver('value', Woodpecker.timeline, 'add_check_in');
+	this._add_check_in(Woodpecker.timepicker.value);
+    },
+    _add_check_in: function(ts) {
+	var i = 0;
+	while (true) {
+	    console.log(i);
+	    if (i >= this.content.length) {
+		this.pushObject(Woodpecker.Timeline.Record.create(
+		    {start: ts,
+		     end: null,
+		     task: null,
+		     comment: null}));
+		console.log(this.content);
+		break;
+	    } else if (this.content[i].start == null) {
+		if (this.content[i].end >= ts) {
+		    this.replaceContent(
+			i, 1, [Woodpecker.Timeline.Record.create({
+			    start: ts,
+			    end: this.content[i].end,
+			    task: this.content[i].task,
+			    comment: this.content[i].comment,
+			})]);
+		    break;
+		} else {
+		    i = i + 1;
+		}
+	    } else if (this.content[i].start < ts) {
+		if (this.content[i].end <= ts) {
+		    i = i + 1;
+		} else {
+		    this.insertAt(
+			i + 1, new Record(
+			    {start: ts,
+			     end: this.content[i].end,
+			     task: this.content[i].task,
+			     comment: this.content[i].comment}));
+		    this.replaceContent(
+			i, 1, [Woodpecker.Timeline.Record.create({
+			    start: this.content[i].start,
+			    end: null,
+			    task: this.content[i].task,
+			    comment: this.content[i].comment,
+			})]);
+		    console.log(this.content);
+		    break;
+		}
+	    } else if (this.content[i].start == ts) {
+		break;
+	    } else if (this.content[i].start > ts) {
+		this.insertAt(i, Woodpecker.Timeline.Record.create({
+		    start: ts,
+		    end: null,
+		    task: null,
+		    comment: null}));
+		console.log(this.content);
+		break;
+	    } else {
+		console.log('error');
+	    }
+	}
+    },
+    add_check_out: function() {
+	Woodpecker.timepicker.removeObserver('value', Woodpecker.timeline, 'add_check_out');
+	this._add_check_out(Woodpecker.timepicker.value);
+    },
+    _add_check_out: function(ts) {
+	console.log(ts);
+	var i = this.content.length - 1;
+	while (true) {
+	    console.log(i);
+	    if (i < 0) {
+		this.insertAt(0, Woodpecker.Timeline.Record.create({
+		    start: null,
+		    end: ts,
+		    task: null,
+		    comment: null}));
+		break;
+	    } else if (this.content[i].end == null) {
+		if (this.content[i].start <= ts) {
+		    this.replaceContent(
+			i, 1, [Woodpecker.Timeline.Record.create({
+			    start: this.content[i].start,
+			    end: ts,
+			    task: this.content[i].task,
+			    comment: this.content[i].comment,
+			})]);
+		    break;
+		} else {
+		    i = i - 1;
+		}
+	    } else if (this.content[i].end > ts) {
+		if (this.content[i].start > ts) {
+		    i = i - 1;
+		} else {
+		    this.insertAt(
+			i + 1, Woodpecker.Timeline.Record.create({
+			    start: null,
+			    end: this.content[i].end,
+			    task: null,
+			    comment: null}));
+		    this.replaceContent(
+			i, 1, [Woodpecker.Timeline.Record.create({
+			    start: this.content[i].start,
+			    end: ts,
+			    task: this.content[i].task,
+			    comment: this.content[i].comment,
+			})]);
+		    break;
+		}
+	    } else if (this.content[i].end == ts) {
+		break;
+	    } else if (this.content[i].end < ts) {
+		this.insertAt(i, Woodpecker.Timeline.Record.create({
+		    start: null,
+		    end: ts,
+		    task: null,
+		    comment: null}));
+		break;
+	    } else {
+		console.log('error');
+	    }
+	}
+    },
 });
-Woodpecker.timepicker = Ember.Object.create({
+Woodpecker.Timeline.Record = Ember.ObjectController.extend({
+    start: null,
+    end: null,
+    task: null,
+    comment: null,
+    start_short: function() {
+	if (this.start) {
+	    return sprintf("%02d:%02d", this.start.getHours(), this.start.getMinutes());
+	} else {
+	    return "";
+	}
+    }.property(),
+    end_short: function() {
+	if (this.end) {
+	    return sprintf("%02d:%02d", this.end.getHours(), this.end.getMinutes());
+	} else {
+	    return "";
+	}
+    }.property(),
+});
+Woodpecker.Timepicker = Ember.ObjectController.extend({
     value: null,
-    Cursor: Woodpecker.Button.extend({
-	hit: function() {
-	    Woodpecker.timepicker.cursors.jump(this);
-	},
-    }),
-    CursorView: Ember.View.extend({
-	templateName: 'timepicker-cursor',
-    }),
-    NumpadButton: Woodpecker.Button.extend({
-	hit: function() {
-	    switch (this.type) {
-	    case "set-single":
-		Woodpecker.timepicker.cursors.set_current(this.text);
-		Woodpecker.timepicker.cursors.next();
-		break;
-	    case "set-minutes":
-		Woodpecker.timepicker.cursors.mset(3, 2, this.text.slice(1));
-		break;
-	    case "reset":
-		Woodpecker.timepicker.cursors.reset();
-		break;
-	    case "now":
-		var now = new Date();
-		Woodpecker.timepicker.cursors.mset(0, 2, sprintf("%02d", now.getHours()));
-		Woodpecker.timepicker.cursors.mset(3, 2, sprintf("%02d", now.getMinutes()));
-		break;
-	    default:
-		console.log('unhandled event');
-	    }
-	},
-    }),
-    NumpadButtonView: Ember.View.extend({
-	templateName: 'timepicker-button',
-    }),
-    ControlButton: Woodpecker.Button.extend({
-	hit: function() {
-	    switch (this.type) {
-	    case "cancel":
-		Woodpecker.timepicker.view.set('isVisible', false);
-		break;
-	    case "confirm":
-		var ts = new Date();
-		var hours = parseInt(Woodpecker.timepicker.cursors.mget(0, 2).join(''));
-		var minutes = parseInt(Woodpecker.timepicker.cursors.mget(3, 2).join(''));
-		ts.setHours(hours);
-		ts.setMinutes(minutes);
-		Woodpecker.timepicker.set('value', ts);
-		Woodpecker.timepicker.view.set('isVisible', false);
-		break;
-	    default:
-		console.log('unhandled event');
-	    }
-	},
-    }),
-    ControlButtonView: Woodpecker.ButtonView.extend({
-	templateName: 'button',
-    }),
-})
-Woodpecker.timepicker.cursors = Ember.ArrayController.create({
+    add_check_in: function() {
+	Woodpecker.timepicker.view.set('isVisible', true);
+	this.addObserver('value', Woodpecker.timeline, 'add_check_in');
+    },
+    add_check_out: function() {
+	Woodpecker.timepicker.view.set('isVisible', true);
+	this.addObserver('value', Woodpecker.timeline, 'add_check_out');
+    },
+});
+Woodpecker.Timepicker.Cursor = Woodpecker.Button.extend({
+    hit: function() {
+	Woodpecker.timepicker.cursors.jump(this);
+    },
+});
+Woodpecker.Timepicker.CursorView = Ember.View.extend({
+    templateName: 'timepicker-cursor',
+});
+Woodpecker.Timepicker.NumpadButton = Woodpecker.Button.extend({
+    hit: function() {
+	switch (this.type) {
+	case "set-single":
+	    Woodpecker.timepicker.cursors.set_current(this.text);
+	    Woodpecker.timepicker.cursors.next();
+	    break;
+	case "set-minutes":
+	    Woodpecker.timepicker.cursors.mset(3, 2, this.text.slice(1));
+	    break;
+	case "reset":
+	    Woodpecker.timepicker.cursors.reset();
+	    break;
+	case "now":
+	    var now = new Date();
+	    Woodpecker.timepicker.cursors.mset(0, 2, sprintf("%02d", now.getHours()));
+	    Woodpecker.timepicker.cursors.mset(3, 2, sprintf("%02d", now.getMinutes()));
+	    break;
+	default:
+	    console.log('unhandled event');
+	}
+    },
+});
+Woodpecker.Timepicker.NumpadButtonView = Ember.View.extend({
+    templateName: 'timepicker-button',
+});
+Woodpecker.Timepicker.ControlButton = Woodpecker.Button.extend({
+    hit: function() {
+	switch (this.type) {
+	case "cancel":
+	    Woodpecker.timepicker.view.set('isVisible', false);
+	    break;
+	case "confirm":
+	    var ts = new Date();
+	    var hours = parseInt(Woodpecker.timepicker.cursors.mget(0, 2).join(''));
+	    var minutes = parseInt(Woodpecker.timepicker.cursors.mget(3, 5).join(''));
+	    ts.setHours(hours);
+	    ts.setMinutes(minutes);
+	    Woodpecker.timepicker.set('value', ts);
+	    Woodpecker.timepicker.view.set('isVisible', false);
+	    break;
+	default:
+	    console.log('unhandled event');
+	}
+    },
+});
+Woodpecker.Timepicker.ControlButtonView = Woodpecker.ButtonView.extend({
+    templateName: 'button',
+});
+Woodpecker.Timepicker.Cursors = Ember.ArrayController.extend({
     content: [],
     current: 0,
     init: function() {
@@ -96,7 +257,7 @@ Woodpecker.timepicker.cursors = Ember.ArrayController.create({
 		       {fixed: true, current: false, value: ":"},
 		       {fixed: false, current: false, value: "3"},
 		       {fixed: false, current: false, value: "4"}].map(function (elem) {
-			   return Woodpecker.timepicker.Cursor.create(elem);
+			   return Woodpecker.Timepicker.Cursor.create(elem);
 		       });
 	this.set('content', cursors);
     },
@@ -110,8 +271,8 @@ Woodpecker.timepicker.cursors = Ember.ArrayController.create({
 	this.content[this.current].set('value', value);
     },
     mget: function(start, offset) {
-	return this.content.slice(start, offset).map(function () {
-	    return this.value;
+	return this.content.slice(start, offset).map(function (elem) {
+	    return elem.value;
 	});
     },
     mset: function(start, offset, values) {
@@ -132,7 +293,7 @@ Woodpecker.timepicker.cursors = Ember.ArrayController.create({
 	this.set('current', this.content.indexOf(to_cursor));
     },
 });
-Woodpecker.timepicker.numpad_buttons = Ember.ArrayController.create({
+Woodpecker.Timepicker.NumpadButtons = Ember.ArrayController.extend({
     content: [],
     init: function() {
 	var buttons = [{text: "1", type: "set-single"},
@@ -151,49 +312,47 @@ Woodpecker.timepicker.numpad_buttons = Ember.ArrayController.create({
 		       {text: "0", type: "set-single"},
 		       {text: "now", type: "now"},
 		       {text: ":00", type: "set-minutes"}].map(function (elem) {
-			   return Woodpecker.timepicker.NumpadButton.create(elem);
+			   return Woodpecker.Timepicker.NumpadButton.create(elem);
 		       });
 	this.set('content', buttons);
     },
 });
-Woodpecker.timepicker.control_buttons = Ember.ArrayController.create({
+Woodpecker.Timepicker.ControlButtons = Ember.ArrayController.extend({
     content: [],
     init: function() {
 	var buttons = [{text: "Cancel", type: "cancel"},
 		       {text: "Confirm", type: "confirm"}].map(function(elem) {
-			   return Woodpecker.timepicker.ControlButton.create(elem);
+			   return Woodpecker.Timepicker.ControlButton.create(elem);
 		       });
 	this.set('content', buttons);
     }
 });
-Woodpecker.timepicker.view = Ember.View.create({
-    templateName: "timepicker",
-    isVisible: false,
+Woodpecker.Puncher = Ember.ObjectController.extend({
 });
-Woodpecker.puncher = Ember.Object.create({
-    Button: Woodpecker.Button.extend({
-	hit: function() {
-	    switch (this.type) {
-	    case "check-in":
-		break;
-	    case "check-out":
-		break;
-	    case "add-check-in":
-		Woodpecker.timepicker.view.set('isVisible', true);
-		break;
-	    case "add-check-out":
-		Woodpecker.timepicker.view.set('isVisible', true);
-		break;
-	    default:
-		console.log('unhandled event');
-	    }
-	},
-    }),
-    ButtonView: Ember.View.extend({
-	templateName: 'button',
-    }),
+Woodpecker.Puncher.ButtonView = Ember.View.extend({
+    templateName: 'button',
 });
-Woodpecker.puncher.buttons = Ember.ArrayController.create({
+Woodpecker.Puncher.Button = Woodpecker.Button.extend({
+    hit: function() {
+	switch (this.type) {
+	case "check-in":
+	    Woodpecker.timeline.check_in()
+	    break;
+	case "check-out":
+	    Woodpecker.timeline.check_out()
+	    break;
+	case "add-check-in":
+	    Woodpecker.timepicker.add_check_in()
+	    break;
+	case "add-check-out":
+	    Woodpecker.timepicker.add_check_out()
+	    break;
+	default:
+	    console.log('unhandled event');
+	}
+    },
+}),
+Woodpecker.Puncher.Buttons = Ember.ArrayController.extend({
     content: [],
     init: function() {
 	var buttons = [
@@ -201,11 +360,25 @@ Woodpecker.puncher.buttons = Ember.ArrayController.create({
 	    {text: "Check out", type: "check-out"},
 	    {text: "Add check in", type: "add-check-in"},
 	    {text: "Add check out", type: "add-check-out"}].map(function (elem) {
-		return Woodpecker.puncher.Button.create(elem);
-	});
+		return Woodpecker.Puncher.Button.create(elem);
+	    });
 	this.set('content', buttons);
     },
 });
+Woodpecker.timepicker = Woodpecker.Timepicker.create();
+Woodpecker.timepicker.cursors = Woodpecker.Timepicker.Cursors.create();
+Woodpecker.timepicker.numpad_buttons = Woodpecker.Timepicker.NumpadButtons.create();
+Woodpecker.timepicker.control_buttons = Woodpecker.Timepicker.ControlButtons.create();
+Woodpecker.timepicker.view = Ember.View.create({
+    templateName: "timepicker",
+    isVisible: false,
+});
+Woodpecker.puncher = Woodpecker.Puncher.create();
+Woodpecker.puncher.buttons = Woodpecker.Puncher.Buttons.create();
 Woodpecker.puncher.view = Ember.View.create({
     templateName: "puncher",
+});
+Woodpecker.timeline = Woodpecker.Timeline.create();
+Woodpecker.timeline.view = Ember.View.create({
+    templateName: "timeline",
 });

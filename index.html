@@ -21,14 +21,14 @@
     <script type="text/x-handlebars">
       <h3>Hello, {{world}}</h3>
       {{view Woodpecker.puncher.view}}
-      {{view Woodpecker.TimelineView}}
+      {{view Woodpecker.timeline.view}}
       {{view Woodpecker.timepicker.view}}
     </script>
     <script type="text/x-handlebars" data-template-name="puncher">
       <div id="punch-box">
 	<div class="row-fluid">
 	  {{#each Woodpecker.puncher.buttons}}
-	  {{view Woodpecker.puncher.ButtonView}}
+	  {{view Woodpecker.Puncher.ButtonView}}
 	  {{/each}}
 	</div>
       </div>
@@ -52,17 +52,17 @@
       <div class="popup-1">
 	<div class="clearfix">
 	  {{#each Woodpecker.timepicker.cursors}}
-	  {{view Woodpecker.timepicker.CursorView}}
+	  {{view Woodpecker.Timepicker.CursorView}}
 	  {{/each}}
 	</div>
 	<div>
 	  {{#each Woodpecker.timepicker.numpad_buttons}}
-	  {{view Woodpecker.timepicker.NumpadButtonView}}
+	  {{view Woodpecker.Timepicker.NumpadButtonView}}
 	  {{/each}}
 	</div>
 	<div>
 	  {{#each Woodpecker.timepicker.control_buttons}}
-	  {{view Woodpecker.timepicker.ControlButtonView}}
+	  {{view Woodpecker.Timepicker.ControlButtonView}}
 	  {{/each}}
 	</div>
       </div>
@@ -70,10 +70,12 @@
     <script type="text/x-handlebars" data-template-name="timeline">
       <table id="timeline">
 	<tbody>
-	  {{#each Woodpecker.TimelineController}}
+	  {{#each Woodpecker.timeline}}
 	  <tr>
-	    <td>{{start}}</td>
-	    <td>{{end}}</td>
+	    <td>{{start_short}}</td>
+	    <td>{{end_short}}</td>
+	    <td>{{task}}</td>
+	    <td>{{comment}}</td>
 	  </tr>
 	  {{/each}}
 	</tbody>
