@@ -1,7 +1,3 @@
-body {
-    width: 500px;
-}
-
 .popup-1 {
     position: absolute;
     top: 0px;
@@ -13,7 +9,7 @@ body {
     overflow: hidden;
 }
 
-#punch-box {
+.box {
     background-color: #f7f709;
     margin: 1% 1%;
     width: 98%;
@@ -29,3 +25,15 @@ body {
     margin: 1%;
 }
 
+.option {
+    background-color: #f7f7f9;
+    width: 100%;
+    height: 50px;
+    line-height: 50px;
+    text-align: center;
+    margin: 1%;
+}
+
+.marked {
+    background-color: #e4e4e4;
+}

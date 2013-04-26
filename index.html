@@ -23,18 +23,34 @@
       {{view Woodpecker.puncher.view}}
       {{view Woodpecker.timeline.view}}
       {{view Woodpecker.timepicker.view}}
+      {{view Woodpecker.selector.view}}
     </script>
-    <script type="text/x-handlebars" data-template-name="puncher">
-      <div id="punch-box">
-	<div class="row-fluid">
-	  {{#each Woodpecker.puncher.buttons}}
-	  {{view Woodpecker.Puncher.ButtonView}}
+    <script type="text/x-handlebars" data-template-name="selector">
+      <div class="popup-1">
+	<div>
+	  {{#each Woodpecker.selector}}
+	  {{view Woodpecker.Selector.OptionView}}
+	  {{/each}}
+	</div>
+	<div>
+	  {{#each Woodpecker.selector.control_buttons}}
+	  {{view Woodpecker.Selector.ControlButtonView}}
 	  {{/each}}
 	</div>
       </div>
     </script>
+    <script type="text/x-handlebars" data-template-name="selector-option">
+      <div {{bindAttr class=":option marked:marked"}} {{action toggle on="click"}} {{action toggle on="touchStart"}}>{{text}}</div>
+    </script>
+    <script type="text/x-handlebars" data-template-name="puncher">
+      <div class="row-fluid box">
+	{{#each Woodpecker.puncher.buttons}}
+	{{view Woodpecker.Puncher.ButtonView}}
+	{{/each}}
+      </div>
+    </script>
     <script type="text/x-handlebars" data-template-name="button">
-      <div class="punch span5 offset1" {{action hit on="click"}} {{action hit on="touchStart"}}>
+      <div class="punch span6" {{action hit on="click"}} {{action hit on="touchStart"}}>
 	{{text}}
       </div>
     </script>
@@ -55,31 +71,48 @@
 	  {{view Woodpecker.Timepicker.CursorView}}
 	  {{/each}}
 	</div>
-	<div>
+	<div class="timepicker-numpad">
 	  {{#each Woodpecker.timepicker.numpad_buttons}}
 	  {{view Woodpecker.Timepicker.NumpadButtonView}}
 	  {{/each}}
 	</div>
 	<div>
-	  {{#each Woodpecker.timepicker.control_buttons}}
-	  {{view Woodpecker.Timepicker.ControlButtonView}}
-	  {{/each}}
+	  <div class="row-fluid">
+	    {{#each Woodpecker.timepicker.control_buttons}}
+	    {{view Woodpecker.Timepicker.ControlButtonView}}
+	    {{/each}}
+	  </div>
 	</div>
       </div>
     </script>
     <script type="text/x-handlebars" data-template-name="timeline">
-      <table id="timeline">
+      <table id="timeline" class="table">
+	<thead>
+	  <td>In</td>
+	  <td>Out</td>
+	  <td>Tasks</td>
+	  <td>Comments</td>
+	</thead>
 	<tbody>
-	  {{#each Woodpecker.timeline}}
-	  <tr>
-	    <td>{{start_short}}</td>
-	    <td>{{end_short}}</td>
-	    <td>{{task}}</td>
-	    <td>{{comment}}</td>
-	  </tr>
+	  {{#each record in Woodpecker.timeline}}
+	  {{view Woodpecker.Timeline.RecordView controllerBinding=record}}
 	  {{/each}}
 	</tbody>
       </table>
+    </script>
+    <script type="text/x-handlebars" data-template-name="timeline-record">
+      <tr>
+	<td>{{start_short}}</td>
+	<td>{{end_short}}</td>
+	<td {{action select_tasks on="click"}} {{action select_tasks on="touchStart"}}>
+	  {{#each tasks}}
+	  <div><i class="icon-calendar"></i>{{text}}</div>
+	  {{else}}
+	  <div><i class="icon-calendar"></i>Empty</div>
+	  {{/each}}
+	</td>
+	<td>{{comment}}</td>
+      </tr>
     </script>
     <div id="log"></div>
     <script type="text/x-handlebars" data-template-name="popup">

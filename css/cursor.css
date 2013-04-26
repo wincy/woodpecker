@@ -1,6 +1,6 @@
 .cursor-fixed {
-    height: 30px;
-    line-height: 30px;
+    height: 40px;
+    line-height: 40px;
     float: left;
     margin: 10px;
     overflow: hidden;
@@ -9,9 +9,9 @@
 
 .cursor-variable {
     background-color: #f7f7f9;
-    width: 30px;
-    height: 30px;
-    line-height: 30px;
+    width: 40px;
+    height: 40px;
+    line-height: 40px;
     float: left;
     margin: 10px;
     overflow: hidden;

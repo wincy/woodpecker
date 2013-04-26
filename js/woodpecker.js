@@ -28,9 +28,13 @@ Woodpecker.TimelineView = Ember.View.extend({
 Woodpecker.Timeline = Ember.ArrayController.extend({
     content: [],
     check_in: function() {
-	this._add_check_in(new Date());
+	var now = new Date();
+	now.setSeconds(0);
+	this._add_check_in(now);
     },
     check_out: function() {
+	var now = new Date();
+	now.setSeconds(0);
 	this._add_check_out(new Date());
     },
     add_check_in: function() {
@@ -45,8 +49,8 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 		this.pushObject(Woodpecker.Timeline.Record.create(
 		    {start: ts,
 		     end: null,
-		     task: null,
-		     comment: null}));
+		     tasks: [],
+		     comments: []}));
 		console.log(this.content);
 		break;
 	    } else if (this.content[i].start == null) {
@@ -55,8 +59,8 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 			i, 1, [Woodpecker.Timeline.Record.create({
 			    start: ts,
 			    end: this.content[i].end,
-			    task: this.content[i].task,
-			    comment: this.content[i].comment,
+			    tasks: this.content[i].tasks,
+			    comments: this.content[i].comments,
 			})]);
 		    break;
 		} else {
@@ -70,14 +74,14 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 			i + 1, new Record(
 			    {start: ts,
 			     end: this.content[i].end,
-			     task: this.content[i].task,
-			     comment: this.content[i].comment}));
+			     tasks: this.content[i].tasks,
+			     comments: this.content[i].comments}));
 		    this.replaceContent(
 			i, 1, [Woodpecker.Timeline.Record.create({
 			    start: this.content[i].start,
 			    end: null,
-			    task: this.content[i].task,
-			    comment: this.content[i].comment,
+			    tasks: this.content[i].tasks,
+			    comments: this.content[i].comments,
 			})]);
 		    console.log(this.content);
 		    break;
@@ -88,8 +92,8 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 		this.insertAt(i, Woodpecker.Timeline.Record.create({
 		    start: ts,
 		    end: null,
-		    task: null,
-		    comment: null}));
+		    tasks: [],
+		    comments: []}));
 		console.log(this.content);
 		break;
 	    } else {
@@ -110,8 +114,8 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 		this.insertAt(0, Woodpecker.Timeline.Record.create({
 		    start: null,
 		    end: ts,
-		    task: null,
-		    comment: null}));
+		    tasks: [],
+		    comments: []}));
 		break;
 	    } else if (this.content[i].end == null) {
 		if (this.content[i].start <= ts) {
@@ -119,8 +123,8 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 			i, 1, [Woodpecker.Timeline.Record.create({
 			    start: this.content[i].start,
 			    end: ts,
-			    task: this.content[i].task,
-			    comment: this.content[i].comment,
+			    tasks: this.content[i].tasks,
+			    comments: this.content[i].comments,
 			})]);
 		    break;
 		} else {
@@ -134,14 +138,14 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 			i + 1, Woodpecker.Timeline.Record.create({
 			    start: null,
 			    end: this.content[i].end,
-			    task: null,
-			    comment: null}));
+			    tasks: [],
+			    comments: []}));
 		    this.replaceContent(
 			i, 1, [Woodpecker.Timeline.Record.create({
 			    start: this.content[i].start,
 			    end: ts,
-			    task: this.content[i].task,
-			    comment: this.content[i].comment,
+			    tasks: this.content[i].tasks,
+			    comments: this.content[i].comments,
 			})]);
 		    break;
 		}
@@ -151,8 +155,8 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 		this.insertAt(i, Woodpecker.Timeline.Record.create({
 		    start: null,
 		    end: ts,
-		    task: null,
-		    comment: null}));
+		    tasks: [],
+		    comments: []}));
 		break;
 	    } else {
 		console.log('error');
@@ -163,8 +167,8 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 Woodpecker.Timeline.Record = Ember.ObjectController.extend({
     start: null,
     end: null,
-    task: null,
-    comment: null,
+    tasks: [],
+    comments: [],
     start_short: function() {
 	if (this.start) {
 	    return sprintf("%02d:%02d", this.start.getHours(), this.start.getMinutes());
@@ -179,6 +183,15 @@ Woodpecker.Timeline.Record = Ember.ObjectController.extend({
 	    return "";
 	}
     }.property(),
+    select_tasks: function() {
+	console.log(this.tasks);
+	Woodpecker.selector.set_selected(this.tasks);
+	Woodpecker.selector.target = this;
+	Woodpecker.selector.view.set('isVisible', true);
+    },
+});
+Woodpecker.Timeline.RecordView = Ember.View.extend({
+    templateName: "timeline-record",
 });
 Woodpecker.Timepicker = Ember.ObjectController.extend({
     value: null,
@@ -381,4 +394,86 @@ Woodpecker.puncher.view = Ember.View.create({
 Woodpecker.timeline = Woodpecker.Timeline.create();
 Woodpecker.timeline.view = Ember.View.create({
     templateName: "timeline",
+});
+
+
+// Selector
+Woodpecker.Selector = Ember.ArrayController.extend({
+    content: [],
+    init: function() {
+	this.set('content', [
+	    Woodpecker.Selector.Option.create({text: "123"}),
+	    Woodpecker.Selector.Option.create({text: "456"}),
+	    Woodpecker.Selector.Option.create({text: "789"}),
+	]);
+    },
+    get_selected: function() {
+	return this.content.filter(function (elem) {
+	    return elem.marked;
+	});
+    },
+    set_selected: function(options) {
+	for (var i = 0; i < this.content.length; i++) {
+	    if (options.indexOf(this.objectAt(i)) != -1) {
+		this.objectAt(i).set('marked', true);
+	    } else {
+		this.objectAt(i).set('marked', false);
+	    }
+	}
+    },
+});
+Woodpecker.Selector.Option = Ember.ObjectController.extend({
+    text: "",
+    marked: false,
+    classNameBindings: ["marked:marked"],
+    mark: function() {
+	this.set("marked", true);
+    },
+    unmark: function() {
+	this.set("marked", false);
+    },
+    toggle: function() {
+	this.set("marked", !this.marked);
+    },
+});
+Woodpecker.Selector.OptionView = Ember.View.extend({
+    templateName: "selector-option",
+});
+Woodpecker.Selector.ControlButton = Woodpecker.Button.extend({
+    hit: function() {
+	switch (this.type) {
+	case "cancel":
+	    Woodpecker.selector.view.set('isVisible', false);
+	    break;
+	case "confirm":
+	    console.log(Woodpecker.selector.get_selected());
+	    Woodpecker.selector.target.set('tasks', Woodpecker.selector.get_selected());
+	    Woodpecker.selector.view.set('isVisible', false);
+	    break;
+	default:
+	    console.log('unhandled event');
+	}
+    },
+});
+Woodpecker.Selector.ControlButtons = Ember.ArrayController.extend({
+    content: [],
+    init: function() {
+	var buttons = [{text: "Cancel", type: "cancel"},
+		       {text: "Confirm", type: "confirm"}].map(function(elem) {
+			   return Woodpecker.Selector.ControlButton.create(elem);
+		       });
+	this.set('content', buttons);
+    }
+});
+Woodpecker.Selector.ControlButtonView = Woodpecker.ButtonView.extend({
+    templateName: 'button',
+});
+Woodpecker.selector = Woodpecker.Selector.create();
+Woodpecker.selector.control_buttons = Woodpecker.Selector.ControlButtons.create();
+Woodpecker.selector.view = Ember.View.create({
+    templateName: "selector",
+    isVisible: false,
+});
+Woodpecker.TaskView = Ember.View.create({
+    templateName: "task",
 });
