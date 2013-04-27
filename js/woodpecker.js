@@ -572,7 +572,6 @@ asana.get_workspace_tasks(
     106952078415,
     {"opt_fields": "name,parent,assignee,assignee_status,completed"},
     function(data) {
-	console.log(data);
 	Woodpecker.selector.set(
 	    'content',
 	    data.filter(function(elem) {
