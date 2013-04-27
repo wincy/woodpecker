@@ -37,3 +37,7 @@
 .marked {
     background-color: #e4e4e4;
 }
+
+textarea {
+    width: 100%;
+}

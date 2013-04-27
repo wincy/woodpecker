@@ -24,6 +24,7 @@
       {{view Woodpecker.timeline.view}}
       {{view Woodpecker.timepicker.view}}
       {{view Woodpecker.selector.view}}
+      {{view Woodpecker.comment_editor.view}}
     </script>
     <script type="text/x-handlebars" data-template-name="selector">
       <div class="popup-1">
@@ -40,7 +41,7 @@
       </div>
     </script>
     <script type="text/x-handlebars" data-template-name="selector-option">
-      <div {{bindAttr class=":option marked:marked"}} {{action toggle on="click"}} {{action toggle on="touchStart"}}>{{text}}</div>
+      <div {{bindAttr class=":option marked:marked"}} {{action toggle on="click"}} {{action toggle on="touchStart"}}>{{content.title}}</div>
     </script>
     <script type="text/x-handlebars" data-template-name="puncher">
       <div class="row-fluid box">
@@ -105,16 +106,44 @@
 	<td>{{start_short}}</td>
 	<td>{{end_short}}</td>
 	<td {{action select_tasks on="click"}} {{action select_tasks on="touchStart"}}>
-	  {{#each tasks}}
-	  <div><i class="icon-calendar"></i>{{text}}</div>
+	  {{#each task in tasks}}
+	  {{#if task.title}}
+	  <div><i class="icon-calendar"></i>{{task.title}}</div>
 	  {{else}}
 	  <div><i class="icon-calendar"></i>Empty</div>
+	  {{/if}}
 	  {{/each}}
 	</td>
-	<td>{{comment}}</td>
+	<td>
+	  {{#each task in tasks}}
+	  {{view Woodpecker.CommentView controllerBinding=task}}
+	  {{/each}}
+	</td>
       </tr>
     </script>
     <div id="log"></div>
+    <script type="text/x-handlebars" data-template-name="comment">
+      <div {{action write_comment on="click"}} {{action write_comment on="touchStart"}}>
+	<i class="icon-edit"></i>
+	{{#if comment}}
+	{{comment.content}}
+	{{else}}
+	Empty
+	{{/if}}
+      </div>
+    </script>
+    <script type="text/x-handlebars" data-template-name="comment-editor">
+      <div class="popup-1">
+	{{view Ember.TextArea valueBinding="Woodpecker.comment_editor.comment"}}
+	<div>
+	  <div class="row-fluid">
+	    {{#each Woodpecker.comment_editor.control_buttons}}
+	    {{view Woodpecker.CommentEditor.ControlButtonView}}
+	    {{/each}}
+	  </div>
+	</div>
+      </div>
+    </script>
     <script type="text/x-handlebars" data-template-name="popup">
       <div class="popup popup-1">
 	<button class="popup-dismiss">x</button>
