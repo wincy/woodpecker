@@ -13,8 +13,8 @@ asana_api = asana.AsanaAPI(api_key, debug=True)
 class WorkspaceTasks(webapp2.RequestHandler):
     def get(self, wid):
         wid = int(wid)
-        print self.request.GET
-        tasks = asana_api.list_workspace_tasks(wid, self.request.GET)
+        options = self.request.GET
+        tasks = asana_api.list_tasks(wid, 'me', options)
         self.response.content_type = 'application/json'
         self.response.write(json.dumps(tasks))
 

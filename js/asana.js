@@ -4,7 +4,11 @@ Asana = function(url, api_key) {
 }
 
 Asana.prototype = {
-    get_workspace_tasks: function(workspace, filters, callback) {
-	$.get(this.url + '/workspaces/' + workspace + '/tasks', filters, callback);
+    get_workspace_tasks: function(workspace, options, callback) {
+	$.get(this.url + '/workspaces/' + workspace + '/tasks',
+	      options,
+	      function(data) {
+		  callback(data);
+	      });
     },
 }
