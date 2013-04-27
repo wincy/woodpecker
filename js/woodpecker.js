@@ -568,7 +568,7 @@ Woodpecker.comment_editor.view = Ember.View.create({
 });
 
 var asana = new Asana('/asana', '1SK41kN.IkDtNBNaa7wGx2qJAE1lbeYb');
-asana.get_workspace_tasks(106952078415, {}, function(data) {
+asana.get_workspace_tasks(106952078415, {'assignee': 'me'}, function(data) {
     console.log(data);
     Woodpecker.selector.set('content', data.map(function(elem) {
 	return Woodpecker.Selector.Option.create({content: Woodpecker.Task.create(elem)});

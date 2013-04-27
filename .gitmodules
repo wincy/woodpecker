@@ -1,0 +1,3 @@
+[submodule "lib/asana"]
+	path = lib/asana
+	url = git@github.com:gombiuda/asana.git
