@@ -115,18 +115,18 @@
 	  {{/each}}
 	</td>
 	<td>
-	  {{#each task in tasks}}
-	  {{view Woodpecker.CommentView controllerBinding=task}}
+	  {{#each comment in comments}}
+	  {{view Woodpecker.CommentView controllerBinding=comment}}
 	  {{/each}}
 	</td>
       </tr>
     </script>
     <div id="log"></div>
     <script type="text/x-handlebars" data-template-name="comment">
-      <div {{action write_comment on="click"}} {{action write_comment on="touchStart"}}>
+      <div {{action edit on="click"}} {{action edit on="touchStart"}}>
 	<i class="icon-edit"></i>
-	{{#if comment}}
-	{{comment.content}}
+	{{#if content}}
+	{{content}}
 	{{else}}
 	Empty
 	{{/if}}
@@ -134,7 +134,7 @@
     </script>
     <script type="text/x-handlebars" data-template-name="comment-editor">
       <div class="popup-1">
-	{{view Ember.TextArea valueBinding="Woodpecker.comment_editor.comment"}}
+	{{view Ember.TextArea valueBinding="Woodpecker.comment_editor.content"}}
 	<div>
 	  <div class="row-fluid">
 	    {{#each Woodpecker.comment_editor.control_buttons}}

@@ -24,21 +24,21 @@ Woodpecker.PopupView = Ember.View.extend({
 });
 Woodpecker.Task = Ember.ObjectController.extend({
     id: null,
-    comment: null,
     title: function() {
 	return this.id;
     }.property('id'),
-    write_comment: function() {
-	console.log('write_comment for ' + this.id);
-	Woodpecker.comment_editor.set('task', this);
-	Woodpecker.comment_editor.view.set('isVisible', true);
-    },
 });
 Woodpecker.Comment = Ember.ObjectController.extend({
     id: null,
+    task: null,
     content: function() {
 	return this.id;
     }.property('id'),
+    edit: function() {
+	console.log('write comment for ' + this.task);
+	Woodpecker.comment_editor.set('target', this);
+	Woodpecker.comment_editor.view.set('isVisible', true);
+    },
 });
 Woodpecker.CommentView = Ember.View.extend({
     templateName: "comment",
@@ -70,7 +70,9 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 		this.pushObject(Woodpecker.Timeline.Record.create(
 		    {start: ts,
 		     end: null,
-		     tasks: [Woodpecker.Task.create()]}));
+		     tasks: [Woodpecker.Task.create()],
+		     comments: [Woodpecker.Comment.create()],
+		    }));
 		console.log(this.content);
 		break;
 	    } else if (this.content[i].start == null) {
@@ -79,7 +81,9 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 			i, 1, [Woodpecker.Timeline.Record.create({
 			    start: ts,
 			    end: this.content[i].end,
-			    tasks: this.content[i].tasks})]);
+			    tasks: this.content[i].tasks,
+			    comments: this.content[i].comments,
+			})]);
 		    break;
 		} else {
 		    i = i + 1;
@@ -92,12 +96,16 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 			i + 1, Woodpecker.Timeline.Record.create({
 			    start: ts,
 			    end: this.content[i].end,
-			    tasks: this.content[i].tasks}));
+			    tasks: this.content[i].tasks,
+			    comments: this.content[i].comments,
+			}));
 		    this.replaceContent(
 			i, 1, [Woodpecker.Timeline.Record.create({
 			    start: this.content[i].start,
 			    end: null,
-			    tasks: this.content[i].tasks})]);
+			    tasks: this.content[i].tasks,
+			    comments: this.content[i].comments,
+			})]);
 		    console.log(this.content);
 		    break;
 		}
@@ -107,7 +115,9 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 		this.insertAt(i, Woodpecker.Timeline.Record.create({
 		    start: ts,
 		    end: null,
-		    tasks: [Woodpecker.Task.create()]}));
+		    tasks: [Woodpecker.Task.create()],
+		    comments: [Woodpecker.Comment.create()],
+		}));
 		console.log(this.content);
 		break;
 	    } else {
@@ -128,7 +138,9 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 		this.insertAt(0, Woodpecker.Timeline.Record.create({
 		    start: null,
 		    end: ts,
-		    tasks: [Woodpecker.Task.create()]}));
+		    tasks: [Woodpecker.Task.create()],
+		    comments: [Woodpecker.Comment.create()],
+		}));
 		break;
 	    } else if (this.content[i].end == null) {
 		if (this.content[i].start <= ts) {
@@ -136,7 +148,9 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 			i, 1, [Woodpecker.Timeline.Record.create({
 			    start: this.content[i].start,
 			    end: ts,
-			    tasks: this.content[i].tasks})]);
+			    tasks: this.content[i].tasks,
+			    comments: this.content[i].comments,
+			})]);
 		    break;
 		} else {
 		    i = i - 1;
@@ -149,12 +163,16 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 			i + 1, Woodpecker.Timeline.Record.create({
 			    start: null,
 			    end: this.content[i].end,
-			    tasks: [Woodpecker.Task.create()]}));
+			    tasks: [Woodpecker.Task.create()],
+			    comments: [Woodpecker.Comment.create()],
+			}));
 		    this.replaceContent(
 			i, 1, [Woodpecker.Timeline.Record.create({
 			    start: this.content[i].start,
 			    end: ts,
-			    tasks: this.content[i].tasks})]);
+			    tasks: this.content[i].tasks,
+			    comments: this.content[i].comments,
+			})]);
 		    break;
 		}
 	    } else if (this.content[i].end == ts) {
@@ -163,7 +181,9 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 		this.insertAt(i, Woodpecker.Timeline.Record.create({
 		    start: null,
 		    end: ts,
-		    tasks: [Woodpecker.Task.create()]}));
+		    tasks: [Woodpecker.Task.create()],
+		    comments: [Woodpecker.Comment.create()],
+		}));
 		break;
 	    } else {
 		console.log('error');
@@ -175,6 +195,7 @@ Woodpecker.Timeline.Record = Ember.ObjectController.extend({
     start: null,
     end: null,
     tasks: [],
+    comments: [],
     start_short: function() {
 	if (this.start) {
 	    return sprintf("%02d:%02d", this.start.getHours(), this.start.getMinutes());
@@ -194,12 +215,6 @@ Woodpecker.Timeline.Record = Ember.ObjectController.extend({
 	Woodpecker.selector.set_selected(this.tasks);
 	Woodpecker.selector.target = this;
 	Woodpecker.selector.view.set('isVisible', true);
-    },
-    write_comment: function(task) {
-	console.log('write comment for ' + task.id);
-	if (comment) {
-	    
-	}
     },
 });
 Woodpecker.Timeline.RecordView = Ember.View.extend({
@@ -464,7 +479,22 @@ Woodpecker.Selector.ControlButton = Woodpecker.Button.extend({
 	    break;
 	case "confirm":
 	    console.log(Woodpecker.selector.get_selected());
-	    Woodpecker.selector.target.set('tasks', Woodpecker.selector.get_selected());
+	    var tasks = Woodpecker.selector.target.tasks;
+	    var comments = Woodpecker.selector.target.comments;
+	    var new_tasks = Woodpecker.selector.get_selected();
+	    var new_comments = [];
+	    for (var i = 0; i < new_tasks.length; i++) {
+		var idx = tasks.indexOf(new_tasks[i]);
+		if (idx != -1) {
+		    new_comments.push(comments[idx]);
+		} else {
+		    new_comments.push(Woodpecker.Comment.create({
+			task: new_tasks[i].id,
+		    }));
+		}
+	    }
+	    Woodpecker.selector.target.set('tasks', new_tasks);
+	    Woodpecker.selector.target.set('comments', new_comments);
 	    Woodpecker.selector.view.set('isVisible', false);
 	    break;
 	default:
@@ -497,13 +527,11 @@ Woodpecker.TaskView = Ember.View.create({
 
 // Comment Editor
 Woodpecker.CommentEditor = Ember.ObjectController.extend({
-    task: null,
-    comment: null,
+    target: null,
+    content: null,
     save: function() {
-	console.log(this.comment);
-	this.task.set('comment', Woodpecker.Comment.create({
-	    id: this.comment,
-	}));
+	console.log(this.content);
+	this.target.set('id', this.content);
     },
 });
 Woodpecker.CommentEditor.ControlButton = Woodpecker.Button.extend({
