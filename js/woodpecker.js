@@ -24,9 +24,7 @@ Woodpecker.PopupView = Ember.View.extend({
 });
 Woodpecker.Task = Ember.ObjectController.extend({
     id: null,
-    title: function() {
-	return this.id;
-    }.property('id'),
+    name: null,
 });
 Woodpecker.Comment = Ember.ObjectController.extend({
     id: null,
@@ -567,4 +565,12 @@ Woodpecker.comment_editor.control_buttons = Woodpecker.CommentEditor.ControlButt
 Woodpecker.comment_editor.view = Ember.View.create({
     templateName: "comment-editor",
     isVisible: false,
+});
+
+var asana = new Asana('/asana', '1SK41kN.IkDtNBNaa7wGx2qJAE1lbeYb');
+asana.get_workspace_tasks(106952078415, {}, function(data) {
+    console.log(data);
+    Woodpecker.selector.set('content', data.map(function(elem) {
+	return Woodpecker.Selector.Option.create({content: Woodpecker.Task.create(elem)});
+    }));
 });

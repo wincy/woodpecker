@@ -15,6 +15,7 @@
     <script src="js/cursor.js"></script>
     <script src="js/timepicker.js"></script>
     <script src="js/timeline.js"></script>
+    <script src="js/asana.js"></script>
     <script src="js/woodpecker.js"></script>
   </head>
   <body>
@@ -41,7 +42,7 @@
       </div>
     </script>
     <script type="text/x-handlebars" data-template-name="selector-option">
-      <div {{bindAttr class=":option marked:marked"}} {{action toggle on="click"}} {{action toggle on="touchStart"}}>{{content.title}}</div>
+      <div {{bindAttr class=":option marked:marked"}} {{action toggle on="click"}} {{action toggle on="touchStart"}}>{{content.name}}</div>
     </script>
     <script type="text/x-handlebars" data-template-name="puncher">
       <div class="row-fluid box">
@@ -107,8 +108,8 @@
 	<td>{{end_short}}</td>
 	<td {{action select_tasks on="click"}} {{action select_tasks on="touchStart"}}>
 	  {{#each task in tasks}}
-	  {{#if task.title}}
-	  <div><i class="icon-calendar"></i>{{task.title}}</div>
+	  {{#if task.name}}
+	  <div><i class="icon-calendar"></i>{{task.name}}</div>
 	  {{else}}
 	  <div><i class="icon-calendar"></i>Empty</div>
 	  {{/if}}

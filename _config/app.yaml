@@ -2,8 +2,8 @@ application: woodpecker
 version: 1
 
 handlers:
- - url: '/.*'
-   script: main.py
+ - url: '/asana/.*'
+   script: asana.py
 
 # - url: '/user/.*'
 #   script: user.py
