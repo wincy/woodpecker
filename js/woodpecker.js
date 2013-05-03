@@ -10,7 +10,34 @@ function gtime(ts) {
 Woodpecker = Ember.Application.create({
     //    LOG_TRANSITIONS: true,
     ready: function () {
+	Woodpecker.timepicker = Woodpecker.Timepicker.create();
+	Woodpecker.timepicker.cursors = Woodpecker.Timepicker.Cursors.create();
+	Woodpecker.timepicker.numpad_buttons = Woodpecker.Timepicker.NumpadButtons.create();
+	Woodpecker.timepicker.control_buttons = Woodpecker.Timepicker.ControlButtons.create();
+	Woodpecker.timepicker.view = Ember.View.create({
+	    templateName: "timepicker",
+	    isVisible: false,
+	});
+	Woodpecker.puncher = Woodpecker.Puncher.create();
+	Woodpecker.puncher.buttons = Woodpecker.Puncher.Buttons.create();
+	Woodpecker.puncher.view = Ember.View.create({
+	    templateName: "puncher",
+	});
+	Woodpecker.timeline = Woodpecker.Timeline.create();
+	Woodpecker.timeline.view = Ember.View.create({
+	    templateName: "timeline",
+	});
+	Woodpecker.comment_editor = Woodpecker.CommentEditor.create();
+	Woodpecker.comment_editor.control_buttons = Woodpecker.CommentEditor.ControlButtons.create();
+	Woodpecker.comment_editor.view = Ember.View.create({
+	    templateName: "comment-editor",
+	    isVisible: false,
+	});
     },
+});
+Woodpecker.Store = DS.Store.extend({
+    revision: 12,
+    adapter: DS.RESTAdapter,
 });
 Woodpecker.ApplicationController = Ember.Controller.extend({
     world: "world!",
@@ -22,20 +49,28 @@ Woodpecker.ButtonView = Ember.View.extend({
 Woodpecker.PopupView = Ember.View.extend({
     layoutName: 'popup'
 });
-Woodpecker.Task = Ember.ObjectController.extend({
-    id: null,
-    name: null,
-});
+// Woodpecker.Task = Ember.ObjectController.extend({
+//     id: null,
+//     name: null,
+// });
 Woodpecker.Comment = Ember.ObjectController.extend({
     id: null,
     task: null,
+    text: null,
     content: function() {
-	return this.id;
-    }.property('id'),
+	return this.text;
+    }.property('text'),
     edit: function() {
 	console.log('write comment for ' + this.task);
 	Woodpecker.comment_editor.set('target', this);
 	Woodpecker.comment_editor.view.set('isVisible', true);
+    },
+    save: function(content) {
+	var comment = this;
+	comment.set('text', data.text);
+	asana.post_task_story(this.task, content, function(data) {
+	    comment.set('id', data.id);
+	});
     },
 });
 Woodpecker.CommentView = Ember.View.extend({
@@ -45,7 +80,31 @@ Woodpecker.TimelineView = Ember.View.extend({
     templateName: "timeline",
 });
 Woodpecker.Timeline = Ember.ArrayController.extend({
+    id: null,
+    date: null,
     content: [],
+    // init: function() {
+    // 	var timeline = this.timeline;
+    // 	this._super();
+    // 	var date = this.get('date');
+    // 	console.log('load timeline:' + date);
+    // 	if (! asana.timelines[date]) {
+    // 	    asana.post_tasks(
+    // 		{workspace: asana.workspaces('.woodpecker').id,
+    // 		 name: date,
+    // 		 assignee: asana.me},
+    // 	    function(task) {
+    // 		timeline.id = task.id;
+    // 	    })
+    // 	}
+    // 	asana.get_workspace_tasks(
+    // 	    asana.timelines[date].id,
+    // 	    {"opt_fields": "name,parent,assignee,assignee_status,completed"},
+    // 	    function(tasks) {
+    // 		tasks
+    // 	    }
+    // 	);
+    // },
     check_in: function() {
 	var now = new Date();
 	now.setSeconds(0);
@@ -290,6 +349,7 @@ Woodpecker.Timepicker.Cursors = Ember.ArrayController.extend({
     content: [],
     current: 0,
     init: function() {
+	this._super();
 	var cursors = [{fixed: false, current: true, value: "1"},
 		       {fixed: false, current: false, value: "2"},
 		       {fixed: true, current: false, value: ":"},
@@ -334,6 +394,7 @@ Woodpecker.Timepicker.Cursors = Ember.ArrayController.extend({
 Woodpecker.Timepicker.NumpadButtons = Ember.ArrayController.extend({
     content: [],
     init: function() {
+	this._super();
 	var buttons = [{text: "1", type: "set-single"},
 		       {text: "2", type: "set-single"},
 		       {text: "3", type: "set-single"},
@@ -358,6 +419,7 @@ Woodpecker.Timepicker.NumpadButtons = Ember.ArrayController.extend({
 Woodpecker.Timepicker.ControlButtons = Ember.ArrayController.extend({
     content: [],
     init: function() {
+	this._super();
 	var buttons = [{text: "Cancel", type: "cancel"},
 		       {text: "Confirm", type: "confirm"}].map(function(elem) {
 			   return Woodpecker.Timepicker.ControlButton.create(elem);
@@ -393,6 +455,7 @@ Woodpecker.Puncher.Button = Woodpecker.Button.extend({
 Woodpecker.Puncher.Buttons = Ember.ArrayController.extend({
     content: [],
     init: function() {
+	this._super();
 	var buttons = [
 	    {text: "Check in", type: "check-in"},
 	    {text: "Check out", type: "check-out"},
@@ -403,38 +466,22 @@ Woodpecker.Puncher.Buttons = Ember.ArrayController.extend({
 	this.set('content', buttons);
     },
 });
-Woodpecker.timepicker = Woodpecker.Timepicker.create();
-Woodpecker.timepicker.cursors = Woodpecker.Timepicker.Cursors.create();
-Woodpecker.timepicker.numpad_buttons = Woodpecker.Timepicker.NumpadButtons.create();
-Woodpecker.timepicker.control_buttons = Woodpecker.Timepicker.ControlButtons.create();
-Woodpecker.timepicker.view = Ember.View.create({
-    templateName: "timepicker",
-    isVisible: false,
-});
-Woodpecker.puncher = Woodpecker.Puncher.create();
-Woodpecker.puncher.buttons = Woodpecker.Puncher.Buttons.create();
-Woodpecker.puncher.view = Ember.View.create({
-    templateName: "puncher",
-});
-Woodpecker.timeline = Woodpecker.Timeline.create();
-Woodpecker.timeline.view = Ember.View.create({
-    templateName: "timeline",
-});
 
 
 // Selector
 Woodpecker.Selector = Ember.ArrayController.extend({
     content: [],
-    init: function() {
-	this.set('content', [
-	    Woodpecker.Selector.Option.create(
-		{content: Woodpecker.Task.create({id: 1, comment: 11})}),
-	    Woodpecker.Selector.Option.create(
-		{content: Woodpecker.Task.create({id: 2, comment: 22})}),
-	    Woodpecker.Selector.Option.create(
-		{content: Woodpecker.Task.create({id: 3, comment: 33})}),
-	]);
-    },
+    // init: function() {
+    // 	this._super();
+    // 	this.set('content', [
+    // 	    Woodpecker.Selector.Option.create(
+    // 		{content: Woodpecker.Task.create({name: 1, comment: 11})}),
+    // 	    Woodpecker.Selector.Option.create(
+    // 		{content: Woodpecker.Task.create({name: 2, comment: 22})}),
+    // 	    Woodpecker.Selector.Option.create(
+    // 		{content: Woodpecker.Task.create({name: 3, comment: 33})}),
+    // 	]);
+    // },
     get_selected: function() {
 	return this.content.filter(function (elem) {
 	    return elem.marked;
@@ -503,6 +550,7 @@ Woodpecker.Selector.ControlButton = Woodpecker.Button.extend({
 Woodpecker.Selector.ControlButtons = Ember.ArrayController.extend({
     content: [],
     init: function() {
+	this._super();
 	var buttons = [{text: "Cancel", type: "cancel"},
 		       {text: "Confirm", type: "confirm"}].map(function(elem) {
 			   return Woodpecker.Selector.ControlButton.create(elem);
@@ -529,7 +577,7 @@ Woodpecker.CommentEditor = Ember.ObjectController.extend({
     content: null,
     save: function() {
 	console.log(this.content);
-	this.target.set('id', this.content);
+	this.target.save(this.content);
     },
 });
 Woodpecker.CommentEditor.ControlButton = Woodpecker.Button.extend({
@@ -550,6 +598,7 @@ Woodpecker.CommentEditor.ControlButton = Woodpecker.Button.extend({
 Woodpecker.CommentEditor.ControlButtons = Ember.ArrayController.extend({
     content: [],
     init: function() {
+	this._super();
 	var buttons = [{text: "Cancel", type: "cancel"},
 		       {text: "Confirm", type: "confirm"}].map(function(elem) {
 			   return Woodpecker.CommentEditor.ControlButton.create(elem);
@@ -560,24 +609,70 @@ Woodpecker.CommentEditor.ControlButtons = Ember.ArrayController.extend({
 Woodpecker.CommentEditor.ControlButtonView = Woodpecker.ButtonView.extend({
     templateName: 'button',
 });
-Woodpecker.comment_editor = Woodpecker.CommentEditor.create();
-Woodpecker.comment_editor.control_buttons = Woodpecker.CommentEditor.ControlButtons.create();
-Woodpecker.comment_editor.view = Ember.View.create({
-    templateName: "comment-editor",
-    isVisible: false,
+
+var asana = new Asana('/asana');
+var record_ws = '';
+asana.get_workspaces(function(workspaces) {
+    console.log(typeof workspaces);
+    Woodpecker.selector.set('content', []);
+    for (var i = 0; i < workspaces.length; i++) {
+	console.log(typeof workspaces[i]);
+	asana.get_workspace_tasks(
+            workspaces[i].id,
+            {"opt_fields": "name,parent,assignee,assignee_status,completed"},
+            function(tasks) {
+    		Woodpecker.selector.pushObjects(
+    		    tasks.filter(function(elem) {
+    			return (elem.assignee_status == 'today' &&
+				elem.completed == false &&
+				elem.name[0] != '.');
+    		    })
+    			.map(function(elem) {
+    			    return Woodpecker.Selector.Option.create(
+				{content: Woodpecker.Task.create(elem)});
+    			}));
+            });
+    }
 });
 
-var asana = new Asana('/asana', '1SK41kN.IkDtNBNaa7wGx2qJAE1lbeYb');
-asana.get_workspace_tasks(
-    106952078415,
-    {"opt_fields": "name,parent,assignee,assignee_status,completed"},
-    function(data) {
-	Woodpecker.selector.set(
-	    'content',
-	    data.filter(function(elem) {
-		return (elem.assignee_status == 'today' && elem.completed == false);
-	    })
-		.map(function(elem) {
-	    return Woodpecker.Selector.Option.create({content: Woodpecker.Task.create(elem)});
-	}));
-    });
+Woodpecker.User = DS.Model.extend({
+    // id: DS.attr('number'),
+    name: DS.attr('string'),
+    email: DS.attr('string'),
+    workspaces: DS.belongsTo('Woodpecker.Workspace'),
+});
+
+Woodpecker.Workspace = DS.Model.extend({
+    // id: DS.attr('number'),
+    name: DS.attr('string'),
+});
+
+// Woodpecker.Project = DS.Model.extend({
+//     // id: DS.attr('number'),
+//     name: DS.attr('string'),
+//     archived: DS.attr('boolean'),
+//     notes: DS.attr('string'),
+//     workspace: DS.belongsTo('Woodpecker.Workspace'),
+// });
+
+// Woodpecker.Task = DS.Model.extend({
+//     // id: DS.attr('number'),
+//     assignee: DS.belongsTo('Woodpecker.User'),
+//     assignee_status: DS.attr('string'),
+//     completed: DS.attr('boolean'),
+//     name: DS.attr('string'),
+//     notes: DS.attr('string'),
+//     parent: DS.belongsTo('Woodpecker.Task'),
+//     workspace: DS.belongsTo('Woodpecker.Workspace'),
+// });
+
+// Woodpecker.Story = DS.Model.extend({
+//     // id: DS.attr('number'),
+//     text: DS.attr('string'),
+//     type: DS.attr('string'),
+// });
+
+DS.RESTAdapter.reopen({
+    namespace: 'asana',
+    url: 'http://localhost:9000',
+});

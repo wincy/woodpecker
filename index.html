@@ -12,22 +12,14 @@
     <script src="js/jquery-2.0.0.js"></script>
     <script src="js/handlebars.js"></script>
     <script src="js/ember-1.0.0-rc.3.js"></script>
+    <script src="js/ember-data.js"></script>
+    <script src="js/rsvp.js"></script>
     <script src="js/cursor.js"></script>
     <script src="js/timepicker.js"></script>
     <script src="js/timeline.js"></script>
     <script src="js/locache.min.js"></script>
     <script src="js/asana.js"></script>
     <script src="js/woodpecker.js"></script>
-  </head>
-  <body>
-    <script type="text/x-handlebars">
-      <h3>Hello, {{world}}</h3>
-      {{view Woodpecker.puncher.view}}
-      {{view Woodpecker.timeline.view}}
-      {{view Woodpecker.timepicker.view}}
-      {{view Woodpecker.selector.view}}
-      {{view Woodpecker.comment_editor.view}}
-    </script>
     <script type="text/x-handlebars" data-template-name="selector">
       <div class="popup-1">
 	<div>
@@ -91,10 +83,10 @@
     <script type="text/x-handlebars" data-template-name="timeline">
       <table id="timeline" class="table">
 	<thead>
-	  <td>In</td>
-	  <td>Out</td>
-	  <td>Tasks</td>
-	  <td>Comments</td>
+	  <td class="span1">In</td>
+	  <td class="span1">Out</td>
+	  <td class="span5">Tasks</td>
+	  <td class="span5">Comments</td>
 	</thead>
 	<tbody>
 	  {{#each record in Woodpecker.timeline}}
@@ -153,6 +145,16 @@
 	  {{yield}}
 	</div>
       </div>
+    </script>
+  </head>
+  <body>
+    <script type="text/x-handlebars">
+      <h3>Hello, {{world}}</h3>
+      {{view Woodpecker.puncher.view}}
+      {{view Woodpecker.timeline.view}}
+      {{view Woodpecker.timepicker.view}}
+      {{view Woodpecker.selector.view}}
+      {{view Woodpecker.comment_editor.view}}
     </script>
   </body>
 </html>
