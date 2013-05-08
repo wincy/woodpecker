@@ -20,14 +20,8 @@ handlers:
  - url: '/favicon.ico'
    static_file: favicon.ico
 
- - url: '/js'
-   static_dir: js
-
- - url: '/css'
-   static_dir: css
-
- - url: '/img'
-   static_dir: img
+ - url: '/static'
+   static_dir: static
 
 services:
 # - mysqldb

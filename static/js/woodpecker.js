@@ -7,6 +7,8 @@ function gtime(ts) {
     return now;
 }
 
+var asana = new Asana('/asana');
+
 Woodpecker = Ember.Application.create({
     //    LOG_TRANSITIONS: true,
     ready: function () {
@@ -33,6 +35,35 @@ Woodpecker = Ember.Application.create({
 	    templateName: "comment-editor",
 	    isVisible: false,
 	});
+	asana.Workspace
+	    .find()
+	    .then(function(workspaces) {
+		Woodpecker.selector.set('content', []);
+		for (var i = 0; i < workspaces.length; i++) {
+		    asana.Task
+			.find({
+			    workspace: workspaces[i].id,
+			    assignee: 'me',
+			    opt_fields: "name,parent,assignee,assignee_status,completed"
+			})
+			.then(function(tasks) {
+			    for (var j = 0; j < tasks.length; j++) {
+				tasks[j]
+				    .load()
+				    .then(function(task) {
+					if (task.assignee_status == 'today' &&
+					    task.completed == false &&
+					    task.name[0] != '.') {
+					    console.log(task);
+					    Woodpecker.selector.pushObject(
+						Woodpecker.Selector.Option.create(
+						    {content: task}));
+					}
+				    });
+			    }
+			});
+		}
+	    });
     },
 });
 Woodpecker.Store = DS.Store.extend({
@@ -49,10 +80,10 @@ Woodpecker.ButtonView = Ember.View.extend({
 Woodpecker.PopupView = Ember.View.extend({
     layoutName: 'popup'
 });
-// Woodpecker.Task = Ember.ObjectController.extend({
-//     id: null,
-//     name: null,
-// });
+Woodpecker.Task = Ember.ObjectController.extend({
+    id: null,
+    name: null,
+});
 Woodpecker.Comment = Ember.ObjectController.extend({
     id: null,
     task: null,
@@ -608,71 +639,4 @@ Woodpecker.CommentEditor.ControlButtons = Ember.ArrayController.extend({
 });
 Woodpecker.CommentEditor.ControlButtonView = Woodpecker.ButtonView.extend({
     templateName: 'button',
-});
-
-var asana = new Asana('/asana');
-var record_ws = '';
-asana.get_workspaces(function(workspaces) {
-    console.log(typeof workspaces);
-    Woodpecker.selector.set('content', []);
-    for (var i = 0; i < workspaces.length; i++) {
-	console.log(typeof workspaces[i]);
-	asana.get_workspace_tasks(
-            workspaces[i].id,
-            {"opt_fields": "name,parent,assignee,assignee_status,completed"},
-            function(tasks) {
-    		Woodpecker.selector.pushObjects(
-    		    tasks.filter(function(elem) {
-    			return (elem.assignee_status == 'today' &&
-				elem.completed == false &&
-				elem.name[0] != '.');
-    		    })
-    			.map(function(elem) {
-    			    return Woodpecker.Selector.Option.create(
-				{content: Woodpecker.Task.create(elem)});
-    			}));
-            });
-    }
-});
-
-Woodpecker.User = DS.Model.extend({
-    // id: DS.attr('number'),
-    name: DS.attr('string'),
-    email: DS.attr('string'),
-    workspaces: DS.belongsTo('Woodpecker.Workspace'),
-});
-
-Woodpecker.Workspace = DS.Model.extend({
-    // id: DS.attr('number'),
-    name: DS.attr('string'),
-});
-
-// Woodpecker.Project = DS.Model.extend({
-//     // id: DS.attr('number'),
-//     name: DS.attr('string'),
-//     archived: DS.attr('boolean'),
-//     notes: DS.attr('string'),
-//     workspace: DS.belongsTo('Woodpecker.Workspace'),
-// });
-
-// Woodpecker.Task = DS.Model.extend({
-//     // id: DS.attr('number'),
-//     assignee: DS.belongsTo('Woodpecker.User'),
-//     assignee_status: DS.attr('string'),
-//     completed: DS.attr('boolean'),
-//     name: DS.attr('string'),
-//     notes: DS.attr('string'),
-//     parent: DS.belongsTo('Woodpecker.Task'),
-//     workspace: DS.belongsTo('Woodpecker.Workspace'),
-// });
-
-// Woodpecker.Story = DS.Model.extend({
-//     // id: DS.attr('number'),
-//     text: DS.attr('string'),
-//     type: DS.attr('string'),
-// });
-
-DS.RESTAdapter.reopen({
-    namespace: 'asana',
-    url: 'http://localhost:9000',
 });
