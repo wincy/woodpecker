@@ -3,6 +3,7 @@ import requests
 import redis
 import json
 import logging
+import pprint
 
 api_key = redis.StrictRedis().get('api_key')
 
@@ -24,6 +25,17 @@ class Asana(webapp2.RequestHandler):
         self.response.content_type = r.headers['content-type']
         self.response.write(json.dumps(r.json()))
         import pprint
+        pprint.pprint(r.json())
+
+    def post(self, url):
+        print 'POST /%s' % url
+        pprint.pprint(self.request.POST)
+        r = session.post('https://app.asana.com/api/1.0/%s' % url,
+                         data=dict(self.request.POST),
+                         auth=(api_key, ''))
+        self.response.status_int = r.status_code
+        self.response.content_type = r.headers['content-type']
+        self.response.write(json.dumps(r.json()))
         pprint.pprint(r.json())
 
 

@@ -81,27 +81,22 @@ Woodpecker.PopupView = Ember.View.extend({
     layoutName: 'popup'
 });
 Woodpecker.Task = Ember.ObjectController.extend({
-    id: null,
-    name: null,
 });
 Woodpecker.Comment = Ember.ObjectController.extend({
-    id: null,
     task: null,
-    text: null,
-    content: function() {
-	return this.text;
-    }.property('text'),
     edit: function() {
 	console.log('write comment for ' + this.task);
 	Woodpecker.comment_editor.set('target', this);
 	Woodpecker.comment_editor.view.set('isVisible', true);
     },
     save: function(content) {
-	var comment = this;
-	comment.set('text', data.text);
-	asana.post_task_story(this.task, content, function(data) {
-	    comment.set('id', data.id);
-	});
+	console.log(this.task.name);
+	console.log(this.task.id);
+	console.log(this.task.Story.create);
+	this.task.Story.create(content)
+	    .then(function(story) {
+		this.set('content', story);
+	    }.bind(this));
     },
 });
 Woodpecker.CommentView = Ember.View.extend({
@@ -502,17 +497,6 @@ Woodpecker.Puncher.Buttons = Ember.ArrayController.extend({
 // Selector
 Woodpecker.Selector = Ember.ArrayController.extend({
     content: [],
-    // init: function() {
-    // 	this._super();
-    // 	this.set('content', [
-    // 	    Woodpecker.Selector.Option.create(
-    // 		{content: Woodpecker.Task.create({name: 1, comment: 11})}),
-    // 	    Woodpecker.Selector.Option.create(
-    // 		{content: Woodpecker.Task.create({name: 2, comment: 22})}),
-    // 	    Woodpecker.Selector.Option.create(
-    // 		{content: Woodpecker.Task.create({name: 3, comment: 33})}),
-    // 	]);
-    // },
     get_selected: function() {
 	return this.content.filter(function (elem) {
 	    return elem.marked;
@@ -565,7 +549,7 @@ Woodpecker.Selector.ControlButton = Woodpecker.Button.extend({
 		    new_comments.push(comments[idx]);
 		} else {
 		    new_comments.push(Woodpecker.Comment.create({
-			task: new_tasks[i].id,
+			task: new_tasks[i],
 		    }));
 		}
 	    }
