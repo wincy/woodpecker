@@ -1,12 +1,3 @@
-function gtime(ts) {
-    var now = new Date();
-    var hours = parseInt(ts.slice(0, 2));
-    var minutes = parseInt(ts.slice(3, 5));
-    now.setHours(hours);
-    now.setMinutes(minutes);
-    return now;
-}
-
 var asana = new Asana('/asana');
 
 Woodpecker = Ember.Application.create({
@@ -38,6 +29,7 @@ Woodpecker = Ember.Application.create({
 	RSVP.all([
 	    asana.Workspace.find()
 		.then(function(workspaces) {
+		    asana.workspaces = workspaces;
 		    asana.personal = workspaces.filter(function(workspace) {
 			return workspace.name == 'Personal';
 		    })[0];
@@ -53,36 +45,9 @@ Woodpecker = Ember.Application.create({
 	]).then(function() {
 	    console.log('load');
 	    Woodpecker.timeline.load();
+	    Woodpecker.selector.load();
 	});
-	asana.Workspace
-	    .find()
-	    .then(function(workspaces) {
-		Woodpecker.selector.set('content', []);
-		for (var i = 0; i < workspaces.length; i++) {
-		    asana.Task
-			.find({
-			    workspace: workspaces[i].id,
-			    assignee: 'me',
-			    opt_fields: "name,parent,assignee,assignee_status,completed,projects"
-			})
-			.then(function(tasks) {
-			    for (var j = 0; j < tasks.length; j++) {
-				if (tasks[j].assignee_status == 'today' &&
-				    tasks[j].completed == false &&
-				    tasks[j].name[0] != '.') {
-				    Woodpecker.selector.pushObject(
-					Woodpecker.Selector.Option.create(
-					    {content: tasks[j]}));
-				}
-			    }
-			});
-		}
-	    });
     },
-});
-Woodpecker.Store = DS.Store.extend({
-    revision: 12,
-    adapter: DS.RESTAdapter,
 });
 Woodpecker.ApplicationController = Ember.Controller.extend({
     world: "world!",
@@ -159,28 +124,6 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 		}.bind(this));
 	}.bind(this));
     },
-    // init: function() {
-    // 	var timeline = this.timeline;
-    // 	this._super();
-    // 	var date = this.get('date');
-    // 	console.log('load timeline:' + date);
-    // 	if (! asana.timelines[date]) {
-    // 	    asana.post_tasks(
-    // 		{workspace: asana.workspaces('.woodpecker').id,
-    // 		 name: date,
-    // 		 assignee: asana.me},
-    // 	    function(task) {
-    // 		timeline.id = task.id;
-    // 	    })
-    // 	}
-    // 	asana.get_workspace_tasks(
-    // 	    asana.timelines[date].id,
-    // 	    {"opt_fields": "name,parent,assignee,assignee_status,completed"},
-    // 	    function(tasks) {
-    // 		tasks
-    // 	    }
-    // 	);
-    // },
     toJSON: function() {
 	return JSON.stringify(this.content.map(function(record) {
 	    return JSON.parse(record.toJSON());
@@ -615,6 +558,28 @@ Woodpecker.Puncher.Buttons = Ember.ArrayController.extend({
 // Selector
 Woodpecker.Selector = Ember.ArrayController.extend({
     content: [],
+    load: function() {
+	Woodpecker.selector.set('content', []);
+	for (var i = 0; i < asana.workspaces.length; i++) {
+	    asana.Task
+		.find({
+		    workspace: asana.workspaces[i].id,
+		    assignee: 'me',
+		    opt_fields: "name,parent,assignee,assignee_status,completed,projects"
+		})
+		.then(function(tasks) {
+		    for (var j = 0; j < tasks.length; j++) {
+			if (tasks[j].assignee_status == 'today' &&
+			    tasks[j].completed == false &&
+			    tasks[j].name[0] != '.') {
+			    Woodpecker.selector.pushObject(
+				Woodpecker.Selector.Option.create(
+				    {content: tasks[j]}));
+			}
+		    }
+		});
+	}
+    },
     get_selected: function() {
 	return this.content.filter(function (elem) {
 	    return elem.marked;
@@ -652,6 +617,9 @@ Woodpecker.Selector.OptionView = Ember.View.extend({
 Woodpecker.Selector.ControlButton = Woodpecker.Button.extend({
     hit: function() {
 	switch (this.type) {
+	case "load":
+	    Woodpecker.selector.load();
+	    break;
 	case "cancel":
 	    Woodpecker.selector.view.set('isVisible', false);
 	    break;
@@ -684,9 +652,10 @@ Woodpecker.Selector.ControlButtons = Ember.ArrayController.extend({
     init: function() {
 	this._super();
 	var buttons = [{text: "Cancel", type: "cancel"},
-		       {text: "Confirm", type: "confirm"}].map(function(elem) {
-			   return Woodpecker.Selector.ControlButton.create(elem);
-		       });
+		       {text: "Confirm", type: "confirm"},
+		       {text: "Load", type: "load"}].map(function(elem) {
+		return Woodpecker.Selector.ControlButton.create(elem);
+	    });
 	this.set('content', buttons);
     }
 });
