@@ -12,24 +12,6 @@ var asana = new Asana('/asana');
 Woodpecker = Ember.Application.create({
     //    LOG_TRANSITIONS: true,
     ready: function () {
-	RSVP.all([
-	    asana.Workspace.find()
-		.then(function(workspaces) {
-		    asana.personal = workspaces.filter(function(workspace) {
-			return workspace.name == 'Personal';
-		    })[0];
-		    return true;
-		}),
-	    asana.Project.find()
-		.then(function(projects) {
-		    asana.woodpecker = projects.filter(function(project) {
-			return project.name == '.woodpecker';
-		    })[0];
-		    return true;
-		})
-	]).then(function() {
-	    Woodpecker.syncer = Woodpecker.Syncer.create();
-	});
 	Woodpecker.timepicker = Woodpecker.Timepicker.create();
 	Woodpecker.timepicker.cursors = Woodpecker.Timepicker.Cursors.create();
 	Woodpecker.timepicker.numpad_buttons = Woodpecker.Timepicker.NumpadButtons.create();
@@ -52,6 +34,25 @@ Woodpecker = Ember.Application.create({
 	Woodpecker.comment_editor.view = Ember.View.create({
 	    templateName: "comment-editor",
 	    isVisible: false,
+	});
+	RSVP.all([
+	    asana.Workspace.find()
+		.then(function(workspaces) {
+		    asana.personal = workspaces.filter(function(workspace) {
+			return workspace.name == 'Personal';
+		    })[0];
+		    return true;
+		}),
+	    asana.Project.find()
+		.then(function(projects) {
+		    asana.woodpecker = projects.filter(function(project) {
+			return project.name == '.woodpecker';
+		    })[0];
+		    return true;
+		})
+	]).then(function() {
+	    console.log('load');
+	    Woodpecker.timeline.load();
 	});
 	asana.Workspace
 	    .find()
@@ -114,15 +115,42 @@ Woodpecker.TimelineView = Ember.View.extend({
 });
 Woodpecker.Timeline = Ember.ArrayController.extend({
     id: null,
-    date: null,
     content: [],
+    _get_task: function() {
+	return asana.Task.find({
+	    assignee: 'me',
+	    workspace: asana.personal.id,
+	})
+	    .then(function(tasks) {
+		var name = new Date().toISOString().slice(0, 10);
+		var tasks = tasks.filter(function(task) {
+		    return task.name == name;
+		});
+		console.log(tasks);
+		if (tasks.length > 0) {
+		    return new Asana.Task(tasks[0].id).load();
+		} else {
+		    return asana.personal.Task.create({
+			name: name,
+			'projects[0]': asana.woodpecker.id,
+			assignee: 'me',
+			assignee_status: 'today',
+		    });
+		}
+	    });
+    },
     save: function() {
-	asana.today.update({notes: this.toJSON()});
+	return this._get_task().then(function(promise) {
+	    promise.then(function(today) {
+		today.update({notes: this.toJSON()});
+	    });
+	});
     },
     load: function() {
-	asana.today.load().then(function() {
+	return this._get_task().then(function(today) {
+	    console.log(today);
 	    RSVP.all(
-		JSON.parse(asana.today.notes).map(function(raw) {
+		JSON.parse(today.notes).map(function(raw) {
 		    return Woodpecker.Timeline.Record.create().load(raw);
 		}))
 		.then(function(records) {
@@ -303,8 +331,12 @@ Woodpecker.Timeline.Record = Ember.ObjectController.extend({
     tasks: [],
     comments: [],
     load: function(data) {
-	this.set('start', new Date(Date.parse(data.start)));
-	this.set('end', new Date(Date.parse(data.end)));
+	if (data.start) {
+	    this.set('start', new Date(Date.parse(data.start)));
+	}
+	if (data.end) {
+	    this.set('end', new Date(Date.parse(data.end)));
+	}
 	var load_tasks = RSVP.all(
 	    data.tasks.map(function(id) {
 		return new Asana.Task(id).load();
@@ -707,36 +739,4 @@ Woodpecker.CommentEditor.ControlButtons = Ember.ArrayController.extend({
 });
 Woodpecker.CommentEditor.ControlButtonView = Woodpecker.ButtonView.extend({
     templateName: 'button',
-});
-
-Woodpecker.Syncer = Ember.ObjectController.extend({
-    init: function() {
-	asana.Task.find({
-	    assignee: 'me',
-	    workspace: asana.personal.id,
-	})
-	    .then(function(tasks) {
-		var name = new Date().toISOString().slice(0, 10);
-		var tasks = tasks.filter(function(task) {
-		    return task.name == name;
-		});
-		if (tasks.length > 0) {
-		    asana.today = tasks[0];
-		} else {
-		    asana.personal.Task.create({
-			name: name,
-			'projects[0]': asana.woodpecker.id,
-			assignee: 'me',
-			assignee_status: 'today',
-		    }).then(function(task) {
-			asana.today = task;
-		    });
-		}
-	    });
-    },
-    hit: function() {
-	console.log(this.type);
-	switch (this.type) {
-	}
-    },
 });

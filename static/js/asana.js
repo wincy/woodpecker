@@ -9,7 +9,7 @@ Function.prototype.partial = function() {
     };
 };
 
-function _(target, that) {
+function bindAll(target, that) {
     var result = {};
     for (var key in target) {
 	result[key] = target[key].bind(that);
@@ -19,9 +19,9 @@ function _(target, that) {
 
 Asana = function(ns) {
     this.ns = ns;
-    this.Task = _(this.Task, this);
-    this.Project = _(this.Project, this);
-    this.Workspace = _(this.Workspace, this);
+    this.Task = bindAll(this.Task, this);
+    this.Project = bindAll(this.Project, this);
+    this.Workspace = bindAll(this.Workspace, this);
 }
 
 Asana.prototype = {
@@ -82,7 +82,7 @@ Asana.Workspace = function(id) {
     this.lastUpdate = 0;
     this.id = id;
     this.name = null;
-    this.Task = _(this.Task, this);
+    this.Task = bindAll(this.Task, this);
 }
 
 Asana.Workspace.prototype = {
@@ -109,7 +109,7 @@ Asana.Workspace.prototype = {
 Asana.Project = function(id) {
     this.id = id;
     this.name = null;
-    this.Task = _(this.Task, this);
+    this.Task = bindAll(this.Task, this);
 }
 
 Asana.Project.prototype = {
@@ -135,7 +135,7 @@ Asana.Project.prototype = {
 
 Asana.Task = function(id) {
     this.id = id;
-    this.Story = _(this.Story, this);
+    this.Story = bindAll(this.Story, this);
 }
 
 Asana.Task.prototype = {
