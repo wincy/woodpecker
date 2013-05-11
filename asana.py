@@ -38,6 +38,17 @@ class Asana(webapp2.RequestHandler):
         self.response.write(json.dumps(r.json()))
         pprint.pprint(r.json())
 
+    def put(self, url):
+        print 'PUT /%s' % url
+        pprint.pprint(self.request.POST)
+        r = session.put('https://app.asana.com/api/1.0/%s' % url,
+                        data=dict(self.request.POST),
+                        auth=(api_key, ''))
+        self.response.status_int = r.status_code
+        self.response.content_type = r.headers['content-type']
+        self.response.write(json.dumps(r.json()))
+        pprint.pprint(r.json())
+
 
 application = webapp2.WSGIApplication([
     webapp2.Route('/asana/<url:.*>', Asana),

@@ -12,6 +12,24 @@ var asana = new Asana('/asana');
 Woodpecker = Ember.Application.create({
     //    LOG_TRANSITIONS: true,
     ready: function () {
+	RSVP.all([
+	    asana.Workspace.find()
+		.then(function(workspaces) {
+		    asana.personal = workspaces.filter(function(workspace) {
+			return workspace.name == 'Personal';
+		    })[0];
+		    return true;
+		}),
+	    asana.Project.find()
+		.then(function(projects) {
+		    asana.woodpecker = projects.filter(function(project) {
+			return project.name == '.woodpecker';
+		    })[0];
+		    return true;
+		})
+	]).then(function() {
+	    Woodpecker.syncer = Woodpecker.Syncer.create();
+	});
 	Woodpecker.timepicker = Woodpecker.Timepicker.create();
 	Woodpecker.timepicker.cursors = Woodpecker.Timepicker.Cursors.create();
 	Woodpecker.timepicker.numpad_buttons = Woodpecker.Timepicker.NumpadButtons.create();
@@ -44,22 +62,17 @@ Woodpecker = Ember.Application.create({
 			.find({
 			    workspace: workspaces[i].id,
 			    assignee: 'me',
-			    opt_fields: "name,parent,assignee,assignee_status,completed"
+			    opt_fields: "name,parent,assignee,assignee_status,completed,projects"
 			})
 			.then(function(tasks) {
 			    for (var j = 0; j < tasks.length; j++) {
-				tasks[j]
-				    .load()
-				    .then(function(task) {
-					if (task.assignee_status == 'today' &&
-					    task.completed == false &&
-					    task.name[0] != '.') {
-					    console.log(task);
-					    Woodpecker.selector.pushObject(
-						Woodpecker.Selector.Option.create(
-						    {content: task}));
-					}
-				    });
+				if (tasks[j].assignee_status == 'today' &&
+				    tasks[j].completed == false &&
+				    tasks[j].name[0] != '.') {
+				    Woodpecker.selector.pushObject(
+					Woodpecker.Selector.Option.create(
+					    {content: tasks[j]}));
+				}
 			    }
 			});
 		}
@@ -80,19 +93,13 @@ Woodpecker.ButtonView = Ember.View.extend({
 Woodpecker.PopupView = Ember.View.extend({
     layoutName: 'popup'
 });
-Woodpecker.Task = Ember.ObjectController.extend({
-});
 Woodpecker.Comment = Ember.ObjectController.extend({
     task: null,
     edit: function() {
-	console.log('write comment for ' + this.task);
 	Woodpecker.comment_editor.set('target', this);
 	Woodpecker.comment_editor.view.set('isVisible', true);
     },
     save: function(content) {
-	console.log(this.task.name);
-	console.log(this.task.id);
-	console.log(this.task.Story.create);
 	this.task.Story.create(content)
 	    .then(function(story) {
 		this.set('content', story);
@@ -109,6 +116,21 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
     id: null,
     date: null,
     content: [],
+    save: function() {
+	asana.today.update({notes: this.toJSON()});
+    },
+    load: function() {
+	asana.today.load().then(function() {
+	    RSVP.all(
+		JSON.parse(asana.today.notes).map(function(raw) {
+		    return Woodpecker.Timeline.Record.create().load(raw);
+		}))
+		.then(function(records) {
+		    console.log(records);
+		    this.set('content', records);
+		}.bind(this));
+	}.bind(this));
+    },
     // init: function() {
     // 	var timeline = this.timeline;
     // 	this._super();
@@ -131,14 +153,21 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
     // 	    }
     // 	);
     // },
+    toJSON: function() {
+	return JSON.stringify(this.content.map(function(record) {
+	    return JSON.parse(record.toJSON());
+	}));
+    },
     check_in: function() {
 	var now = new Date();
 	now.setSeconds(0);
+	now.setMilliseconds(0);
 	this._add_check_in(now);
     },
     check_out: function() {
 	var now = new Date();
 	now.setSeconds(0);
+	now.setMilliseconds(0);
 	this._add_check_out(new Date());
     },
     add_check_in: function() {
@@ -148,15 +177,13 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
     _add_check_in: function(ts) {
 	var i = 0;
 	while (true) {
-	    console.log(i);
 	    if (i >= this.content.length) {
 		this.pushObject(Woodpecker.Timeline.Record.create(
 		    {start: ts,
 		     end: null,
-		     tasks: [Woodpecker.Task.create()],
-		     comments: [Woodpecker.Comment.create()],
+		     tasks: [],
+		     comments: [],
 		    }));
-		console.log(this.content);
 		break;
 	    } else if (this.content[i].start == null) {
 		if (this.content[i].end >= ts) {
@@ -189,7 +216,6 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 			    tasks: this.content[i].tasks,
 			    comments: this.content[i].comments,
 			})]);
-		    console.log(this.content);
 		    break;
 		}
 	    } else if (this.content[i].start == ts) {
@@ -198,10 +224,9 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 		this.insertAt(i, Woodpecker.Timeline.Record.create({
 		    start: ts,
 		    end: null,
-		    tasks: [Woodpecker.Task.create()],
-		    comments: [Woodpecker.Comment.create()],
+		    tasks: [],
+		    comments: [],
 		}));
-		console.log(this.content);
 		break;
 	    } else {
 		console.log('error');
@@ -213,16 +238,14 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 	this._add_check_out(Woodpecker.timepicker.value);
     },
     _add_check_out: function(ts) {
-	console.log(ts);
 	var i = this.content.length - 1;
 	while (true) {
-	    console.log(i);
 	    if (i < 0) {
 		this.insertAt(0, Woodpecker.Timeline.Record.create({
 		    start: null,
 		    end: ts,
-		    tasks: [Woodpecker.Task.create()],
-		    comments: [Woodpecker.Comment.create()],
+		    tasks: [],
+		    comments: [],
 		}));
 		break;
 	    } else if (this.content[i].end == null) {
@@ -246,8 +269,8 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 			i + 1, Woodpecker.Timeline.Record.create({
 			    start: null,
 			    end: this.content[i].end,
-			    tasks: [Woodpecker.Task.create()],
-			    comments: [Woodpecker.Comment.create()],
+			    tasks: [],
+			    comments: [],
 			}));
 		    this.replaceContent(
 			i, 1, [Woodpecker.Timeline.Record.create({
@@ -264,8 +287,8 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 		this.insertAt(i, Woodpecker.Timeline.Record.create({
 		    start: null,
 		    end: ts,
-		    tasks: [Woodpecker.Task.create()],
-		    comments: [Woodpecker.Comment.create()],
+		    tasks: [],
+		    comments: [],
 		}));
 		break;
 	    } else {
@@ -279,25 +302,80 @@ Woodpecker.Timeline.Record = Ember.ObjectController.extend({
     end: null,
     tasks: [],
     comments: [],
+    load: function(data) {
+	this.set('start', new Date(Date.parse(data.start)));
+	this.set('end', new Date(Date.parse(data.end)));
+	var load_tasks = RSVP.all(
+	    data.tasks.map(function(id) {
+		return new Asana.Task(id).load();
+	    })).then(function(tasks) {
+		this.set('tasks', tasks);
+		return this;
+	    }.bind(this));
+	var load_comments = RSVP.all(
+	    data.comments.map(function(id) {
+		if (id) {
+		    var story = new Asana.Story(id);
+		    return story.load();
+		} else {
+		    return null;
+		}
+	    })).then(function(stories) {
+		var comments = stories.toArray().map(function(story) {
+		    if (story) {
+			return Woodpecker.Comment.create({content: story});
+		    } else {
+			var idx = stories.indexOf(story);
+			return Woodpecker.Comment.create({
+			    task: this.tasks[idx],
+			});
+		    }
+		}.bind(this));
+		this.set('comments', comments);
+		return this;
+	    }.bind(this));
+	return this;
+    },
     start_short: function() {
 	if (this.start) {
 	    return sprintf("%02d:%02d", this.start.getHours(), this.start.getMinutes());
 	} else {
 	    return "";
 	}
-    }.property(),
+    }.property('start'),
     end_short: function() {
 	if (this.end) {
 	    return sprintf("%02d:%02d", this.end.getHours(), this.end.getMinutes());
 	} else {
 	    return "";
 	}
-    }.property(),
+    }.property('end'),
+    use_time: function() {
+	if (this.end && this.start) {
+	    var diff = (this.end - this.start) / 1000;
+	    return sprintf('%02d:%02d',
+			   Math.floor(diff / 3600),
+			   Math.floor(diff % 3600 / 60));
+	} else {
+	    return '00:00';
+	}
+    }.property('start', 'end'),
     select_tasks: function() {
-	console.log(this.tasks);
 	Woodpecker.selector.set_selected(this.tasks);
 	Woodpecker.selector.target = this;
 	Woodpecker.selector.view.set('isVisible', true);
+    },
+    toJSON: function() {
+	return JSON.stringify({
+	    tasks: this.tasks.map(function(task) {
+		return task.id;
+	    }),
+	    comments: this.comments.map(function(comment) {
+		return comment.get('id');
+	    }),
+	    start: this.start,
+	    end: this.end,
+	});
     },
 });
 Woodpecker.Timeline.RecordView = Ember.View.extend({
@@ -461,17 +539,23 @@ Woodpecker.Puncher.ButtonView = Ember.View.extend({
 Woodpecker.Puncher.Button = Woodpecker.Button.extend({
     hit: function() {
 	switch (this.type) {
+	case "save":
+	    Woodpecker.timeline.save();
+	    break;
+	case "load":
+	    Woodpecker.timeline.load();
+	    break;
 	case "check-in":
-	    Woodpecker.timeline.check_in()
+	    Woodpecker.timeline.check_in();
 	    break;
 	case "check-out":
-	    Woodpecker.timeline.check_out()
+	    Woodpecker.timeline.check_out();
 	    break;
 	case "add-check-in":
-	    Woodpecker.timepicker.add_check_in()
+	    Woodpecker.timepicker.add_check_in();
 	    break;
 	case "add-check-out":
-	    Woodpecker.timepicker.add_check_out()
+	    Woodpecker.timepicker.add_check_out();
 	    break;
 	default:
 	    console.log('unhandled event');
@@ -483,6 +567,8 @@ Woodpecker.Puncher.Buttons = Ember.ArrayController.extend({
     init: function() {
 	this._super();
 	var buttons = [
+	    {text: "Save", type: "save"},
+	    {text: "Load", type: "load"},
 	    {text: "Check in", type: "check-in"},
 	    {text: "Check out", type: "check-out"},
 	    {text: "Add check in", type: "add-check-in"},
@@ -538,7 +624,6 @@ Woodpecker.Selector.ControlButton = Woodpecker.Button.extend({
 	    Woodpecker.selector.view.set('isVisible', false);
 	    break;
 	case "confirm":
-	    console.log(Woodpecker.selector.get_selected());
 	    var tasks = Woodpecker.selector.target.tasks;
 	    var comments = Woodpecker.selector.target.comments;
 	    var new_tasks = Woodpecker.selector.get_selected();
@@ -591,7 +676,6 @@ Woodpecker.CommentEditor = Ember.ObjectController.extend({
     target: null,
     content: null,
     save: function() {
-	console.log(this.content);
 	this.target.save(this.content);
     },
 });
@@ -623,4 +707,36 @@ Woodpecker.CommentEditor.ControlButtons = Ember.ArrayController.extend({
 });
 Woodpecker.CommentEditor.ControlButtonView = Woodpecker.ButtonView.extend({
     templateName: 'button',
+});
+
+Woodpecker.Syncer = Ember.ObjectController.extend({
+    init: function() {
+	asana.Task.find({
+	    assignee: 'me',
+	    workspace: asana.personal.id,
+	})
+	    .then(function(tasks) {
+		var name = new Date().toISOString().slice(0, 10);
+		var tasks = tasks.filter(function(task) {
+		    return task.name == name;
+		});
+		if (tasks.length > 0) {
+		    asana.today = tasks[0];
+		} else {
+		    asana.personal.Task.create({
+			name: name,
+			'projects[0]': asana.woodpecker.id,
+			assignee: 'me',
+			assignee_status: 'today',
+		    }).then(function(task) {
+			asana.today = task;
+		    });
+		}
+	    });
+    },
+    hit: function() {
+	console.log(this.type);
+	switch (this.type) {
+	}
+    },
 });

@@ -101,30 +101,27 @@
 	<td>{{end_short}}</td>
 	<td {{action select_tasks on="click"}} {{action select_tasks on="touchStart"}}>
 	  {{#each task in tasks}}
-	  {{#if task.name}}
 	  <div><i class="icon-calendar"></i>{{task.name}}</div>
 	  {{else}}
 	  <div><i class="icon-calendar"></i>Empty</div>
-	  {{/if}}
 	  {{/each}}
 	</td>
 	<td>
 	  {{#each comment in comments}}
-	  {{view Woodpecker.CommentView controllerBinding=comment}}
+	  <div {{action edit on="click"}} {{action edit on="touchStart"}}>
+	    <i class="icon-edit"></i>
+	    {{#if content}}
+	    {{text}}
+	    {{else}}
+	    Empty
+	    {{/if}}
+	  </div>
 	  {{/each}}
 	</td>
       </tr>
     </script>
     <div id="log"></div>
     <script type="text/x-handlebars" data-template-name="comment">
-      <div {{action edit on="click"}} {{action edit on="touchStart"}}>
-	<i class="icon-edit"></i>
-	{{#if content}}
-	{{text}}
-	{{else}}
-	Empty
-	{{/if}}
-      </div>
     </script>
     <script type="text/x-handlebars" data-template-name="comment-editor">
       <div class="popup-1">

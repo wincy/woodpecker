@@ -33,25 +33,18 @@ Asana.prototype = {
 	if (typeof method === undefined) {
 	    method = 'GET';
 	}
-	var key = JSON.stringify([url, params]);
-	var cached_value = locache.get(key);
 	var promise = new RSVP.Promise(function(resolve, reject) {
-	    if (cached_value) {
-		resolve(cached_value);
-	    } else {
-		$.ajax({
-		    url: url,
-		    data: params,
-		    type: method,
+	    $.ajax({
+		url: url,
+		data: params,
+		type: method,
+	    })
+		.success(function(data) {
+		    resolve(data.data);
 		})
-		    .success(function(data) {
-			locache.set(key, data.data);
-			resolve(data.data);
-		    })
-		    .fail(function() {
-			reject(this);
-		    });
-	    }
+		.fail(function() {
+		    reject(this);
+		});
 	});
 	return promise;
     },
@@ -59,7 +52,7 @@ Asana.prototype = {
 	find: function(conds) {
 	    return this.request('/tasks', conds).then(function(data) {
 		return data.map(function(elem) {
-		    return new Asana.Task(elem.id);
+		    return $.extend(new Asana.Task(elem.id), elem);
 		});
 	    });
 	},
@@ -67,8 +60,9 @@ Asana.prototype = {
     Project: {
 	find: function(conds) {
 	    return this.request('/projects', conds).then(function(data) {
+		console.log(data);
 		return data.map(function(elem) {
-		    return new Asana.Project(elem.id);
+		    return $.extend(new Asana.Project(elem.id), elem);
 		});
 	    });
 	},
@@ -77,7 +71,7 @@ Asana.prototype = {
 	find: function(conds) {
 	    return this.request('/workspaces', conds).then(function(data) {
 		return data.map(function(elem) {
-		    return new Asana.Workspace(elem.id);
+		    return $.extend(new Asana.Workspace(elem.id), elem);
 		});
 	    });
 	},
@@ -85,16 +79,58 @@ Asana.prototype = {
 }
 
 Asana.Workspace = function(id) {
+    this.lastUpdate = 0;
     this.id = id;
     this.name = null;
+    this.Task = _(this.Task, this);
 }
 
 Asana.Workspace.prototype = {
     load: function() {
-	return asana.request('/workspaces/' + this.id).then(function(data) {
+	return asana.request(url).then(function(data) {
 	    return $.extend(this, data);
 	}.bind(this));
     },
+    Task: {
+	create: function(data) {
+	    return asana.request('/workspaces/' + this.id + '/tasks', data, 'POST')
+		.then(function(data) {
+		    return $.extend(new Asana.Task(data.id), data);
+		}.bind(this));
+	},
+	find: function(conds) {
+	    return asana.request('/workspaces/' + this.id + '/tasks').map(function(elem) {
+		return new Asana.Task(elem.id);
+	    });
+	},
+    }
+}
+
+Asana.Project = function(id) {
+    this.id = id;
+    this.name = null;
+    this.Task = _(this.Task, this);
+}
+
+Asana.Project.prototype = {
+    load: function() {
+	return asana.request('/projects/' + this.id).then(function(data) {
+	    return $.extend(this, data);
+	}.bind(this));
+    },
+    Task: {
+	create: function(data) {
+	    return asana.request('/projects/' + this.id + '/tasks', data, 'POST')
+		.then(function(data) {
+		    return $.extend(new Asana.Task(data.id), data);
+		}.bind(this));
+	},
+	find: function(conds) {
+	    return asana.request('/projects/' + this.id + '/tasks').map(function(elem) {
+		return new Asana.Task(elem.id);
+	    });
+	},
+    }
 }
 
 Asana.Task = function(id) {
@@ -107,6 +143,12 @@ Asana.Task.prototype = {
 	return asana.request('/tasks/' + this.id).then(function(data) {
 	    return $.extend(this, data);
 	}.bind(this));
+    },
+    update: function(kvs) {
+	return asana.request('/tasks/' + this.id, kvs, 'PUT')
+	    .then(function(data) {
+		return $.extend(this, data);
+	    }.bind(this));
     },
     Story: {
 	create: function(content) {
@@ -127,7 +169,7 @@ Asana.Task.prototype = {
     }
 }
 
-Asana.Story = function(target, target_type, id) {
+Asana.Story = function(id) {
     this.id = id;
 }
 
