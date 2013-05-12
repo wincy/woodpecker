@@ -123,6 +123,7 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 	}.bind(this));
     },
     load: function() {
+	this.set('content', []);
 	return this._get_task().then(function(today) {
 	    RSVP.all(
 		JSON.parse(today.notes).map(function(raw) {
