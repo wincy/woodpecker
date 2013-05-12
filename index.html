@@ -109,10 +109,14 @@
 	  {{#each comment in comments}}
 	  <div {{action edit on="click"}} {{action edit on="touchStart"}}>
 	    <i class="icon-edit"></i>
+	    {{#if story}}
+	    {{story.text}}
+	    {{else}}
 	    {{#if content}}
-	    {{text}}
+	    {{content}}
 	    {{else}}
 	    Empty
+	    {{/if}}
 	    {{/if}}
 	  </div>
 	  {{/each}}
@@ -124,6 +128,7 @@
     </script>
     <script type="text/x-handlebars" data-template-name="comment-editor">
       <div class="popup-1">
+	<h4>{{Woodpecker.comment_editor.target.task.name}}</h4>
 	{{view Ember.TextArea valueBinding="Woodpecker.comment_editor.content"}}
 	<div>
 	  <div class="row-fluid">
