@@ -63,7 +63,11 @@ Woodpecker.Comment = Ember.ObjectController.extend({
     story: null,
     edit: function() {
 	Woodpecker.comment_editor.set('target', this);
-	Woodpecker.comment_editor.set('content', '');
+	if (! this.story) {
+	    Woodpecker.comment_editor.set('content', this.content);
+	} else {
+	    Woodpecker.comment_editor.set('content', '');
+	}
 	Woodpecker.comment_editor.view.set('isVisible', true);
     },
     save: function() {
