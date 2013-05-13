@@ -21,6 +21,7 @@ Woodpecker = Ember.Application.create({
 	    templateName: "puncher",
 	});
 	Woodpecker.timeline = Woodpecker.Timeline.create();
+	Woodpecker.timeline.flush_date();
 	Woodpecker.timeline.view = Ember.View.create({
 	    templateName: "timeline",
 	});
@@ -108,25 +109,20 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 	    workspace: asana.personal.id,
 	})
 	    .then(function(tasks) {
-		var now = new Date();
-		var name = sprintf('%d-%02d-%02d',
-				   now.getFullYear(),
-				   now.getMonth() + 1,
-				   now.getDate());
 		var tasks = tasks.filter(function(task) {
-		    return task.name == name;
-		});
+		    return task.name == this.date;
+		}.bind(this));
 		if (tasks.length > 0) {
 		    return new Asana.Task(tasks[0].id).load();
 		} else {
 		    return asana.personal.Task.create({
-			name: name,
+			name: this.date,
 			'projects[0]': asana.woodpecker.id,
 			assignee: 'me',
 			assignee_status: 'today',
 		    });
 		}
-	    });
+	    }.bind(this));
     },
     save: function() {
 	return RSVP.all(this.content.map(function(record) {
@@ -153,6 +149,14 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 	return JSON.stringify(this.content.map(function(record) {
 	    return JSON.parse(record.toJSON());
 	}));
+    },
+    flush_date: function() {
+	var now = new Date();
+	var date = sprintf('%d-%02d-%02d',
+			   now.getFullYear(),
+			   now.getMonth() + 1,
+			   now.getDate());
+	this.set('date', date);
     },
     check_in: function() {
 	var now = new Date();
@@ -574,6 +578,10 @@ Woodpecker.Puncher.Button = Woodpecker.Button.extend({
 	case "add-check-out":
 	    Woodpecker.timepicker.add_check_out();
 	    break;
+	case "flush-date":
+	    Woodpecker.timeline.flush_date();
+	    Woodpecker.timeline.load();
+	    break;
 	default:
 	    console.log('unhandled event');
 	}
@@ -589,7 +597,8 @@ Woodpecker.Puncher.Buttons = Ember.ArrayController.extend({
 	    {text: "Check in", type: "check-in"},
 	    {text: "Check out", type: "check-out"},
 	    {text: "Add check in", type: "add-check-in"},
-	    {text: "Add check out", type: "add-check-out"}].map(function (elem) {
+	    {text: "Add check out", type: "add-check-out"},
+	    {text: "Flush date", type: "flush-date"}].map(function (elem) {
 		return Woodpecker.Puncher.Button.create(elem);
 	    });
 	this.set('content', buttons);
