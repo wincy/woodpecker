@@ -3,13 +3,17 @@ var asana = new Asana('/asana');
 Woodpecker = Ember.Application.create({
     //    LOG_TRANSITIONS: true,
     ready: function () {
+	Woodpecker.selector = Woodpecker.Selector.create();
+	Woodpecker.selector.control_buttons = Woodpecker.Selector.ControlButtons.create();
+	Woodpecker.selector.view = Woodpecker.PopupView.create({
+	    templateName: "selector",
+	});
 	Woodpecker.timepicker = Woodpecker.Timepicker.create();
 	Woodpecker.timepicker.cursors = Woodpecker.Timepicker.Cursors.create();
 	Woodpecker.timepicker.numpad_buttons = Woodpecker.Timepicker.NumpadButtons.create();
 	Woodpecker.timepicker.control_buttons = Woodpecker.Timepicker.ControlButtons.create();
-	Woodpecker.timepicker.view = Ember.View.create({
+	Woodpecker.timepicker.view = Woodpecker.PopupView.create({
 	    templateName: "timepicker",
-	    isVisible: false,
 	});
 	Woodpecker.puncher = Woodpecker.Puncher.create();
 	Woodpecker.puncher.buttons = Woodpecker.Puncher.Buttons.create();
@@ -22,9 +26,8 @@ Woodpecker = Ember.Application.create({
 	});
 	Woodpecker.comment_editor = Woodpecker.CommentEditor.create();
 	Woodpecker.comment_editor.control_buttons = Woodpecker.CommentEditor.ControlButtons.create();
-	Woodpecker.comment_editor.view = Ember.View.create({
+	Woodpecker.comment_editor.view = Woodpecker.PopupView.create({
 	    templateName: "comment-editor",
-	    isVisible: false,
 	});
 	RSVP.all([
 	    asana.Workspace.find()
@@ -46,6 +49,7 @@ Woodpecker = Ember.Application.create({
 	    Woodpecker.timeline.load();
 	    Woodpecker.selector.load();
 	});
+	// $(".popup-1").affix();
     },
 });
 Woodpecker.ApplicationController = Ember.Controller.extend({
@@ -56,7 +60,13 @@ Woodpecker.ButtonView = Ember.View.extend({
     templateName: 'button',
 });
 Woodpecker.PopupView = Ember.View.extend({
-    layoutName: 'popup'
+    classNames: ["popup"],
+    isVisible: false,
+    attributeBindings: ["style"],
+    scroll: 0,
+    style: function() {
+	return "top:" + this.get('scroll') + "px";
+    }.property('scroll'),
 });
 Woodpecker.Comment = Ember.ObjectController.extend({
     task: null,
@@ -68,6 +78,7 @@ Woodpecker.Comment = Ember.ObjectController.extend({
 	} else {
 	    Woodpecker.comment_editor.set('content', '');
 	}
+	Woodpecker.comment_editor.view.set('scroll', window.scrollY);
 	Woodpecker.comment_editor.view.set('isVisible', true);
     },
     save: function() {
@@ -360,6 +371,7 @@ Woodpecker.Timeline.Record = Ember.ObjectController.extend({
     select_tasks: function() {
 	Woodpecker.selector.set_selected(this.tasks);
 	Woodpecker.selector.target = this;
+	Woodpecker.selector.view.set('scroll', window.scrollY);
 	Woodpecker.selector.view.set('isVisible', true);
     },
     toJSON: function() {
@@ -385,10 +397,12 @@ Woodpecker.Timeline.RecordView = Ember.View.extend({
 Woodpecker.Timepicker = Ember.ObjectController.extend({
     value: null,
     add_check_in: function() {
+	Woodpecker.timepicker.view.set('scroll', window.scrollY);
 	Woodpecker.timepicker.view.set('isVisible', true);
 	this.addObserver('value', Woodpecker.timeline, 'add_check_in');
     },
     add_check_out: function() {
+	Woodpecker.timepicker.view.set('scroll', window.scrollY);
 	Woodpecker.timepicker.view.set('isVisible', true);
 	this.addObserver('value', Woodpecker.timeline, 'add_check_out');
     },
@@ -439,6 +453,8 @@ Woodpecker.Timepicker.ControlButton = Woodpecker.Button.extend({
 	    var minutes = parseInt(Woodpecker.timepicker.cursors.mget(3, 5).join(''));
 	    ts.setHours(hours);
 	    ts.setMinutes(minutes);
+	    ts.setSeconds(0);
+	    ts.setMilliseconds(0);
 	    Woodpecker.timepicker.set('value', ts);
 	    Woodpecker.timepicker.view.set('isVisible', false);
 	    break;
@@ -687,15 +703,6 @@ Woodpecker.Selector.ControlButtons = Ember.ArrayController.extend({
 });
 Woodpecker.Selector.ControlButtonView = Woodpecker.ButtonView.extend({
     templateName: 'button',
-});
-Woodpecker.selector = Woodpecker.Selector.create();
-Woodpecker.selector.control_buttons = Woodpecker.Selector.ControlButtons.create();
-Woodpecker.selector.view = Ember.View.create({
-    templateName: "selector",
-    isVisible: false,
-});
-Woodpecker.TaskView = Ember.View.create({
-    templateName: "task",
 });
 
 // Comment Editor
