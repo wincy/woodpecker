@@ -1,11 +1,11 @@
+import os
 import webapp2
 import requests
-import redis
 import json
 import logging
 import pprint
 
-api_key = redis.StrictRedis().get('api_key')
+api_key = os.environ.get('ASANA_API_KEY')
 
 session = requests.Session()
 
