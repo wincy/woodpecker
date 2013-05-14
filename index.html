@@ -36,11 +36,9 @@
       <div {{bindAttr class=":option marked:marked"}} {{action toggle on="click"}} {{action toggle on="touchStart"}}>{{name}}</div>
     </script>
     <script type="text/x-handlebars" data-template-name="puncher">
-      <div class="row-fluid box">
-	{{#each Woodpecker.puncher.buttons}}
-	{{view Woodpecker.Puncher.ButtonView}}
-	{{/each}}
-      </div>
+      {{#each Woodpecker.puncher.buttons}}
+      {{view Woodpecker.Puncher.ButtonView}}
+      {{/each}}
     </script>
     <script type="text/x-handlebars" data-template-name="button">
       <div class="punch span6" {{action hit on="click"}} {{action hit on="touchStart"}}>
@@ -121,7 +119,9 @@
       </tr>
     </script>
     <div id="log"></div>
-    <script type="text/x-handlebars" data-template-name="comment">
+    <script type="text/x-handlebars" data-template-name="menu">
+      <div {{action hit on="click"}}
+	   {{action hit on="touchStart"}}>Menu</div>
     </script>
     <script type="text/x-handlebars" data-template-name="comment-editor">
       <h4>{{Woodpecker.comment_editor.target.task.name}}</h4>
@@ -138,6 +138,7 @@
   <body>
     <script type="text/x-handlebars">
       <h3>Time Recording: {{Woodpecker.timeline.date}}</h3>
+      {{view Woodpecker.menu.view}}
       {{view Woodpecker.puncher.view}}
       {{view Woodpecker.timeline.view}}
       {{view Woodpecker.timepicker.view}}

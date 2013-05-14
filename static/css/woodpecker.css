@@ -10,10 +10,13 @@
 }
 
 .box {
+    position: absolute;
+    top: 70px;
     background-color: #f7f709;
     margin: 1% 1%;
     width: 98%;
     overflow: hidden;
+    z-index: 100;
 }
 
 .punch {
@@ -40,4 +43,13 @@
 
 textarea {
     width: 100%;
+}
+
+.menu {
+    position: absolute;
+    right: 0px;
+    top: 0px;
+    margin: 1% 1%;
+    padding: 1% 1%;
+    background-color: #f1f1a1;
 }

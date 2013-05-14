@@ -18,7 +18,9 @@ Woodpecker = Ember.Application.create({
 	Woodpecker.puncher = Woodpecker.Puncher.create();
 	Woodpecker.puncher.buttons = Woodpecker.Puncher.Buttons.create();
 	Woodpecker.puncher.view = Ember.View.create({
+	    classNames: ["box", "row-fluid"],
 	    templateName: "puncher",
+	    isVisible: false,
 	});
 	Woodpecker.timeline = Woodpecker.Timeline.create();
 	Woodpecker.timeline.flush_date();
@@ -29,6 +31,12 @@ Woodpecker = Ember.Application.create({
 	Woodpecker.comment_editor.control_buttons = Woodpecker.CommentEditor.ControlButtons.create();
 	Woodpecker.comment_editor.view = Woodpecker.PopupView.create({
 	    templateName: "comment-editor",
+	});
+	Woodpecker.menu = Woodpecker.Menu.create();
+	Woodpecker.menu.view = Ember.View.create({
+	    controller: Woodpecker.menu,
+	    templateName: 'menu',
+	    classNames: ['menu'],
 	});
 	RSVP.all([
 	    asana.Workspace.find()
@@ -93,9 +101,6 @@ Woodpecker.Comment = Ember.ObjectController.extend({
 	    return this;
 	}
     },
-});
-Woodpecker.CommentView = Ember.View.extend({
-    templateName: "comment",
 });
 Woodpecker.TimelineView = Ember.View.extend({
     templateName: "timeline",
@@ -230,6 +235,7 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 		break;
 	    } else {
 		console.log('error');
+		break;
 	    }
 	}
     },
@@ -293,6 +299,7 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 		break;
 	    } else {
 		console.log('error');
+		break;
 	    }
 	}
     },
@@ -750,4 +757,10 @@ Woodpecker.CommentEditor.ControlButtons = Ember.ArrayController.extend({
 });
 Woodpecker.CommentEditor.ControlButtonView = Woodpecker.ButtonView.extend({
     templateName: 'button',
+});
+Woodpecker.Menu = Ember.ObjectController.extend({
+    hit: function() {
+	var visible = Woodpecker.puncher.view.isVisible;
+	Woodpecker.puncher.view.set('isVisible', ! visible);
+    },
 });
