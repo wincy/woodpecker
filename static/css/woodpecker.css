@@ -46,7 +46,7 @@ textarea {
 }
 
 .menu {
-    position: absolute;
+    position: fixed;
     right: 0px;
     top: 0px;
     margin: 1% 1%;
