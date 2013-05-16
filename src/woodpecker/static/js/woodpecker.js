@@ -589,7 +589,9 @@ Woodpecker.Puncher.Button = Woodpecker.Button.extend({
 	    Woodpecker.puncher.view.set('isVisible', false);
 	    break;
 	case "load":
-	    Woodpecker.timeline.load();
+	    Woodpecker.timeline.load().then(function() {
+		return logging.apply_all();
+	    });
 	    Woodpecker.puncher.view.set('isVisible', false);
 	    break;
 	case "check-in":
@@ -610,6 +612,7 @@ Woodpecker.Puncher.Button = Woodpecker.Button.extend({
 	    break;
 	case "flush-date":
 	    Woodpecker.timeline.flush_date();
+	    logging.clear();
 	    Woodpecker.timeline.load();
 	    Woodpecker.puncher.view.set('isVisible', false);
 	    break;
