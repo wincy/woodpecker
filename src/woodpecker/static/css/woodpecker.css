@@ -14,6 +14,7 @@ body {
 }
 
 .box {
+    background-color: #D9D1BA;
     position: fixed;
     top: 120px;
     margin: 5% 5%;

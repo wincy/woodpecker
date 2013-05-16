@@ -14,6 +14,7 @@ session = requests.Session()
 
 mapping = {'users': 'user'}
 
+root = os.path.dirname(__file__)
 
 class Static(webapp2.RequestHandler):
     def get(self, path):
