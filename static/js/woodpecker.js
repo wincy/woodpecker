@@ -674,14 +674,15 @@ Woodpecker.Selector = Ember.ArrayController.extend({
 	    return elem.content;
 	});
     },
-    set_selected: function(options) {
+    set_selected: function(tasks) {
+	var ids = tasks.map(function(task) {
+	    return task.id;
+	});
 	for (var i = 0; i < this.content.length; i++) {
-	    for (var j = 0; j < options.length; j++) {
-		if (options[j].id == this.objectAt(i).content.id) {
-		    this.objectAt(i).set('marked', true);
-		} else {
-		    this.objectAt(i).set('marked', false);
-		}
+	    if (ids.indexOf(this.objectAt(i).content.id) != -1) {
+		this.objectAt(i).set('marked', true);
+	    } else {
+		this.objectAt(i).set('marked', false);
 	    }
 	}
     },
