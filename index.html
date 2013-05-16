@@ -19,6 +19,7 @@
     <script src="/static/js/timeline.js"></script>
     <script src="/static/js/locache.min.js"></script>
     <script src="/static/js/asana.js"></script>
+    <script src="/static/js/logging.js"></script>
     <script src="/static/js/woodpecker.js"></script>
     <script type="text/x-handlebars" data-template-name="selector">
       <div>
@@ -120,7 +121,7 @@
     </script>
     <div id="log"></div>
     <script type="text/x-handlebars" data-template-name="menu">
-      <div {{action hit on="click"}}
+      <div class="menu" {{action hit on="click"}}
 	   {{action hit on="touchStart"}}>Menu</div>
     </script>
     <script type="text/x-handlebars" data-template-name="comment-editor">
@@ -137,7 +138,7 @@
   </head>
   <body>
     <script type="text/x-handlebars">
-      <h3>Time Recording: {{Woodpecker.timeline.date}}</h3>
+      <h3>{{Woodpecker.timeline.date}}</h3>
       {{view Woodpecker.menu.view}}
       {{view Woodpecker.puncher.view}}
       {{view Woodpecker.timeline.view}}

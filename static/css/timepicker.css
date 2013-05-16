@@ -1,11 +1,12 @@
 .timepicker-numpad {
-    background-color: #aaa;
+    background-color: #D9D1BA;
     width: 100%;
     overflow: hidden;
 }
 
 .timepicker-button {
-    background-color: #f7f7f9;
+    color: #F2E9D8;
+    background-color: #8094A6;
     width: 23%;
     height: 50px;
     line-height: 50px;
