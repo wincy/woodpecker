@@ -8,6 +8,7 @@ import webapp2
 import requests
 
 api_key = os.environ.get('ASANA_API_KEY')
+port = os.environ.get('WOODPECKER_PORT', 8000)
 
 session = requests.Session()
 
@@ -69,4 +70,4 @@ application = webapp2.WSGIApplication([
 
 if __name__ == "__main__":
     from gevent import wsgi
-    wsgi.WSGIServer(('localhost', 8000), application).serve_forever()
+    wsgi.WSGIServer(('0.0.0.0', port), application).serve_forever()
