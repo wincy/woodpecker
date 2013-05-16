@@ -1,15 +1,25 @@
 import os
-import webapp2
-import requests
 import json
 import logging
 import pprint
+import mimetypes
+
+import webapp2
+import requests
 
 api_key = os.environ.get('ASANA_API_KEY')
 
 session = requests.Session()
 
 mapping = {'users': 'user'}
+
+
+class Static(webapp2.RequestHandler):
+    def get(self, path):
+        self.response.content_type = str(mimetypes.guess_type(path)[0])
+        fd = open(path)
+        self.response.write(fd.read())
+        fd.close()
 
 class Asana(webapp2.RequestHandler):
     def options(self, url):
@@ -51,16 +61,12 @@ class Asana(webapp2.RequestHandler):
 
 
 application = webapp2.WSGIApplication([
+    webapp2.Route('/', webapp2.RedirectHandler, defaults={'_uri': '/index.html'}),
     webapp2.Route('/asana/<url:.*>', Asana),
+    webapp2.Route('/<path:.*>', Static),
 ])
 
 
 if __name__ == "__main__":
-    from paste.cascade import Cascade
     from gevent import wsgi
-    from paste.fileapp import FileApp
-    from paste.urlparser import StaticURLParser
-    index_app = FileApp("index.html")
-    static_app = StaticURLParser("static")
-    app = Cascade([static_app, application, index_app])
-    wsgi.WSGIServer(('localhost', 8000), app, spawn=None).serve_forever()
+    wsgi.WSGIServer(('localhost', 8000), application, spawn=None).serve_forever()
