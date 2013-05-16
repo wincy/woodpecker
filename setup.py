@@ -12,6 +12,8 @@ setuptools.setup(
     package_dir = {'': 'src'},
     package_data = {
         'woodpecker': [
+            '*.png',
+            '*.ico',
             'static/js/*.js',
             'static/css/*.css',
             'static/css/images/*.gif',

@@ -18,8 +18,9 @@ root = os.path.dirname(__file__)
 
 class Static(webapp2.RequestHandler):
     def get(self, path):
-        self.response.content_type = str(mimetypes.guess_type(path)[0])
-        fd = open(path)
+        full_path = os.path.join(root, path)
+        self.response.content_type = str(mimetypes.guess_type(full_path)[0])
+        fd = open(full_path)
         self.response.write(fd.read())
         fd.close()
 
