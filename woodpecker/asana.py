@@ -69,4 +69,4 @@ application = webapp2.WSGIApplication([
 
 if __name__ == "__main__":
     from gevent import wsgi
-    wsgi.WSGIServer(('localhost', 8000), application, spawn=None).serve_forever()
+    wsgi.WSGIServer(('localhost', 8000), application).serve_forever()
