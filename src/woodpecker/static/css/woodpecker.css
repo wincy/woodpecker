@@ -16,9 +16,10 @@ body {
 .box {
     background-color: #D9D1BA;
     position: fixed;
-    top: 120px;
-    margin: 5% 5%;
-    width: 90%;
+    top: 60px;
+    margin: 5%;
+    padding: 5%;
+    width: 80%;
     overflow: hidden;
     z-index: 100;
 }
@@ -26,8 +27,8 @@ body {
 .punch {
     color: #F2E9D8;
     background-color: #8094A6;
-    height: 50px;
-    line-height: 50px;
+    height: 60px;
+    line-height: 60px;
     text-align: center;
     float: left;
     margin: 1%;
