@@ -84,6 +84,38 @@ Logging.prototype = {
 		console.log('record not found when applying log:' + JSON.stringify(log));
 	    }
 	    break
+	case 'set-start':
+	    var start = log.args.start && new Date(Date.parse(log.args.start)) || log.args.start;
+	    var end = log.args.end && new Date(Date.parse(log.args.end)) || log.args.end;
+	    var record = Woodpecker.timeline.content.filter(function(record) {
+		return ((record.start == start || 
+			 record.start.getTime() == start.getTime()) &&
+			(record.end == end || 
+			 record.end.getTime() == end.getTime()))
+	    })[0];
+	    if (record) {
+		var ts = new Date(Date.parse(log.args.ts));
+		record.set('start', ts);
+	    } else {
+		console.log('record not found when applying log:' + JSON.stringify(log));
+	    }
+	    break
+	case 'set-end':
+	    var start = log.args.start && new Date(Date.parse(log.args.start)) || log.args.start;
+	    var end = log.args.end && new Date(Date.parse(log.args.end)) || log.args.end;
+	    var record = Woodpecker.timeline.content.filter(function(record) {
+		return ((record.start == start || 
+			 record.start.getTime() == start.getTime()) &&
+			(record.end == end || 
+			 record.end.getTime() == end.getTime()))
+	    })[0];
+	    if (record) {
+		var ts = new Date(Date.parse(log.args.ts));
+		record.set('end', ts);
+	    } else {
+		console.log('record not found when applying log:' + JSON.stringify(log));
+	    }
+	    break
 	}
 	return RSVP.all([ret]);
     }

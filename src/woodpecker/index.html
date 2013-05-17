@@ -92,8 +92,14 @@
     </script>
     <script type="text/x-handlebars" data-template-name="timeline-record">
       <tr>
-	<td>{{start_short}}</td>
-	<td>{{end_short}}</td>
+	<td {{action set_start on="click"}}
+	    {{action set_start on="touchStart"}}>
+	  {{start_short}}
+	</td>
+	<td {{action set_end on="click"}}
+	    {{action set_end on="touchStart"}}>
+	  {{end_short}}
+	</td>
 	<td {{action select_tasks on="click"}} {{action select_tasks on="touchStart"}}>
 	  {{#each task in tasks}}
 	  <div><i class="icon-calendar"></i>{{task.name}}</div>

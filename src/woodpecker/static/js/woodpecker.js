@@ -377,6 +377,50 @@ Woodpecker.Timeline.Record = Ember.ObjectController.extend({
 	    return '00:00';
 	}
     }.property('start', 'end'),
+    set_start: function(sender, key) {
+	if (sender == undefined) {
+	    if (this.start) {
+		Woodpecker.timepicker.cursors.mset(
+		    0, 2, sprintf("%02d", this.start.getHours()));
+		Woodpecker.timepicker.cursors.mset(
+		    3, 2, sprintf("%02d", this.start.getMinutes()));
+	    }
+	    Woodpecker.timepicker.get_time(this, 'set_start');
+	} else {
+	    logging.log({
+		type: 'set-start',
+		args: {
+		    start: this.start,
+		    end: this.end,
+		    ts: sender.get(key),
+		},
+	    });
+	    this.set('start', sender.get(key));
+	    Woodpecker.timepicker.removeObserver('value', this, 'set_start');
+	}
+    },
+    set_end: function(sender, key) {
+	if (sender == undefined) {
+	    if (this.end) {
+		Woodpecker.timepicker.cursors.mset(
+		    0, 2, sprintf("%02d", this.end.getHours()));
+		Woodpecker.timepicker.cursors.mset(
+		    3, 2, sprintf("%02d", this.end.getMinutes()));
+	    }
+	    Woodpecker.timepicker.get_time(this, 'set_end');
+	} else {
+	    logging.log({
+		type: 'set-end',
+		args: {
+		    start: this.start,
+		    end: this.end,
+		    ts: sender.get(key),
+		},
+	    });
+	    this.set('end', sender.get(key));
+	    Woodpecker.timepicker.removeObserver('value', this, 'set_end');
+	}
+    },
     select_tasks: function() {
 	Woodpecker.selector.set_selected(this.tasks);
 	Woodpecker.selector.target = this;
@@ -422,6 +466,11 @@ Woodpecker.Timeline.RecordView = Ember.View.extend({
 });
 Woodpecker.Timepicker = Ember.ObjectController.extend({
     value: null,
+    get_time: function(target, method) {
+	Woodpecker.timepicker.view.set('scroll', window.scrollY);
+	Woodpecker.timepicker.view.set('isVisible', true);
+	this.addObserver('value', target, method);
+    },
     add_check_in: function() {
 	Woodpecker.timepicker.view.set('scroll', window.scrollY);
 	Woodpecker.timepicker.view.set('isVisible', true);
