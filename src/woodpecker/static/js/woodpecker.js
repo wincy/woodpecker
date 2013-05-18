@@ -1,4 +1,5 @@
 var asana = new Asana('/asana');
+var logging = null;
 
 Woodpecker = Ember.Application.create({
     //    LOG_TRANSITIONS: true,
@@ -23,8 +24,7 @@ Woodpecker = Ember.Application.create({
 	    isVisible: false,
 	});
 	Woodpecker.timeline = Woodpecker.Timeline.create();
-	Woodpecker.timeline.flush_date();
-	logging = new Logging(Woodpecker.timeline.date);
+	Woodpecker.timeline.set_date();
 	Woodpecker.timeline.view = Ember.View.create({
 	    templateName: "timeline",
 	});
@@ -158,13 +158,16 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 	    return JSON.parse(record.toJSON());
 	}));
     },
-    flush_date: function() {
-	var now = new Date();
-	var date = sprintf('%d-%02d-%02d',
+    set_date: function(date) {
+	if (date == undefined) {
+	    date = new Date();
+	}
+	var date_str = sprintf('%d-%02d-%02d',
 			   now.getFullYear(),
 			   now.getMonth() + 1,
 			   now.getDate());
-	this.set('date', date);
+	this.set('date', date_str);
+	logging = new Logging(date_str);
     },
     check_in: function() {
 	var now = new Date();
@@ -660,8 +663,7 @@ Woodpecker.Puncher.Button = Woodpecker.Button.extend({
 	    Woodpecker.puncher.view.set('isVisible', false);
 	    break;
 	case "flush-date":
-	    Woodpecker.timeline.flush_date();
-	    logging.clear();
+	    Woodpecker.timeline.set_date();
 	    Woodpecker.timeline.load();
 	    Woodpecker.puncher.view.set('isVisible', false);
 	    break;
