@@ -1,6 +1,11 @@
 var asana = new Asana('/asana');
 var logging = null;
 
+window.applicationCache.addEventListener('updateready', function() {
+    console.log('update to newest');
+    window.applicationCache.swapCache();
+});
+
 Woodpecker = Ember.Application.create({
     //    LOG_TRANSITIONS: true,
     ready: function () {

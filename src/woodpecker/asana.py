@@ -49,7 +49,7 @@ class Asana(webapp2.RequestHandler):
         self.response.status_int = r.status_code
         self.response.content_type = r.headers['content-type']
         self.response.write(json.dumps(r.json()))
-        pprint.pprint(r.json())
+        # pprint.pprint(r.json())
 
     def put(self, url):
         print 'PUT /%s' % url
@@ -68,8 +68,3 @@ application = webapp2.WSGIApplication([
     webapp2.Route('/asana/<url:.*>', Asana),
     webapp2.Route('/<path:.*>', Static),
 ])
-
-
-if __name__ == "__main__":
-    from gevent import wsgi
-    wsgi.WSGIServer(('0.0.0.0', port), application).serve_forever()
