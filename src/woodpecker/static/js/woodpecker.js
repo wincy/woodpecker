@@ -163,9 +163,9 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 	    date = new Date();
 	}
 	var date_str = sprintf('%d-%02d-%02d',
-			   now.getFullYear(),
-			   now.getMonth() + 1,
-			   now.getDate());
+			       date.getFullYear(),
+			       date.getMonth() + 1,
+			       date.getDate());
 	this.set('date', date_str);
 	logging = new Logging(date_str);
     },
