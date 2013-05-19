@@ -6,6 +6,11 @@ window.applicationCache.addEventListener('updateready', function() {
     window.applicationCache.swapCache();
 });
 
+setInterval(function() {
+    console.log('flush expire cache');
+    locache.cleanup();
+}, 86400000);
+
 Woodpecker = Ember.Application.create({
     //    LOG_TRANSITIONS: true,
     ready: function () {

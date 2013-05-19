@@ -26,6 +26,8 @@ Asana = function(ns) {
 
 Asana.prototype = {
     request: function(url, params, method) {
+	var key = JSON.stringify({url: url, params: params, method: method});
+	var cache = locache.get('req:' + key);
 	url = this.ns + url;
 	if (typeof params === undefined) {
 	    params = {};
@@ -34,17 +36,32 @@ Asana.prototype = {
 	    method = 'GET';
 	}
 	var promise = new RSVP.Promise(function(resolve, reject) {
-	    $.ajax({
-		url: url,
-		data: params,
-		type: method,
-	    })
-		.success(function(data) {
-		    resolve(data.data);
+	    if (navigator.onLine) {
+		$.ajax({
+		    url: url,
+		    data: params,
+		    type: method,
+		    timeout: 10000,
 		})
-		.fail(function() {
-		    reject(this);
-		});
+		    .success(function(data) {
+			locache.set('req:' + key, data.data, 86400);
+			resolve(data.data);
+		    })
+		    .fail(function() {
+			if (cache) {
+			    resolve(cache);
+			} else {
+			    reject(this);
+			}
+		    });
+	    } else {
+		if (cache) {
+		    resolve(cache);
+		} else {
+		    console.log('cannot load resource when offline');
+		    reject('offline now');
+		}
+	    }
 	});
 	return promise;
     },
