@@ -190,7 +190,7 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
     toJSON: function() {
 	return JSON.stringify(this.content.map(function(record) {
 	    return JSON.parse(record.toJSON());
-	}));
+	}), undefined, 2);
     },
     set_date: function(date) {
 	if (date == undefined) {
@@ -482,6 +482,13 @@ Woodpecker.Timeline.Record = Ember.ObjectController.extend({
 	this.set('comments', comments);
     },
     toJSON: function() {
+	var human_parts = [];
+	human_parts.push(this.get('use_time'));
+	for (var i = 0; i < this.tasks.length; i++) {
+	    human_parts.push(sprintf('https://app.asana.com/0/%d/%d',
+				     this.tasks[i].projects[0].id, this.tasks[i].id));
+	    human_parts.push(this.comments[i].content);
+	}
 	return JSON.stringify({
 	    tasks: this.tasks.map(function(task) {
 		return task.id;
@@ -495,6 +502,7 @@ Woodpecker.Timeline.Record = Ember.ObjectController.extend({
 	    }),
 	    start: this.start,
 	    end: this.end,
+	    human: human_parts.join(' '),
 	});
     },
 });
