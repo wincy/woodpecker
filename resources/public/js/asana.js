@@ -19,6 +19,7 @@ function bindAll(target, that) {
 
 Asana = function(ns) {
     this.ns = ns;
+    this.onLine = true;
     this.Task = bindAll(this.Task, this);
     this.Project = bindAll(this.Project, this);
     this.Workspace = bindAll(this.Workspace, this);
@@ -36,7 +37,7 @@ Asana.prototype = {
 	    method = 'GET';
 	}
 	var promise = new RSVP.Promise(function(resolve, reject) {
-	    if (navigator.onLine) {
+	    if (navigator.onLine && this.onLine) {
 		$.ajax({
 		    url: url,
 		    data: params,
@@ -62,7 +63,7 @@ Asana.prototype = {
 		    reject('offline now');
 		}
 	    }
-	});
+	}.bind(this));
 	return promise;
     },
     Task: {

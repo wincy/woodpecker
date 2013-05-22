@@ -6,10 +6,34 @@ window.applicationCache.addEventListener('updateready', function() {
     window.applicationCache.swapCache();
 });
 
+window.applicationCache.addEventListener('error', function() {
+    console.log('error when update cache');
+    asana.onLine = false;
+});
+
 setInterval(function() {
     console.log('flush expire cache');
     locache.cleanup();
 }, 86400000);
+
+// setInterval(function() {
+//     $.ajax({
+// 	url: '/ping.html',
+// 	timeout: 500,
+//     })
+// 	.success(function() {
+// 	    if (!asana.onLine) {
+// 		console.log('online now');
+// 	    }
+// 	    asana.onLine = true;
+// 	})
+// 	.error(function() {
+// 	    if (asana.onLine) {
+// 		console.log('offline now');
+// 	    }
+// 	    asana.onLine = false;
+// 	});
+// }, 1000);
 
 Woodpecker = Ember.Application.create({
     //    LOG_TRANSITIONS: true,
@@ -480,6 +504,9 @@ Woodpecker.Timeline.RecordView = Ember.View.extend({
 Woodpecker.Timepicker = Ember.ObjectController.extend({
     value: null,
     get_time: function(target, method) {
+	console.log('get time:');
+	console.log(target);
+	console.log(method);
 	Woodpecker.timepicker.view.set('scroll', window.scrollY);
 	Woodpecker.timepicker.view.set('isVisible', true);
 	this.addObserver('value', target, method);
