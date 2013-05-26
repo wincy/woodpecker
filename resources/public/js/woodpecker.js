@@ -537,7 +537,7 @@ Woodpecker.Timeline.RecordView = Ember.View.extend({
     swipeOptions: {
     	direction: Em.OneGestureDirection.Left | Em.OneGestureDirection.Right,
     	cancelPeriod: 100,
-    	swipeThreshold: 10,
+    	swipeThreshold: 15,
     },
     efficient: function() {
 	return this.controller.efficient;
