@@ -545,8 +545,22 @@ Woodpecker.Timeline.RecordView = Ember.View.extend({
     swipeEnd: function(recognizer, evt) {
     	var direction = recognizer.get('swipeDirection');
     	if (direction === Em.OneGestureDirection.Right) {
+	    logging.log({
+		type: 'toggle-efficient',
+		args: {
+		    start: this.controller.start,
+		    end: this.controller.end,
+		},
+	    });
 	    this.controller.toggleProperty('efficient');
     	} else if (direction === Em.OneGestureDirection.Left) {
+	    logging.log({
+		type: 'toggle-efficient',
+		args: {
+		    start: this.controller.start,
+		    end: this.controller.end,
+		},
+	    });
 	    this.controller.toggleProperty('efficient');
     	}
     },
