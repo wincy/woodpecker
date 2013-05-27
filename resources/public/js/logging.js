@@ -116,7 +116,7 @@ Logging.prototype = {
 		console.log('record not found when applying log:' + JSON.stringify(log));
 	    }
 	    break
-	case 'toggle-efficient':
+	case 'set-efficient':
 	    var start = log.args.start && new Date(Date.parse(log.args.start)) || log.args.start;
 	    var end = log.args.end && new Date(Date.parse(log.args.end)) || log.args.end;
 	    var record = Woodpecker.timeline.content.filter(function(record) {
@@ -126,7 +126,7 @@ Logging.prototype = {
 			 record.end.getTime() == end.getTime()))
 	    })[0];
 	    if (record) {
-		record.toggleProperty('efficient');
+		record.set('efficient', log.args.value);
 	    } else {
 		console.log('record not found when applying log:' + JSON.stringify(log));
 	    }
