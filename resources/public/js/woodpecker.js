@@ -573,9 +573,13 @@ Woodpecker.Timeline.RecordView = Ember.View.extend({
 });
 Woodpecker.Timepicker = Ember.ObjectController.extend({
     value: null,
+    target: null,
+    method: null,
     get_time: function(target, method) {
 	Woodpecker.timepicker.view.set('scroll', window.scrollY);
 	Woodpecker.timepicker.view.set('isVisible', true);
+	this.target = target;
+	this.method = method;
 	this.addObserver('value', target, method);
     },
     add_check_in: function() {
@@ -628,6 +632,8 @@ Woodpecker.Timepicker.ControlButton = Woodpecker.Button.extend({
 	switch (this.type) {
 	case "cancel":
 	    Woodpecker.timepicker.view.set('isVisible', false);
+	    Woodpecker.timepicker.removeObserver(
+		'value', Woodpecker.timepicker.target, Woodpecker.timepicker.method);
 	    break;
 	case "confirm":
 	    var ts = new Date();
