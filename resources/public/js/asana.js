@@ -78,7 +78,6 @@ Asana.prototype = {
     Project: {
 	find: function(conds) {
 	    return this.request('/projects', conds).then(function(data) {
-		console.log(data);
 		return data.map(function(elem) {
 		    return $.extend(new Asana.Project(elem.id), elem);
 		});

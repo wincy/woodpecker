@@ -143,7 +143,10 @@
   </head>
   <body>
     <script type="text/x-handlebars">
-      <h3>{{Woodpecker.timeline.date}}</h3>
+      <h3>
+	{{Woodpecker.timeline.date}}
+	{{view Woodpecker.network.view}}
+      </h3>
       {{#view Ember.View controllerBinding=Woodpecker.menu}}
       <div class="menu" {{action hit on="click"}}>Menu</div>
       {{/view}}
