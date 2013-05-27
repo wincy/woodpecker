@@ -171,20 +171,24 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
     load: function() {
 	this.set('content', []);
 	return this._get_task().then(function(today) {
-	    return RSVP.all(
-		JSON.parse(today.notes).map(function(raw) {
-		    return Woodpecker.Timeline.Record.create().load(raw);
-		}))
-		.then(function(records) {
-		    this.set('content', records);
-	    	    this.view.clear();
-	    	    records.map(function(record) {
-	    		this.view.pushObject(Woodpecker.Timeline.RecordView.create({
-	    		    controller: record,
-	    		}));
-	    	    }.bind(this));
-		    return records;
-		}.bind(this));
+	    if (today.notes == '') {
+		return [];
+	    } else {
+		return RSVP.all(
+		    JSON.parse(today.notes).map(function(raw) {
+			return Woodpecker.Timeline.Record.create().load(raw);
+		    }))
+		    .then(function(records) {
+			this.set('content', records);
+	    		this.view.clear();
+	    		records.map(function(record) {
+	    		    this.view.pushObject(Woodpecker.Timeline.RecordView.create({
+	    			controller: record,
+	    		    }));
+	    		}.bind(this));
+			return records;
+		    }.bind(this));
+	    }
 	}.bind(this));
     },
     toJSON: function() {
