@@ -1,5 +1,5 @@
 CACHE MANIFEST
-# Sat May 25 08:48:19 CST 2013
+# Mon May 27 12:54:46 CST 2013
 /index.html
 /css/bootstrap.min.css
 /css/cursor.css
@@ -10,6 +10,8 @@ CACHE MANIFEST
 /js/bootstrap.js
 /js/handlebars.js
 /js/ember-1.0.0-rc.3.js
+/js/ember-1.0.0-rc.2.js
+/js/ember-touch.js
 /js/rsvp.js
 /js/cursor.js
 /js/timepicker.js

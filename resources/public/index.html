@@ -12,7 +12,8 @@
     <script src="/js/jquery-2.0.0.js"></script>
     <script src="/js/bootstrap.js"></script>
     <script src="/js/handlebars.js"></script>
-    <script src="/js/ember-1.0.0-rc.3.js"></script>
+    <script src="/js/ember-1.0.0-rc.2.js"></script>
+    <script src="/js/ember-touch.js"></script>
     <script src="/js/rsvp.js"></script>
     <script src="/js/cursor.js"></script>
     <script src="/js/timepicker.js"></script>
@@ -94,46 +95,40 @@
       </table>
     </script>
     <script type="text/x-handlebars" data-template-name="timeline-record">
-      <tr>
-	<td {{action set_start on="click"}}
-	    {{action set_start on="touchStart"}}>
-	  {{start_short}}
-	</td>
-	<td {{action set_end on="click"}}
-	    {{action set_end on="touchStart"}}>
-	  {{end_short}}
-	</td>
-	<td>{{use_time}}</td>
-	<td {{action select_tasks on="click"}} {{action select_tasks on="touchStart"}}>
-	  {{#each task in tasks}}
-	  <div><i class="icon-calendar"></i>{{task.name}}</div>
+      <td {{action set_start on="click"}}
+	  {{action set_start on="touchStart"}}>
+	{{start_short}}
+      </td>
+      <td {{action set_end on="click"}}
+	  {{action set_end on="touchStart"}}>
+	{{end_short}}
+      </td>
+      <td>{{use_time}}</td>
+      <td {{action select_tasks on="click"}} {{action select_tasks on="touchStart"}}>
+	{{#each task in tasks}}
+	<div><i class="icon-calendar"></i>{{task.name}}</div>
+	{{else}}
+	<div><i class="icon-calendar"></i>Empty</div>
+	{{/each}}
+      </td>
+      <td>
+	{{#each comment in comments}}
+	<div {{action edit on="click"}} {{action edit on="touchStart"}}>
+	  <i class="icon-edit"></i>
+	  {{#if story}}
+	  {{story.text}}
 	  {{else}}
-	  <div><i class="icon-calendar"></i>Empty</div>
-	  {{/each}}
-	</td>
-	<td>
-	  {{#each comment in comments}}
-	  <div {{action edit on="click"}} {{action edit on="touchStart"}}>
-	    <i class="icon-edit"></i>
-	    {{#if story}}
-	    {{story.text}}
-	    {{else}}
-	    {{#if content}}
-	    {{content}}
-	    {{else}}
-	    Empty
-	    {{/if}}
-	    {{/if}}
-	  </div>
-	  {{/each}}
-	</td>
-      </tr>
+	  {{#if content}}
+	  {{content}}
+	  {{else}}
+	  Empty
+	  {{/if}}
+	  {{/if}}
+	</div>
+	{{/each}}
+      </td>
     </script>
     <div id="log"></div>
-    <script type="text/x-handlebars" data-template-name="menu">
-      <div class="menu" {{action hit on="click"}}
-	   {{action hit on="touchStart"}}>Menu</div>
-    </script>
     <script type="text/x-handlebars" data-template-name="comment-editor">
       <h4>{{Woodpecker.comment_editor.target.task.name}}</h4>
       {{view Ember.TextArea valueBinding="Woodpecker.comment_editor.content"}}
@@ -149,9 +144,20 @@
   <body>
     <script type="text/x-handlebars">
       <h3>{{Woodpecker.timeline.date}}</h3>
-      {{view Woodpecker.menu.view}}
+      {{#view Ember.View controllerBinding=Woodpecker.menu}}
+      <div class="menu" {{action hit on="click"}}>Menu</div>
+      {{/view}}
       {{view Woodpecker.puncher.view}}
-      {{view Woodpecker.timeline.view}}
+      <table class="table">
+	<thead>
+	  <td class="span1">In</td>
+	  <td class="span1">Out</td>
+	  <td class="span1">Use</td>
+	  <td class="span4">Tasks</td>
+	  <td class="span5">Comments</td>
+	</thead>
+	{{view Woodpecker.timeline.view}}
+      </table>
       {{view Woodpecker.timepicker.view}}
       {{view Woodpecker.selector.view}}
       {{view Woodpecker.comment_editor.view}}
