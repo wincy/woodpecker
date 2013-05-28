@@ -21,7 +21,7 @@ function check_online() {
     $.ajax({
 	method: 'GET',
 	url: '/ping.html',
-	timeout: 800,
+	timeout: 5000,
 	cache: false,
     })
 	.success(function() {
