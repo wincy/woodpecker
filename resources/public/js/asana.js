@@ -12,7 +12,9 @@ Function.prototype.partial = function() {
 function bindAll(target, that) {
     var result = {};
     for (var key in target) {
-	result[key] = target[key].bind(that);
+	if (typeof target[key] == 'function') {
+	    result[key] = target[key].bind(that);
+	}
     }
     return result;
 }
@@ -45,15 +47,15 @@ Asana.prototype = {
 		    type: method,
 		    timeout: 10000,
 		})
-		    .success(function(data) {
+		    .done(function(data, status, xhr) {
 			locache.set('req:' + key, data.data, 86400);
 			resolve(data.data);
 		    })
-		    .fail(function() {
+		    .fail(function(xhr, status, error) {
 			if (cache) {
 			    resolve(cache);
 			} else {
-			    reject(this);
+			    reject(xhr.responseText);
 			}
 		    });
 	    } else {
@@ -69,7 +71,7 @@ Asana.prototype = {
     },
     User: {
 	find: function(conds) {
-	    return this.request('/users', conds).then(function(data) {
+	    return asana.request('/users', conds).then(function(data) {
 		return data.map(function(elem) {
 		    return $.extend(new Asana.User(elem.id), elem);
 		});
@@ -79,19 +81,25 @@ Asana.prototype = {
     Task: {
 	find: function(params) {
 	    var conds = {};
-	    if (params.assignee) {
+	    if (params['assignee.id']) {
 		conds.assignee = params['assignee.id'];
 	    }
-	    if (params.workspace) {
+	    if (params['workspace.id']) {
 		conds.workspace = params['workspace.id'];
 	    }
-	    return this.request('/tasks', conds).then(function(data) {
+	    if (params['opt_fields']) {
+		conds.opt_fields = params['opt_fields'];
+	    }
+	    return asana.request('/tasks', conds).then(function(data) {
 		return data.filter(function(task) {
 		    for (var field in params) {
+			if (field == 'opt_fields') {
+			    continue;
+			}
 			var fields = field.split('.');
 			var target = task;
 			for (var i = 0; i < fields.length; i++) {
-			    target = task[fields[i]];
+			    target = target[fields[i]];
 			}
 			if (! RegExp(params[field]).test(target)) {
 			    return false;
@@ -112,19 +120,25 @@ Asana.prototype = {
 	    //     'project.0.id': 123456789,
 	    // })
 	    var conds = {};
-	    if (params.assignee) {
+	    if (params['assignee.id']) {
 		conds.assignee = params['assignee.id'];
 	    }
-	    if (params.workspace) {
+	    if (params['workspace.id']) {
 		conds.workspace = params['workspace.id'];
 	    }
-	    return this.request('/tasks', conds).then(function(data) {
+	    if (params['opt_fields']) {
+		conds.opt_fields = params['opt_fields'];
+	    }
+	    return asana.request('/tasks', conds).then(function(data) {
 		var tasks = data.filter(function(task) {
 		    for (var field in params) {
+			if (field == 'opt_fields') {
+			    continue;
+			}
 			var fields = field.split('.');
 			var target = task;
 			for (var i = 0; i < fields.length; i++) {
-			    target = task[fields[i]];
+			    target = target[fields[i]];
 			}
 			if (! RegExp(params[field]).test(target)) {
 			    return false;
@@ -143,6 +157,7 @@ Asana.prototype = {
 			    'assignee.id': 'assignee',
 			    'assignee_status': 'assignee_status',
 			    'completed': 'completed',
+			    'opt_fields': 'opt_fields',
 			};
 			var converted = {};
 			for (var field in mapping) {
@@ -151,8 +166,8 @@ Asana.prototype = {
 			    }
 			}
 			for (var i = 0; ; i++) {
-			    if (params['project.' + i + '.id']) {
-				converted['projects[' + i + ']'] = params['project.' + i + '.id'];
+			    if (params['projects.' + i + '.id']) {
+				converted['projects[' + i + ']'] = params['projects.' + i + '.id'];
 			    } else {
 				break;
 			    }
@@ -170,7 +185,7 @@ Asana.prototype = {
     },
     Project: {
 	find: function(conds) {
-	    return this.request('/projects', conds).then(function(data) {
+	    return asana.request('/projects', conds).then(function(data) {
 		return data.map(function(elem) {
 		    return $.extend(new Asana.Project(elem.id), elem);
 		});
@@ -179,7 +194,7 @@ Asana.prototype = {
     },
     Workspace: {
 	find: function(conds) {
-	    return this.request('/workspaces', conds).then(function(data) {
+	    return asana.request('/workspaces', conds).then(function(data) {
 		return data.map(function(elem) {
 		    return $.extend(new Asana.Workspace(elem.id), elem);
 		});
@@ -193,6 +208,7 @@ Asana.Workspace = function(id) {
     this.id = id;
     this.name = null;
     this.Task = bindAll(this.Task, this);
+    this.Project = bindAll(this.Project, this);
 }
 
 Asana.Workspace.prototype = {
@@ -203,7 +219,7 @@ Asana.Workspace.prototype = {
     },
     Project: {
 	find: function(conds) {
-	    return this.request('/workspaces/' + this.id + '/projects', conds)
+	    return asana.request('/workspaces/' + this.id + '/projects', conds)
 		.then(function(data) {
 		    return data.map(function(elem) {
 			return $.extend(new Asana.Project(elem.id), elem);

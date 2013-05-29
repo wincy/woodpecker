@@ -167,16 +167,16 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 	})).then(function(records) {
 	    return Object.keys(records).map(function(idx) {
 		return asana.Task.get({
-		    'assignee.id': asana.me.id
+		    'assignee.id': asana.me.id,
 		    'workspace.id': asana.woodpecker.id,
-		    'project.0.id': asana.woodpecker.me.id,
-		    name: sprintf('%d-%02d-%02d#%d',
-				  this.date.getFullYear(),
-				  this.date.getMonth() + 1,
-				  this.date.getDate(),
-				  idx),
+		    'projects.0.id': asana.woodpecker.me.id,
+		    'name': sprintf('%s#%s', this.date, idx),
+		    'assignee_status': 'today',
+		    'opt_fields': ['name','parent','assignee','notes',
+				   'assignee_status','completed',
+				   'projects','workspace'].join(','),
 		}).then(function (task) {
-		    var idx = task.name.split('#')[1];
+		    var idx = parseInt(task.name.split('#')[1]);
 		    return task.update({notes: this.content[idx].toJSON()});
 		}.bind(this));
 	    }.bind(this));
@@ -185,20 +185,21 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
     load: function() {
 	this.set('content', []);
 	return asana.Task.find({
-	    name: sprintf('^%d-%02d-%02d#\\d+$',
-			  this.date.getFullYear(),
-			  this.date.getMonth() + 1,
-			  this.date.getDate()),
+	    'name': sprintf('^%s#\\d+$', this.date),
 	    'assignee.id': asana.me.id,
 	    'workspace.id': asana.woodpecker.id,
+	    'opt_fields': ['name','parent','assignee','notes',
+			   'assignee_status','completed',
+			   'projects','workspace'].join(','),
 	}).then(function(tasks) {
 	    var sorted = tasks.sort(function(a, b) {
 		var idx_a = parseInt(a.name.split('#')[1]);
-		var idx_a = parseInt(b.name.split('#')[1]);
+		var idx_b = parseInt(b.name.split('#')[1]);
 		return idx_a - idx_b;
 	    });
 	    return RSVP.all(sorted.map(function(task) {
-		return Woodpecker.Timeline.Record.create().load(task.notes);
+		return Woodpecker.Timeline.Record.create().load(
+		    JSON.parse(task.notes));
 	    })).then(function(records) {
 		this.set('content', records);
 	    	this.view.clear();
@@ -209,7 +210,7 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 	    	}.bind(this));
 		return records;
 	    }.bind(this));
-	});
+	}.bind(this));
     },
     set_date: function(date) {
 	if (date == undefined) {
@@ -829,23 +830,23 @@ Woodpecker.Selector = Ember.ArrayController.extend({
     load: function() {
 	Woodpecker.selector.set('content', []);
 	for (var i = 0; i < asana.workspaces.length; i++) {
-	    asana.Task
-		.find({
-		    workspace: asana.workspaces[i].id,
-		    assignee: 'me',
-		    opt_fields: "name,parent,assignee,assignee_status,completed,projects"
-		})
-		.then(function(tasks) {
-		    for (var j = 0; j < tasks.length; j++) {
-			if (tasks[j].assignee_status == 'today' &&
-			    tasks[j].completed == false &&
-			    tasks[j].name[0] != '.') {
-			    Woodpecker.selector.pushObject(
-				Woodpecker.Selector.Option.create(
-				    {content: tasks[j]}));
-			}
+	    asana.Task.find({
+		'workspace.id': asana.workspaces[i].id,
+		'assignee.id': asana.me.id,
+		'opt_fields': ['name','parent','assignee','notes',
+			       'assignee_status','completed',
+			       'projects','workspace'].join(','),
+	    }).then(function(tasks) {
+		for (var j = 0; j < tasks.length; j++) {
+		    if (tasks[j].assignee_status == 'today' &&
+			tasks[j].completed == false &&
+			tasks[j].name[0] != '.') {
+			Woodpecker.selector.pushObject(
+			    Woodpecker.Selector.Option.create(
+				{content: tasks[j]}));
 		    }
-		});
+		}
+	    });
 	}
     },
     get_selected: function() {

@@ -26,7 +26,7 @@
                        (str "https://app.asana.com/api/1.0/" url)
                        (assoc params :as :text))]
          (println @response)
-         {:status 200
+         {:status (:status @response)
           :headers {"Content-Type" "application/json; charset=UTF-8"}
           :body (:body @response)}
          )
@@ -40,7 +40,7 @@
                         (str "https://app.asana.com/api/1.0/" url)
                         (assoc params :as :text))]
           (println @response)
-          {:status 200
+          {:status (:status @response)
            :headers {"Content-Type" "application/json; charset=UTF-8"}
            :body (:body @response)}
           )
@@ -54,7 +54,7 @@
                        (str "https://app.asana.com/api/1.0/" url)
                        (assoc params :as :text))]
          (println @response)
-         {:status 200
+         {:status (:status @response)
           :headers {"Content-Type" "application/json; charset=UTF-8"}
           :body (:body @response)}
          ))
