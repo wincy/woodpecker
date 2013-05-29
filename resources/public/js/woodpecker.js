@@ -90,23 +90,26 @@ Woodpecker = Ember.Application.create({
 	});
 	Woodpecker.menu = Woodpecker.Menu.create();
 	check_online();
+	asana.me = new Asana.User('me');
 	RSVP.all([
 	    asana.Workspace.find()
 		.then(function(workspaces) {
 		    asana.workspaces = workspaces;
-		    asana.personal = workspaces.filter(function(workspace) {
-			return workspace.name == 'Personal';
+		    asana.woodpecker = workspaces.filter(function(workspace) {
+			return workspace.name == 'Woodpecker';
 		    })[0];
 		    return true;
 		}),
-	    asana.Project.find()
+	    asana.me.load(),
+	]).then(function (){
+	    return asana.woodpecker.Project.find()
 		.then(function(projects) {
-		    asana.woodpecker = projects.filter(function(project) {
-			return project.name == '.woodpecker';
+		    asana.woodpecker.me = projects.filter(function(project) {
+			return project.name == asana.me.name;
 		    })[0];
 		    return true;
 		})
-	]).then(function() {
+	}).then(function() {
 	    return RSVP.all([Woodpecker.timeline.load(),
 			     Woodpecker.selector.load()]);
 	}).then(function() {
@@ -158,63 +161,55 @@ Woodpecker.Comment = Ember.ObjectController.extend({
 Woodpecker.Timeline = Ember.ArrayController.extend({
     id: null,
     content: [],
-    _get_task: function() {
-	return asana.Task.find({
-	    assignee: 'me',
-	    workspace: asana.personal.id,
-	})
-	    .then(function(tasks) {
-		var tasks = tasks.filter(function(task) {
-		    return task.name == this.date;
-		}.bind(this));
-		if (tasks.length > 0) {
-		    return new Asana.Task(tasks[0].id).load();
-		} else {
-		    return asana.personal.Task.create({
-			name: this.date,
-			'projects[0]': asana.woodpecker.id,
-			assignee: 'me',
-			assignee_status: 'today',
-		    });
-		}
-	    }.bind(this));
-    },
     save: function() {
 	return RSVP.all(this.content.map(function(record) {
 	    return record.save_comments();
-	})).then(function() {
-	    return this._get_task().then(function(today) {
-		return today.update({notes: this.toJSON()});
+	})).then(function(records) {
+	    return Object.keys(records).map(function(idx) {
+		return asana.Task.get({
+		    'assignee.id': asana.me.id
+		    'workspace.id': asana.woodpecker.id,
+		    'project.0.id': asana.woodpecker.me.id,
+		    name: sprintf('%d-%02d-%02d#%d',
+				  this.date.getFullYear(),
+				  this.date.getMonth() + 1,
+				  this.date.getDate(),
+				  idx),
+		}).then(function (task) {
+		    var idx = task.name.split('#')[1];
+		    return task.update({notes: this.content[idx].toJSON()});
+		}.bind(this));
 	    }.bind(this));
 	}.bind(this));
     },
     load: function() {
 	this.set('content', []);
-	return this._get_task().then(function(today) {
-	    if (today.notes == '') {
-		return [];
-	    } else {
-		return RSVP.all(
-		    JSON.parse(today.notes).map(function(raw) {
-			return Woodpecker.Timeline.Record.create().load(raw);
-		    }))
-		    .then(function(records) {
-			this.set('content', records);
-	    		this.view.clear();
-	    		records.map(function(record) {
-	    		    this.view.pushObject(Woodpecker.Timeline.RecordView.create({
-	    			controller: record,
-	    		    }));
-	    		}.bind(this));
-			return records;
-		    }.bind(this));
-	    }
-	}.bind(this));
-    },
-    toJSON: function() {
-	return JSON.stringify(this.content.map(function(record) {
-	    return JSON.parse(record.toJSON());
-	}), undefined, 2);
+	return asana.Task.find({
+	    name: sprintf('^%d-%02d-%02d#\\d+$',
+			  this.date.getFullYear(),
+			  this.date.getMonth() + 1,
+			  this.date.getDate()),
+	    'assignee.id': asana.me.id,
+	    'workspace.id': asana.woodpecker.id,
+	}).then(function(tasks) {
+	    var sorted = tasks.sort(function(a, b) {
+		var idx_a = parseInt(a.name.split('#')[1]);
+		var idx_a = parseInt(b.name.split('#')[1]);
+		return idx_a - idx_b;
+	    });
+	    return RSVP.all(sorted.map(function(task) {
+		return Woodpecker.Timeline.Record.create().load(task.notes);
+	    })).then(function(records) {
+		this.set('content', records);
+	    	this.view.clear();
+	    	records.map(function(record) {
+	    	    this.view.pushObject(Woodpecker.Timeline.RecordView.create({
+	    		controller: record,
+	    	    }));
+	    	}.bind(this));
+		return records;
+	    }.bind(this));
+	});
     },
     set_date: function(date) {
 	if (date == undefined) {
@@ -393,6 +388,8 @@ Woodpecker.Timeline.Record = Ember.ObjectController.extend({
 	    return comment.save();
 	}));
     },
+    save: function() {
+    },
     load: function(data) {
 	if (data.start) {
 	    this.set('start', new Date(Date.parse(data.start)));
@@ -551,7 +548,7 @@ Woodpecker.Timeline.Record = Ember.ObjectController.extend({
 	    end: this.end,
 	    efficient: this.efficient,
 	    human: human_parts.join(' '),
-	});
+	}, undefined, 2);
     },
 });
 Woodpecker.Timeline.RecordView = Ember.View.extend({

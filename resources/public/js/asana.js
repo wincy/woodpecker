@@ -20,6 +20,7 @@ function bindAll(target, that) {
 Asana = function(ns) {
     this.ns = ns;
     this.onLine = true;
+    this.User = bindAll(this.User, this);
     this.Task = bindAll(this.Task, this);
     this.Project = bindAll(this.Project, this);
     this.Workspace = bindAll(this.Workspace, this);
@@ -66,14 +67,106 @@ Asana.prototype = {
 	}.bind(this));
 	return promise;
     },
-    Task: {
+    User: {
 	find: function(conds) {
-	    return this.request('/tasks', conds).then(function(data) {
+	    return this.request('/users', conds).then(function(data) {
 		return data.map(function(elem) {
-		    return $.extend(new Asana.Task(elem.id), elem);
+		    return $.extend(new Asana.User(elem.id), elem);
 		});
 	    });
 	},
+    },
+    Task: {
+	find: function(params) {
+	    var conds = {};
+	    if (params.assignee) {
+		conds.assignee = params['assignee.id'];
+	    }
+	    if (params.workspace) {
+		conds.workspace = params['workspace.id'];
+	    }
+	    return this.request('/tasks', conds).then(function(data) {
+		return data.filter(function(task) {
+		    for (var field in params) {
+			var fields = field.split('.');
+			var target = task;
+			for (var i = 0; i < fields.length; i++) {
+			    target = task[fields[i]];
+			}
+			if (! RegExp(params[field]).test(target)) {
+			    return false;
+			}
+		    }
+		    return true;
+		}).map(function(task) {
+		    return $.extend(new Asana.Task(task.id), task);
+		});
+	    });
+	},
+	get: function(params) {
+	    // 
+	    // Example: asana.Task.get({
+	    //     'name': 'foobar',
+	    //     'workspace.id': 123456789,
+	    //     'assignee_status': 'today',
+	    //     'project.0.id': 123456789,
+	    // })
+	    var conds = {};
+	    if (params.assignee) {
+		conds.assignee = params['assignee.id'];
+	    }
+	    if (params.workspace) {
+		conds.workspace = params['workspace.id'];
+	    }
+	    return this.request('/tasks', conds).then(function(data) {
+		var tasks = data.filter(function(task) {
+		    for (var field in params) {
+			var fields = field.split('.');
+			var target = task;
+			for (var i = 0; i < fields.length; i++) {
+			    target = task[fields[i]];
+			}
+			if (! RegExp(params[field]).test(target)) {
+			    return false;
+			}
+		    }
+		    return true;
+		});
+		if (tasks.length > 0) {
+		    return $.extend(new Asana.Task(tasks[0].id), tasks[0]);
+		} else {
+		    if (params['workspace.id']) {
+			var mapping = {
+			    'name': 'name',
+			    'notes': 'notes',
+			    'workspace.id': 'workspace',
+			    'assignee.id': 'assignee',
+			    'assignee_status': 'assignee_status',
+			    'completed': 'completed',
+			};
+			var converted = {};
+			for (var field in mapping) {
+			    if (params[field]) {
+				converted[mapping[field]] = params[field];
+			    }
+			}
+			for (var i = 0; ; i++) {
+			    if (params['project.' + i + '.id']) {
+				converted['projects[' + i + ']'] = params['project.' + i + '.id'];
+			    } else {
+				break;
+			    }
+			}
+			return asana.request('/tasks', converted, 'POST')
+			    .then(function(data) {
+				return $.extend(new Asana.Task(data.id), data);
+			    });
+		    } else {
+			console.log('workspace.id is required when calling asana.Task.create');
+		    }
+		}
+	    }.bind(this));
+	}
     },
     Project: {
 	find: function(conds) {
@@ -107,6 +200,16 @@ Asana.Workspace.prototype = {
 	return asana.request(url).then(function(data) {
 	    return $.extend(this, data);
 	}.bind(this));
+    },
+    Project: {
+	find: function(conds) {
+	    return this.request('/workspaces/' + this.id + '/projects', conds)
+		.then(function(data) {
+		    return data.map(function(elem) {
+			return $.extend(new Asana.Project(elem.id), elem);
+		    });
+		});
+	},
     },
     Task: {
 	create: function(data) {
@@ -193,6 +296,19 @@ Asana.Story = function(id) {
 Asana.Story.prototype = {
     load: function() {
 	return asana.request('/stories/' + this.id)
+	    .then(function(data) {
+		return $.extend(this, data);
+	    }.bind(this));
+    },
+}
+
+Asana.User = function(id) {
+    this.id = id;
+}
+
+Asana.User.prototype = {
+    load: function() {
+	return asana.request('/users/' + this.id)
 	    .then(function(data) {
 		return $.extend(this, data);
 	    }.bind(this));
