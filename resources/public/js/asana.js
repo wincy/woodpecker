@@ -33,10 +33,10 @@ Asana.prototype = {
 	var key = JSON.stringify({url: url, params: params, method: method});
 	var cache = locache.get('req:' + key);
 	url = this.ns + url;
-	if (typeof params === undefined) {
+	if (params == undefined) {
 	    params = {};
 	}
-	if (typeof method === undefined) {
+	if (method == undefined) {
 	    method = 'GET';
 	}
 	var promise = new RSVP.Promise(function(resolve, reject) {
@@ -45,7 +45,7 @@ Asana.prototype = {
 		    url: url,
 		    data: params,
 		    type: method,
-		    timeout: 10000,
+		    timeout: 20000,
 		})
 		    .done(function(data, status, xhr) {
 			locache.set('req:' + key, data.data, 86400);
@@ -262,9 +262,11 @@ Asana.Project.prototype = {
 		}.bind(this));
 	},
 	find: function(conds) {
-	    return asana.request('/projects/' + this.id + '/tasks').map(function(elem) {
-		return new Asana.Task(elem.id);
-	    });
+	    return asana.request('/projects/' + this.id + '/tasks').then(function(data) {
+		return data.map(function(elem) {
+		    return $.extend(new Asana.Task(elem.id), elem);
+		});
+	    })
 	},
     }
 }
