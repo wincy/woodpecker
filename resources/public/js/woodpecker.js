@@ -89,7 +89,7 @@ window.Woodpecker = Ember.Application.create({
 	    templateName: "comment-editor",
 	});
 	Woodpecker.menu = Woodpecker.Menu.create();
-	check_online();
+	// check_online();
 	RSVP.all([
 	    asana.Workspace.find()
 		.then(function(workspaces) {
@@ -987,11 +987,20 @@ Woodpecker.Menu = Ember.ObjectController.extend({
 });
 
 Woodpecker.Store = DS.Store.extend({
-    namespace: 'asana',
-    url: 'http://localhost:3000'
 });
+
+DS.RESTAdapter.reopen({
+    namespace: 'asana2',
+    url: 'http://localhost:3000',
+});
+
+Woodpecker.Workspace = DS.Model.extend({
+    name: DS.attr('string'),
+})
 
 Woodpecker.User = DS.Model.extend({
     name: DS.attr('string'),
+    email: DS.attr('string'),
+    workspaces: DS.hasMany('Woodpecker.Workspace'),
 })
 
