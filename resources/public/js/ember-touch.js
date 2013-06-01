@@ -7,6 +7,8 @@
 // ==========================================================================
 
 
+var tmp = null;
+
 (function() {
 Em.TimeoutTouchEventType = {
   Cancel: 'cancel',
@@ -510,7 +512,7 @@ Em.GestureManager = Em.Object.extend({
   //applicationGestureManager: null,
 
   applicationGestureManager: Ember.computed(function() {
-    return this.view.get('container').lookup('gesture:application');
+    return Ember.Container.defaultContainer.lookup('gesture:application');
   }),
 
   container: null,
@@ -742,7 +744,7 @@ Em.Gesture = Em.Object.extend({
   */
   applicationGestureManager: Ember.computed(function() {
     // TODO: more elegant way
-    return this.view.get('container').lookup('gesture:application');
+    return Ember.Container.defaultContainer.lookup('gesture:application');
   }),
 
   container: null,
@@ -1266,7 +1268,7 @@ Em.Application.reopen({
 
   gestureManager: Ember.computed(function() {
     // TODO: more elegant way
-    return this.__container__.lookup('gesture:application');
+    return Ember.Container.defaultContainer.lookup('gesture:application');
   })
 
 });
@@ -1324,7 +1326,7 @@ Em.View.reopen({
   */
   eventManager: null,
 
-  init: function() {
+  willInsertElement: function() {
     this._super();
     this._createGestureManager();
     
@@ -1340,7 +1342,8 @@ Em.View.reopen({
 
     if (!eventManager) {
 
-      var applicationGestureManager = get(this, 'container').lookup('gesture:application');
+	tmp = this;
+      var applicationGestureManager = Ember.Container.defaultContainer.lookup('gesture:application');
       var knownGestures = applicationGestureManager.knownGestures();
 
 

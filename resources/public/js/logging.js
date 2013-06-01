@@ -28,6 +28,7 @@ Logging.prototype = {
 	}
     },
     apply: function(log) {
+	console.log(log);
 	var ret = null;
 	switch (log.type) {
 	case 'check-in':

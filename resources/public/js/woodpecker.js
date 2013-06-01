@@ -46,7 +46,7 @@ function check_online() {
 	});
 }
 
-Woodpecker = Ember.Application.create({
+window.Woodpecker = Ember.Application.create({
     ready: function () {
 	Woodpecker.network = Ember.ObjectController.create({
 	    status: true,
@@ -985,3 +985,13 @@ Woodpecker.Menu = Ember.ObjectController.extend({
 	Woodpecker.puncher.view.set('isVisible', ! visible);
     },
 });
+
+Woodpecker.Store = DS.Store.extend({
+    namespace: 'asana',
+    url: 'http://localhost:3000'
+});
+
+Woodpecker.User = DS.Model.extend({
+    name: DS.attr('string'),
+})
+

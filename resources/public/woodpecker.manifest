@@ -1,5 +1,5 @@
 CACHE MANIFEST
-# Tue May 28 07:59:49 CST 2013
+# Sun Jun  2 04:39:57 CST 2013
 /index.html
 /css/bootstrap.min.css
 /css/cursor.css
@@ -9,17 +9,17 @@ CACHE MANIFEST
 /js/jquery-2.0.0.js
 /js/bootstrap.js
 /js/handlebars.js
+/js/handlebars-1.0.0-rc.4.js
+/js/ember-1.0.0-rc.4.js
 /js/ember-1.0.0-rc.3.js
 /js/ember-1.0.0-rc.2.js
+/js/ember-data-0.13.js
 /js/ember-touch.js
 /js/rsvp.js
 /js/cursor.js
 /js/timepicker.js
 /js/timeline.js
 /js/locache.min.js
-/js/asana.js
-/js/logging.js
-/js/woodpecker.js
 /img/glyphicons-halflings-white.png
 /img/glyphicons-halflings.png
 /css/images/ajax-loader.gif
@@ -27,3 +27,6 @@ CACHE MANIFEST
 NETWORK:
 /asana
 /ping.html
+/js/asana.js
+/js/logging.js
+/js/woodpecker.js
