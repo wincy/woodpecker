@@ -209,6 +209,7 @@ Asana.Workspace = function(id) {
     this.name = null;
     this.Task = bindAll(this.Task, this);
     this.Project = bindAll(this.Project, this);
+    this.Tag = bindAll(this.Tag, this);
 }
 
 Asana.Workspace.prototype = {
@@ -239,7 +240,23 @@ Asana.Workspace.prototype = {
 		return new Asana.Task(elem.id);
 	    });
 	},
-    }
+    },
+    Tag: {
+	create: function(data) {
+	    return asana.request('/workspaces/' + this.id + '/tags', data, 'POST')
+		.then(function(data) {
+		    return $.extend(new Asana.Tag(data.id), data);
+		}.bind(this));
+	},
+	find: function() {
+	    return asana.request('/workspaces/' + this.id + '/tags')
+		.then(function(data) {
+		    return data.map(function(elem) {
+			return $.extend(new Asana.Tag(elem.id), elem);
+		    });
+		});
+	},
+    },
 }
 
 Asana.Project = function(id) {
@@ -324,12 +341,30 @@ Asana.Task.prototype = {
     load: function() {
 	return asana.request('/tasks/' + this.id).then(function(data) {
 	    return $.extend(this, data);
-	}.bind(this));
+	}.bind(this)).then(function(task) {
+	    return asana.request('/tasks/' + this.id + '/tags').then(function(data) {
+		return data.map(function(tag) {
+		    return $.extend(new Asana.Tag(tag.id), tag);
+		});
+	    }.bind(this));
+	});
     },
     update: function(kvs) {
 	return asana.request('/tasks/' + this.id, kvs, 'PUT')
 	    .then(function(data) {
 		return $.extend(this, data);
+	    }.bind(this));
+    },
+    addTag: function(tag) {
+	return asana.request('/tasks/' + this.id + '/addTag', {tag: tag.id}, 'POST')
+	    .then(function(data) {
+		return true;
+	    }.bind(this));
+    },
+    removeTag: function(tag) {
+	return asana.request('/tasks/' + this.id + '/removeTag', {tag: tag.id}, 'POST')
+	    .then(function(data) {
+		return true;
 	    }.bind(this));
     },
     Story: {
@@ -371,6 +406,19 @@ Asana.User = function(id) {
 Asana.User.prototype = {
     load: function() {
 	return asana.request('/users/' + this.id)
+	    .then(function(data) {
+		return $.extend(this, data);
+	    }.bind(this));
+    },
+}
+
+Asana.Tag = function(id) {
+    this.id = id;
+}
+
+Asana.Tag.prototype = {
+    load: function() {
+	return asana.request('/tags/' + this.id)
 	    .then(function(data) {
 		return $.extend(this, data);
 	    }.bind(this));
