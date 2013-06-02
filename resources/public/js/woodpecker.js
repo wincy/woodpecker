@@ -98,6 +98,7 @@ Woodpecker = Ember.Application.create({
 		    asana.woodpecker = workspaces.filter(function(workspace) {
 			return workspace.name == 'Woodpecker';
 		    })[0];
+		    asana.workspaces.removeObject(asana.woodpecker);
 		    return true;
 		}),
 	    asana.me.load(),
