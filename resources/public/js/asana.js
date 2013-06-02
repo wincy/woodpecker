@@ -340,14 +340,15 @@ Asana.Task = function(id) {
 Asana.Task.prototype = {
     load: function() {
 	return asana.request('/tasks/' + this.id).then(function(data) {
-	    return $.extend(this, data);
+	    return $.extend(new Asana.Task(data.id), data);
 	}.bind(this)).then(function(task) {
-	    return asana.request('/tasks/' + this.id + '/tags').then(function(data) {
-		return data.map(function(tag) {
+	    return asana.request('/tasks/' + task.id + '/tags').then(function(data) {
+		task.tags = data.map(function(tag) {
 		    return $.extend(new Asana.Tag(tag.id), tag);
 		});
+		return task;
 	    }.bind(this));
-	});
+	}.bind(this));
     },
     update: function(kvs) {
 	return asana.request('/tasks/' + this.id, kvs, 'PUT')

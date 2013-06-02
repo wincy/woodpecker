@@ -23,97 +23,67 @@
     <script src="/js/asana.js"></script>
     <script src="/js/logging.js"></script>
     <script src="/js/woodpecker.js"></script>
-    <script type="text/x-handlebars" data-template-name="selector">
+    <script type="text/x-handlebars" data-template-name="tag-selector">
       <div>
-	{{#each Woodpecker.selector}}
+	{{#each Woodpecker.tag_selector}}
 	{{view Woodpecker.Selector.OptionView}}
 	{{/each}}
       </div>
       <div class="row-fluid">
-	{{#each Woodpecker.selector.control_buttons}}
+	{{#each Woodpecker.tag_selector.control_buttons}}
 	{{view Woodpecker.Selector.ControlButtonView}}
 	{{/each}}
       </div>
     </script>
     <script type="text/x-handlebars" data-template-name="selector-option">
       <div {{bindAttr class=":option marked:marked"}} {{action toggle on="click"}} {{action toggle on="touchStart"}}>
-	{{name}}
+	{{view.content.name}}
       </div>
     </script>
-    <script type="text/x-handlebars" data-template-name="puncher">
-      {{#each Woodpecker.puncher.buttons}}
-      {{view Woodpecker.Puncher.ButtonView}}
-      {{/each}}
-    </script>
     <script type="text/x-handlebars" data-template-name="button">
-      <div class="punch span6" {{action hit on="click"}} {{action hit on="touchStart"}}>
-	{{text}}
+      <div class="punch span6"
+	   {{action hit on="click"}}
+	   {{action hit on="touchStart"}}>
+	{{view.content.text}}
       </div>
     </script>
     <script type="text/x-handlebars" data-template-name="timepicker-cursor">
-      <div {{bindAttr class="fixed:cursor-fixed:cursor-variable current:cursor-current"}} {{action hit on="click"}} {{action hit on="touchStart"}}>
-	{{value}}
+      <div {{bindAttr class="fixed:cursor-fixed:cursor-variable current:cursor-current"}}
+	   {{action hit on="click"}}
+	   {{action hit on="touchStart"}}>
+	{{view.content.value}}
       </div>
     </script>
     <script type="text/x-handlebars" data-template-name="timepicker-button">
-      <div class="timepicker-button" {{action hit on="click"}} {{action hit on="touchStart"}}>
-	{{text}}
+      <div class="timepicker-button"
+	   {{action hit on="click"}}
+	   {{action hit on="touchStart"}}>
+	{{view.content.text}}
       </div>
-    </script>
-    <script type="text/x-handlebars" data-template-name="timepicker">
-      <div class="clearfix">
-	{{#each Woodpecker.timepicker.cursors}}
-	{{view Woodpecker.Timepicker.CursorView}}
-	{{/each}}
-      </div>
-      <div class="timepicker-numpad">
-	{{#each Woodpecker.timepicker.numpad_buttons}}
-	{{view Woodpecker.Timepicker.NumpadButtonView}}
-	{{/each}}
-      </div>
-      <div>
-	<div class="row-fluid">
-	  {{#each Woodpecker.timepicker.control_buttons}}
-	  {{view Woodpecker.Timepicker.ControlButtonView}}
-	  {{/each}}
-	</div>
-      </div>
-    </script>
-    <script type="text/x-handlebars" data-template-name="timeline">
-      <table id="timeline" class="table">
-	<thead>
-	  <td class="span1">In</td>
-	  <td class="span1">Out</td>
-	  <td class="span1">Use</td>
-	  <td class="span4">Tasks</td>
-	  <td class="span5">Comments</td>
-	</thead>
-	<tbody>
-	  {{#each record in Woodpecker.timeline}}
-	  {{view Woodpecker.Timeline.RecordView controllerBinding=record}}
-	  {{/each}}
-	</tbody>
-      </table>
     </script>
     <script type="text/x-handlebars" data-template-name="timeline-record">
       <td {{action set_start on="click"}}
 	  {{action set_start on="touchStart"}}>
-	{{start_short}}
+	{{view.content.start_short}}
       </td>
       <td {{action set_end on="click"}}
 	  {{action set_end on="touchStart"}}>
-	{{end_short}}
+	{{view.content.end_short}}
       </td>
-      <td>{{use_time}}</td>
+      <td>{{view.content.use_time}}</td>
+      <td {{action select_tags on="click"}}
+	  {{action select_tags on="touchStart"}}>
+	<i class="icon-tags"></i>
+      </td>
       <td {{action select_tasks on="click"}} {{action select_tasks on="touchStart"}}>
-	{{#each task in tasks}}
+	{{#each task in view.content.tasks}}
 	<div><i class="icon-calendar"></i>{{task.name}}</div>
 	{{else}}
 	<div><i class="icon-calendar"></i>Empty</div>
 	{{/each}}
       </td>
       <td>
-	{{#each comment in comments}}
+	{{#each comment in view.content.comments}}
 	<div {{action edit on="click"}} {{action edit on="touchStart"}}>
 	  <i class="icon-edit"></i>
 	  {{#if story}}
@@ -130,17 +100,6 @@
       </td>
     </script>
     <div id="log"></div>
-    <script type="text/x-handlebars" data-template-name="comment-editor">
-      <h4>{{Woodpecker.comment_editor.target.task.name}}</h4>
-      {{view Ember.TextArea valueBinding="Woodpecker.comment_editor.content"}}
-      <div>
-	<div class="row-fluid">
-	  {{#each Woodpecker.comment_editor.control_buttons}}
-	  {{view Woodpecker.CommentEditor.ControlButtonView}}
-	  {{/each}}
-	</div>
-      </div>
-    </script>
   </head>
   <body>
     <script type="text/x-handlebars">
@@ -157,8 +116,9 @@
 	  <td class="span1">In</td>
 	  <td class="span1">Out</td>
 	  <td class="span1">Use</td>
-	  <td class="span4">Tasks</td>
-	  <td class="span5">Comments</td>
+	  <td class="span1"></td>
+	  <td class="span4"></td>
+	  <td class="span4"></td>
 	</thead>
 	{{view Woodpecker.timeline.view}}
       </table>
