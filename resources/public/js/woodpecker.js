@@ -107,7 +107,10 @@ Woodpecker = Ember.Application.create({
 		    asana.woodpecker.me = projects.filter(function(project) {
 			return project.name == asana.me.name;
 		    })[0];
-		    return true;
+		    return RSVP.all([
+			asana.woodpecker.me.load(),
+			asana.woodpecker.me.Task.find(), // updating cache
+			]);
 		})
 	}).then(function() {
 	    return RSVP.all([Woodpecker.timeline.load(),
@@ -166,51 +169,49 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 	    return record.save_comments();
 	})).then(function(records) {
 	    return Object.keys(records).map(function(idx) {
-		return asana.Task.get({
-		    'assignee.id': asana.me.id,
-		    'workspace.id': asana.woodpecker.id,
-		    'projects.0.id': asana.woodpecker.me.id,
-		    'name': sprintf('%s#%s', this.date, idx),
-		    'assignee_status': 'today',
-		    'opt_fields': ['name','parent','assignee','notes',
-				   'assignee_status','completed',
-				   'projects','workspace'].join(','),
-		}).then(function (task) {
-		    var idx = parseInt(task.name.split('#')[1]);
-		    return task.update({notes: this.content[idx].toJSON()});
-		}.bind(this));
+		return asana.woodpecker.me
+		    .Task.getByName(sprintf('%s#%s', this.date, idx))
+		    .then(function (task) {
+			var idx = parseInt(task.name.split('#')[1]);
+			return task.update({notes: this.content[idx].toJSON()});
+		    }.bind(this));
 	    }.bind(this));
 	}.bind(this));
     },
     load: function() {
 	this.set('content', []);
-	return asana.Task.find({
-	    'name': sprintf('^%s#\\d+$', this.date),
-	    'assignee.id': asana.me.id,
-	    'workspace.id': asana.woodpecker.id,
-	    'opt_fields': ['name','parent','assignee','notes',
-			   'assignee_status','completed',
-			   'projects','workspace'].join(','),
-	}).then(function(tasks) {
-	    var sorted = tasks.sort(function(a, b) {
-		var idx_a = parseInt(a.name.split('#')[1]);
-		var idx_b = parseInt(b.name.split('#')[1]);
-		return idx_a - idx_b;
-	    });
-	    return RSVP.all(sorted.map(function(task) {
-		return Woodpecker.Timeline.Record.create().load(
-		    JSON.parse(task.notes));
-	    })).then(function(records) {
-		this.set('content', records);
-	    	this.view.clear();
-	    	records.map(function(record) {
-	    	    this.view.pushObject(Woodpecker.Timeline.RecordView.create({
-	    		controller: record,
-	    	    }));
-	    	}.bind(this));
-		return records;
+	return asana.woodpecker.me.Task.find()
+	    .then(function(tasks) {
+		return RSVP.all(
+		    tasks.filter(function(task) {
+			return RegExp(sprintf('^%s#\\d+$', this.date)).test(task.name);
+		    }.bind(this)).map(function(task) {
+			return task.load();
+		    }));
+	    }.bind(this))
+	    .then(function(tasks) {
+		var sorted = tasks.sort(function(a, b) {
+		    var idx_a = parseInt(a.name.split('#')[1]);
+		    var idx_b = parseInt(b.name.split('#')[1]);
+		    return idx_a - idx_b;
+		});
+		return RSVP.all(sorted.map(function(task) {
+		    if (task.notes.length == 0) {
+			console.log('cannot parse', task);
+		    }
+		    return Woodpecker.Timeline.Record.create().load(
+			JSON.parse(task.notes));
+		})).then(function(records) {
+		    this.set('content', records);
+	    	    this.view.clear();
+	    	    records.map(function(record) {
+	    		this.view.pushObject(Woodpecker.Timeline.RecordView.create({
+	    		    controller: record,
+	    		}));
+	    	    }.bind(this));
+		    return records;
+		}.bind(this));
 	    }.bind(this));
-	}.bind(this));
     },
     set_date: function(date) {
 	if (date == undefined) {

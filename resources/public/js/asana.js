@@ -255,18 +255,62 @@ Asana.Project.prototype = {
 	}.bind(this));
     },
     Task: {
+	getByName: function(name) {
+	    if (this.id != asana.woodpecker.me.id) {
+		console.log('cannot call Task.getByName');
+	    }
+	    var date = name.split('#')[0];
+	    var index = name.split('#')[1];
+	    var cache = locache.get(date);
+	    if (date) {
+		if (cache[index]) {
+		    return new Asana.Task(cache[index].id).load();
+		} else {
+		    return this.Task.create({
+			name: name,
+			assignee: 'me',
+			assignee_status: 'today',
+		    });
+		}
+	    }
+	},
 	create: function(data) {
-	    return asana.request('/projects/' + this.id + '/tasks', data, 'POST')
-		.then(function(data) {
-		    return $.extend(new Asana.Task(data.id), data);
+	    data['projects[0]'] = this.id;
+	    return asana.request('/workspaces/' + this.workspace.id + '/tasks', data, 'POST')
+		.then(function(task) {
+		    if (this.id == asana.woodpecker.me.id) {
+			var date = data.name.split('#')[0];
+			var index = data.name.split('#')[1];
+			var cache = locache.get(date);
+			if (!cache) {
+			    cache = {}
+			}
+			cache[index] = {name: task.name, id: task.id};
+			locache.set(date, cache);
+		    }
+		    return $.extend(new Asana.Task(task.id), task);
 		}.bind(this));
 	},
 	find: function(conds) {
 	    return asana.request('/projects/' + this.id + '/tasks').then(function(data) {
 		return data.map(function(elem) {
+		    if (this.id == asana.woodpecker.me.id) {
+			if (!RegExp('.*#.*').test(elem.name)) {
+			    console.log('task is not a record');
+			    return;
+			}
+			var date = elem.name.split('#')[0];
+			var index = elem.name.split('#')[1];
+			var cache = locache.get(date);
+			if (!cache) {
+			    cache = {}
+			}
+			cache[index] = {name: elem.name, id: elem.id};
+			locache.set(date, cache);
+		    }
 		    return $.extend(new Asana.Task(elem.id), elem);
-		});
-	    })
+		}.bind(this));
+	    }.bind(this))
 	},
     }
 }
