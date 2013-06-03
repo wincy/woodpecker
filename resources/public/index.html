@@ -75,7 +75,8 @@
 	  {{action select_tags on="touchStart"}}>
 	<i class="icon-tags"></i>
       </td>
-      <td {{action select_tasks on="click"}} {{action select_tasks on="touchStart"}}>
+      <td {{action select_tasks on="click"}}
+	  {{action select_tasks on="touchStart"}}>
 	{{#each task in view.content.tasks}}
 	<div><i class="icon-calendar"></i>{{task.name}}</div>
 	{{else}}

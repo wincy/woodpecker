@@ -292,25 +292,8 @@ window.Woodpecker = Ember.Application.create({
 	}).then(function() {
 	    return logging.apply_all();
 	}).then(function() {
-	    return RSVP.all(asana.workspaces.map(function(workspace) {
-		return workspace.Task.find({
-		    'assignee': 'me',
-		    'opt_fields': ['name','assignee',
-				   'assignee_status','completed'].join(','),
-		});
-	    })).then(function(tasks_list) {
-		console.log(tasks_list);
-		Woodpecker.selector.set(
-		    'content',
- 		    tasks_list.reduce(function(s, a) {
-			return s.concat(a);
-		    }).filter(function(task) {
-			return task.assignee_status == 'today' && !task.completed;
-		    }).map(function(task) {
-			console.log(task);
-			return Woodpecker.Selector.Option.create({content: task});
-		    }));
-	    })
+	    return RSVP.all([Woodpecker.selector.load_tasks(),
+			     Woodpecker.selector.load_tags()])
 	});
     },
 });
@@ -556,6 +539,7 @@ Woodpecker.Timeline.Record = Ember.ObjectController.extend({
     end: null,
     tasks: [],
     comments: [],
+    tags: [],
     efficient: false,
     save_comments: function() {
 	return RSVP.all(this.comments.map(function(comment) {
@@ -677,12 +661,16 @@ Woodpecker.Timeline.Record = Ember.ObjectController.extend({
 	}
     },
     select_tags: function() {
-	Woodpecker.tag_selector.set_selected(this.tags);
-	Woodpecker.tag_selector.target = this;
-	Woodpecker.tag_selector.view.set('scroll', window.scrollY);
-	Woodpecker.tag_selector.view.set('isVisible', true);
+	Woodpecker.selector.type = 'set-tags';
+	Woodpecker.selector.set('content', Woodpecker.selector.tags);
+	Woodpecker.selector.set_selected(this.tags);
+	Woodpecker.selector.target = this;
+	Woodpecker.selector.view.set('scroll', window.scrollY);
+	Woodpecker.selector.view.set('isVisible', true);
     },
     select_tasks: function() {
+	Woodpecker.selector.type = 'set-tasks';
+	Woodpecker.selector.set('content', Woodpecker.selector.tasks);
 	Woodpecker.selector.set_selected(this.tasks);
 	Woodpecker.selector.target = this;
 	Woodpecker.selector.view.set('scroll', window.scrollY);
@@ -968,27 +956,36 @@ Woodpecker.Puncher.Buttons = Ember.ArrayController.extend({
 // Selector
 Woodpecker.Selector = Ember.ArrayController.extend({
     content: [],
-    load: function() {
-	Woodpecker.selector.set('content', []);
-	for (var i = 0; i < asana.workspaces.length; i++) {
-	    asana.Task.find({
-		'workspace.id': asana.workspaces[i].id,
-		'assignee.id': asana.me.id,
-		'opt_fields': ['name','parent','assignee','notes',
-			       'assignee_status','completed',
-			       'projects','workspace'].join(','),
-	    }).then(function(tasks) {
-		for (var j = 0; j < tasks.length; j++) {
-		    if (tasks[j].assignee_status == 'today' &&
-			tasks[j].completed == false &&
-			tasks[j].name[0] != '.') {
-			Woodpecker.selector.pushObject(
-			    Woodpecker.Selector.Option.create(
-				{content: tasks[j]}));
-		    }
-		}
+    tasks: null,
+    tags: null,
+    type: null,
+    load_tasks: function() {
+	return RSVP.all(asana.workspaces.map(function(workspace) {
+	    return workspace.Task.find({
+		'assignee': 'me',
+		'opt_fields': ['name','assignee',
+			       'assignee_status','completed'].join(','),
 	    });
-	}
+	})).then(function(tasks_list) {
+	    this.set(
+		'tasks',
+ 		tasks_list.reduce(function(s, a) {
+		    return s.concat(a);
+		}).filter(function(task) {
+		    return task.assignee_status == 'today' && !task.completed;
+		}).map(function(task) {
+		    console.log(task);
+		    return Woodpecker.Selector.Option.create({content: task});
+		}));
+	}.bind(this))
+    },
+    load_tags: function() {
+	return asana.woodpecker.Tag.find()
+	    .then(function(tags) {
+		this.set('tags', tags.map(function(tag) {
+		    return Woodpecker.Selector.Option.create({content: tag});
+		}));
+	    }.bind(this));
     },
     get_selected: function() {
 	return this.content.filter(function (elem) {
@@ -997,9 +994,9 @@ Woodpecker.Selector = Ember.ArrayController.extend({
 	    return elem.content;
 	});
     },
-    set_selected: function(tasks) {
-	var ids = tasks.map(function(task) {
-	    return task.id;
+    set_selected: function(selected) {
+	var ids = selected.map(function(element) {
+	    return element.id;
 	});
 	for (var i = 0; i < this.content.length; i++) {
 	    if (ids.indexOf(this.objectAt(i).content.id) != -1) {
@@ -1019,18 +1016,36 @@ Woodpecker.Selector = Ember.ArrayController.extend({
 	    this.view.set('isVisible', false);
 	    break;
 	case "confirm":
-	    var tasks = this.get_selected();
-	    logging.log({
-		'type': 'set-tasks',
-		'args': {
-		    start: this.target.start,
-		    end: this.target.end,
-		    'tasks': tasks.map(function(task) {
-			return task.id;
-		    }),
-		},
-	    });
-	    this.target.set_tasks(tasks);
+	    var selected = this.get_selected();
+	    switch(this.type) {
+	    case 'set-tasks':
+		logging.log({
+		    'type': this.type,
+		    'args': {
+			start: this.target.start,
+			end: this.target.end,
+			'tasks': selected.map(function(element) {
+			    return element.id;
+			}),
+		    },
+		});
+		this.target.set_tasks(selected);
+		break;
+	    case 'set-tags':
+		logging.log({
+		    'type': this.type,
+		    'args': {
+			start: this.target.start,
+			end: this.target.end,
+			'tags': selected.map(function(element) {
+			    return element.id;
+			}),
+		    },
+		});
+		this.target.set('tags', selected);
+	    default:
+		console.log('selector type error');
+	    }
 	    this.view.set('isVisible', false);
 	    break;
 	default:
