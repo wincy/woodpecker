@@ -339,6 +339,9 @@ Woodpecker.Comment = Ember.ObjectController.extend({
 	}
     },
 });
+function rejectHandler(error) {
+    console.log(error);
+}
 Woodpecker.Timeline = Ember.ArrayController.extend({
     id: null,
     content: [],
@@ -352,9 +355,9 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 		    .then(function (task) {
 			var idx = parseInt(task.name.split('#')[1]);
 			return task.update({notes: this.content[idx].toJSON()});
-		    }.bind(this));
+		    }.bind(this), rejectHandler);
 	    }.bind(this));
-	}.bind(this));
+	}.bind(this), rejectHandler);
     },
     load: function() {
 	this.set('content', []);
@@ -963,7 +966,7 @@ Woodpecker.Selector = Ember.ArrayController.extend({
 	return RSVP.all(asana.workspaces.map(function(workspace) {
 	    return workspace.Task.find({
 		'assignee': 'me',
-		'opt_fields': ['name','assignee',
+		'opt_fields': ['name','assignee','projects',
 			       'assignee_status','completed'].join(','),
 	    });
 	})).then(function(tasks_list) {
