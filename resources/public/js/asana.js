@@ -236,9 +236,12 @@ Asana.Workspace.prototype = {
 		}.bind(this));
 	},
 	find: function(conds) {
-	    return asana.request('/workspaces/' + this.id + '/tasks').map(function(elem) {
-		return new Asana.Task(elem.id);
-	    });
+	    return asana.request('/workspaces/' + this.id + '/tasks', conds)
+		.then(function(data) {
+		    return data.map(function(elem) {
+			return $.extend(new Asana.Task(elem.id), elem);
+		    });
+		});
 	},
     },
     Tag: {
@@ -280,7 +283,7 @@ Asana.Project.prototype = {
 	    var index = name.split('#')[1];
 	    var cache = locache.get(date);
 	    if (date) {
-		if (cache[index]) {
+		if (cache && cache[index]) {
 		    return new Asana.Task(cache[index].id).load();
 		} else {
 		    return this.Task.create({

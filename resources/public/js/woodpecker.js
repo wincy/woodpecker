@@ -288,10 +288,29 @@ window.Woodpecker = Ember.Application.create({
 			]);
 		})
 	}).then(function() {
-	    return RSVP.all([Woodpecker.timeline.load(),
-			     Woodpecker.selector.load()]);
+	    return Woodpecker.timeline.load();
 	}).then(function() {
 	    return logging.apply_all();
+	}).then(function() {
+	    return RSVP.all(asana.workspaces.map(function(workspace) {
+		return workspace.Task.find({
+		    'assignee': 'me',
+		    'opt_fields': ['name','assignee',
+				   'assignee_status','completed'].join(','),
+		});
+	    })).then(function(tasks_list) {
+		console.log(tasks_list);
+		Woodpecker.selector.set(
+		    'content',
+ 		    tasks_list.reduce(function(s, a) {
+			return s.concat(a);
+		    }).filter(function(task) {
+			return task.assignee_status == 'today' && !task.completed;
+		    }).map(function(task) {
+			console.log(task);
+			return Woodpecker.Selector.Option.create({content: task});
+		    }));
+	    })
 	});
     },
 });

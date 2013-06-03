@@ -18,6 +18,9 @@ Logging.prototype = {
 	return this._apply_all(locache.get(this.key));
     },
     _apply_all: function(logs) {
+	if (!logs || logs.length == 0) {
+	    return true;
+	}
 	var log = logs.shift();
 	if (log) {
 	    return this.apply(log).then(function() {
