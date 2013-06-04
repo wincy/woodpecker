@@ -15,25 +15,17 @@ function save_records(records) {
 }
 
 function save_record(name, idx, content) {
-    return asana.Task.get({
-	'assignee.id': asana.me.id,
-	'workspace.id': asana.woodpecker.id,
-	'projects.0.id': asana.woodpecker.me.id,
-	'name': sprintf('%s#%s', name, idx),
-	'assignee_status': 'today',
-	'opt_fields': ['name','parent','assignee','notes',
-		       'assignee_status','completed',
-		       'projects','workspace'].join(','),
-    }).then(function (task) {
-	if (task.notes.length > 0) {
-	    return task;
-	} else {
-	    return task.update({notes: content}).then(function(task) {
-		console.log(task);
+    return asana.woodpecker.me.Task.getByName(sprintf('%s#%s', name, idx))
+	.then(function (task) {
+	    if (task.notes.length > 0) {
 		return task;
-	    });
-	}
-    });
+	    } else {
+		return task.update({notes: content}).then(function(task) {
+		    console.log(task);
+		    return task;
+		});
+	    }
+	});
 }
 
 function convert_days(days) {

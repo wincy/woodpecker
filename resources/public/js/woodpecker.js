@@ -1,6 +1,10 @@
 var asana = new Asana('/asana');
 var logging = null;
 
+function rejectHandler(error) {
+    console.log(error);
+}
+
 window.applicationCache.addEventListener('updateready', function() {
     console.log('update to newest');
     window.applicationCache.swapCache();
@@ -188,8 +192,8 @@ window.Woodpecker = Ember.Application.create({
 			    text: "Save",
 			    hit: function() {
 				Woodpecker.timeline.save().then(function() {
-				    logging.clear();
-				});
+				    return logging.clear();
+				}, rejectHandler);
 				Woodpecker.puncher.view.set('isVisible', false);
 			    },
 			}),
@@ -198,7 +202,7 @@ window.Woodpecker = Ember.Application.create({
 			    hit: function() {
 				Woodpecker.timeline.load().then(function() {
 				    return logging.apply_all();
-				});
+				}, rejectHandler);
 				Woodpecker.puncher.view.set('isVisible', false);
 			    },
 			}),
@@ -302,7 +306,7 @@ window.Woodpecker = Ember.Application.create({
 		    })[0];
 		    asana.workspaces.removeObject(asana.woodpecker);
 		    return true;
-		}),
+		}, rejectHandler),
 	    asana.me.load(),
 	]).then(function (){
 	    return asana.woodpecker.Project.find()
@@ -314,15 +318,15 @@ window.Woodpecker = Ember.Application.create({
 			asana.woodpecker.me.load(),
 			asana.woodpecker.me.Task.find(), // updating cache
 			]);
-		})
-	}).then(function() {
+		}, rejectHandler)
+	}, rejectHandler).then(function() {
 	    return Woodpecker.timeline.load();
-	}).then(function() {
+	}, rejectHandler).then(function() {
 	    return logging.apply_all();
-	}).then(function() {
+	}, rejectHandler).then(function() {
 	    return RSVP.all([Woodpecker.selector.load_tasks(),
 			     Woodpecker.selector.load_tags()])
-	});
+	}, rejectHandler);
     },
 });
 Woodpecker.ApplicationController = Ember.Controller.extend({
@@ -361,15 +365,12 @@ Woodpecker.Comment = Ember.ObjectController.extend({
 		.then(function(story) {
 		    this.set('story', story);
 		    return this;
-		}.bind(this));
+		}.bind(this), rejectHandler);
 	} else {
 	    return this;
 	}
     },
 });
-function rejectHandler(error) {
-    console.log(error);
-}
 Woodpecker.Timeline = Ember.ArrayController.extend({
     id: null,
     content: [],
@@ -382,7 +383,7 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 		    .Task.getByName(sprintf('%s#%s', this.date, idx))
 		    .then(function(task) {
 			return task.load();
-		    })
+		    }, rejectHandler)
 		    .then(function(task) {
 			var idx = parseInt(task.name.split('#')[1]);
 			var promises = [];
@@ -418,7 +419,7 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 		    }.bind(this)).map(function(task) {
 			return task.load();
 		    }));
-	    }.bind(this))
+	    }.bind(this), rejectHandler)
 	    .then(function(tasks) {
 		console.log(tasks);
 		var sorted = tasks.sort(function(a, b) {
@@ -437,7 +438,7 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 		    this.set('content', records);
 		    return records;
 		}.bind(this));
-	    }.bind(this));
+	    }.bind(this), rejectHandler);
     },
     set_date: function(date) {
 	if (date == undefined) {
@@ -642,8 +643,8 @@ Woodpecker.Timeline.Record = Ember.ObjectController.extend({
 			}.bind(this));
 			this.set('comments', comments);
 			return this;
-		    }.bind(this));
-	    }.bind(this));
+		    }.bind(this), rejectHandler);
+	    }.bind(this), rejectHandler);
     },
     start_short: function() {
 	if (this.start) {
@@ -947,13 +948,13 @@ Woodpecker.Puncher.Button = Woodpecker.Button.extend({
 	case "save":
 	    Woodpecker.timeline.save().then(function() {
 		logging.clear();
-	    });
+	    }, rejectHandler);
 	    Woodpecker.puncher.view.set('isVisible', false);
 	    break;
 	case "load":
 	    Woodpecker.timeline.load().then(function() {
 		return logging.apply_all();
-	    });
+	    }, rejectHandler);
 	    Woodpecker.puncher.view.set('isVisible', false);
 	    break;
 	case "check-in":
@@ -1030,7 +1031,7 @@ Woodpecker.Selector = Ember.ArrayController.extend({
 		    console.log(task);
 		    return Woodpecker.Selector.Option.create({content: task});
 		}));
-	}.bind(this))
+	}.bind(this), rejectHandler)
     },
     load_tags: function() {
 	return asana.woodpecker.Tag.find()
@@ -1038,7 +1039,7 @@ Woodpecker.Selector = Ember.ArrayController.extend({
 		this.set('tags', tags.map(function(tag) {
 		    return Woodpecker.Selector.Option.create({content: tag});
 		}));
-	    }.bind(this));
+	    }.bind(this), rejectHandler);
     },
     get_selected: function() {
 	return this.content.filter(function (elem) {

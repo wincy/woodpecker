@@ -19,6 +19,10 @@ function bindAll(target, that) {
     return result;
 }
 
+function rejectHandler(error) {
+    console.log(error);
+}
+
 Asana = function(ns) {
     this.ns = ns;
     this.onLine = true;
@@ -75,7 +79,7 @@ Asana.prototype = {
 		return data.map(function(elem) {
 		    return $.extend(new Asana.User(elem.id), elem);
 		});
-	    });
+	    }, rejectHandler);
 	},
     },
     Task: {
@@ -109,7 +113,7 @@ Asana.prototype = {
 		}).map(function(task) {
 		    return $.extend(new Asana.Task(task.id), task);
 		});
-	    });
+	    }, rejectHandler);
 	},
 	get: function(params) {
 	    // 
@@ -180,7 +184,7 @@ Asana.prototype = {
 			console.log('workspace.id is required when calling asana.Task.create');
 		    }
 		}
-	    }.bind(this));
+	    }.bind(this), rejectHandler);
 	}
     },
     Project: {
@@ -189,7 +193,7 @@ Asana.prototype = {
 		return data.map(function(elem) {
 		    return $.extend(new Asana.Project(elem.id), elem);
 		});
-	    });
+	    }, rejectHandler);
 	},
     },
     Workspace: {
@@ -198,7 +202,7 @@ Asana.prototype = {
 		return data.map(function(elem) {
 		    return $.extend(new Asana.Workspace(elem.id), elem);
 		});
-	    });
+	    }, rejectHandler);
 	},
     },
 }
@@ -216,7 +220,7 @@ Asana.Workspace.prototype = {
     load: function() {
 	return asana.request(url).then(function(data) {
 	    return $.extend(this, data);
-	}.bind(this));
+	}.bind(this), rejectHandler);
     },
     Project: {
 	find: function(conds) {
@@ -225,7 +229,7 @@ Asana.Workspace.prototype = {
 		    return data.map(function(elem) {
 			return $.extend(new Asana.Project(elem.id), elem);
 		    });
-		});
+		}, rejectHandler);
 	},
     },
     Task: {
@@ -233,7 +237,7 @@ Asana.Workspace.prototype = {
 	    return asana.request('/workspaces/' + this.id + '/tasks', data, 'POST')
 		.then(function(data) {
 		    return $.extend(new Asana.Task(data.id), data);
-		}.bind(this));
+		}.bind(this), rejectHandler);
 	},
 	find: function(conds) {
 	    return asana.request('/workspaces/' + this.id + '/tasks', conds)
@@ -241,7 +245,7 @@ Asana.Workspace.prototype = {
 		    return data.map(function(elem) {
 			return $.extend(new Asana.Task(elem.id), elem);
 		    });
-		});
+		}, rejectHandler);
 	},
     },
     Tag: {
@@ -249,7 +253,7 @@ Asana.Workspace.prototype = {
 	    return asana.request('/workspaces/' + this.id + '/tags', data, 'POST')
 		.then(function(data) {
 		    return $.extend(new Asana.Tag(data.id), data);
-		}.bind(this));
+		}.bind(this), rejectHandler);
 	},
 	find: function() {
 	    return asana.request('/workspaces/' + this.id + '/tags')
@@ -257,7 +261,7 @@ Asana.Workspace.prototype = {
 		    return data.map(function(elem) {
 			return $.extend(new Asana.Tag(elem.id), elem);
 		    });
-		});
+		}, rejectHandler);
 	},
     },
 }
@@ -272,7 +276,7 @@ Asana.Project.prototype = {
     load: function() {
 	return asana.request('/projects/' + this.id).then(function(data) {
 	    return $.extend(this, data);
-	}.bind(this));
+	}.bind(this), rejectHandler);
     },
     Task: {
 	getByName: function(name) {
@@ -309,7 +313,7 @@ Asana.Project.prototype = {
 			locache.set(date, cache);
 		    }
 		    return $.extend(new Asana.Task(task.id), task);
-		}.bind(this));
+		}.bind(this), rejectHandler);
 	},
 	find: function(conds) {
 	    return asana.request('/projects/' + this.id + '/tasks').then(function(data) {
@@ -330,7 +334,7 @@ Asana.Project.prototype = {
 		    }
 		    return $.extend(new Asana.Task(elem.id), elem);
 		}.bind(this));
-	    }.bind(this))
+	    }.bind(this), rejectHandler)
 	},
     }
 }
@@ -342,34 +346,37 @@ Asana.Task = function(id) {
 
 Asana.Task.prototype = {
     load: function() {
-	return asana.request('/tasks/' + this.id).then(function(data) {
-	    return $.extend(new Asana.Task(data.id), data);
-	}.bind(this)).then(function(task) {
-	    return asana.request('/tasks/' + task.id + '/tags').then(function(data) {
-		task.tags = data.map(function(tag) {
-		    return $.extend(new Asana.Tag(tag.id), tag);
-		});
-		return task;
-	    }.bind(this));
-	}.bind(this));
+	return asana.request('/tasks/' + this.id)
+	    .then(function(data) {
+		return $.extend(new Asana.Task(data.id), data);
+	    }.bind(this), rejectHandler)
+	    .then(function(task) {
+		return asana.request('/tasks/' + task.id + '/tags')
+		    .then(function(data) {
+			task.tags = data.map(function(tag) {
+			    return $.extend(new Asana.Tag(tag.id), tag);
+			});
+			return task;
+		    }.bind(this), rejectHandler);
+	    }.bind(this), rejectHandler);
     },
     update: function(kvs) {
 	return asana.request('/tasks/' + this.id, kvs, 'PUT')
 	    .then(function(data) {
 		return $.extend(this, data);
-	    }.bind(this));
+	    }.bind(this), rejectHandler);
     },
     addTag: function(tag) {
 	return asana.request('/tasks/' + this.id + '/addTag', {tag: tag.id}, 'POST')
 	    .then(function(data) {
 		return true;
-	    }.bind(this));
+	    }.bind(this), rejectHandler);
     },
     removeTag: function(tag) {
 	return asana.request('/tasks/' + this.id + '/removeTag', {tag: tag.id}, 'POST')
 	    .then(function(data) {
 		return true;
-	    }.bind(this));
+	    }.bind(this), rejectHandler);
     },
     Story: {
 	create: function(content) {
@@ -380,7 +387,7 @@ Asana.Task.prototype = {
 		    var story = new Asana.Story(data.id);
 		    $.extend(story, data);
 		    return story;
-		}.bind(this));
+		}.bind(this), rejectHandler);
 	},
 	find: function(conds) {
 	    return asana.request('/tasks/' + this.id + '/stories').map(function(elem) {
@@ -399,7 +406,7 @@ Asana.Story.prototype = {
 	return asana.request('/stories/' + this.id)
 	    .then(function(data) {
 		return $.extend(this, data);
-	    }.bind(this));
+	    }.bind(this), rejectHandler);
     },
 }
 
@@ -412,7 +419,7 @@ Asana.User.prototype = {
 	return asana.request('/users/' + this.id)
 	    .then(function(data) {
 		return $.extend(this, data);
-	    }.bind(this));
+	    }.bind(this), rejectHandler);
     },
 }
 
@@ -425,6 +432,6 @@ Asana.Tag.prototype = {
 	return asana.request('/tags/' + this.id)
 	    .then(function(data) {
 		return $.extend(this, data);
-	    }.bind(this));
+	    }.bind(this), rejectHandler);
     },
 }

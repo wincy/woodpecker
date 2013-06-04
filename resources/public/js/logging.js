@@ -1,3 +1,7 @@
+function rejectHandler(error) {
+    console.log(error);
+}
+
 Logging = function(date) {
     this.key = 'logs-' + date;
 }
@@ -25,7 +29,7 @@ Logging.prototype = {
 	if (log) {
 	    return this.apply(log).then(function() {
 		return this._apply_all(logs);
-	    }.bind(this));
+	    }.bind(this), rejectHandler);
 	} else {
 	    return true;
 	}
@@ -59,7 +63,7 @@ Logging.prototype = {
 		})).then(function(tasks) {
 		    record.set_tasks(tasks);
 		    return tasks;
-		});
+		}, rejectHandler);
 	    } else {
 		console.log('record not found when applying log:' + JSON.stringify(log));
 	    }
@@ -79,7 +83,7 @@ Logging.prototype = {
 		})).then(function(tags) {
 		    record.set('tags', tags);
 		    return tags;
-		});
+		}, rejectHandler);
 	    } else {
 		console.log('record not found when applying log:' + JSON.stringify(log));
 	    }
