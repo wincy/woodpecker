@@ -77,25 +77,53 @@ window.Woodpecker = Ember.Application.create({
 			Woodpecker.Button.create({
 			    text: "Confirm",
 			    hit: function() {
-				var tasks = Woodpecker.selector.get_selected();
-				logging.log({
-				    'type': 'set-tasks',
-				    'args': {
-					start: Woodpecker.selector.target.start,
-					end: Woodpecker.selector.target.end,
-					'tasks': tasks.map(function(task) {
-					    return task.id;
-					}),
-				    },
-				});
-				Woodpecker.selector.target.set_tasks(tasks);
+				var selected = Woodpecker.selector.get_selected();
+				switch(Woodpecker.selector.type) {
+				case 'set-tasks':
+				    logging.log({
+					'type': Woodpecker.selector.type,
+					'args': {
+					    start: Woodpecker.selector.target.start,
+					    end: Woodpecker.selector.target.end,
+					    'tasks': selected.map(function(element) {
+						return element.id;
+					    }),
+					},
+				    });
+				    Woodpecker.selector.target.set_tasks(selected);
+				    break;
+				case 'set-tags':
+				    logging.log({
+					'type': Woodpecker.selector.type,
+					'args': {
+					    start: Woodpecker.selector.target.start,
+					    end: Woodpecker.selector.target.end,
+					    'tags': selected.map(function(element) {
+						return element.id;
+					    }),
+					},
+				    });
+				    Woodpecker.selector.target.set('tags', selected);
+				    break;
+				default:
+				    console.log('selector type error');
+				}
 				Woodpecker.selector.view.set('isVisible', false);
-			    },
+			    }
 			}),
 			Woodpecker.Button.create({
 			    text: "Load",
 			    hit: function() {
-				Woodpecker.selector.load();
+				switch(Woodpecker.selector.type) {
+				case 'set-tasks':
+				    Woodpecker.selector.load_tasks();
+				    break;
+				case 'set-tags':
+				    Woodpecker.selector.load_tags();
+				    break;
+				default:
+				    console.log('selector load unknown type');
+				}
 			    },
 			}),
 		    ],
@@ -349,14 +377,35 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 	return RSVP.all(this.content.map(function(record) {
 	    return record.save_comments();
 	})).then(function(records) {
-	    return Object.keys(records).map(function(idx) {
+	    return RSVP.all(Object.keys(records).map(function(idx) {
 		return asana.woodpecker.me
 		    .Task.getByName(sprintf('%s#%s', this.date, idx))
-		    .then(function (task) {
+		    .then(function(task) {
+			return task.load();
+		    })
+		    .then(function(task) {
 			var idx = parseInt(task.name.split('#')[1]);
-			return task.update({notes: this.content[idx].toJSON()});
+			var promises = [];
+			promises.push(task.update({notes: this.content[idx].toJSON()}));
+			var old_ids = task.tags.map(function(tag) {
+			    return tag.id;
+			});
+			var new_ids = this.content[idx].tags.map(function(tag) {
+			    return tag.id;
+			});
+			this.content[idx].tags.forEach(function(tag) {
+			    if (old_ids.indexOf(tag.id) == -1) {
+				promises.push(task.addTag(tag));
+			    }
+			});
+			task.tags.forEach(function(tag) {
+			    if (new_ids.indexOf(tag.id) == -1) {
+				promises.push(task.removeTag(tag));
+			    }
+			});
+			return RSVP.all(promises);
 		    }.bind(this), rejectHandler);
-	    }.bind(this));
+	    }.bind(this)));
 	}.bind(this), rejectHandler);
     },
     load: function() {
@@ -381,8 +430,9 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 		    if (task.notes.length == 0) {
 			console.log('cannot parse', task);
 		    }
-		    return Woodpecker.Timeline.Record.create().load(
-			JSON.parse(task.notes));
+		    var record = Woodpecker.Timeline.Record.create();
+		    record.tags = task.tags;
+		    return record.load(JSON.parse(task.notes));
 		})).then(function(records) {
 		    this.set('content', records);
 		    return records;

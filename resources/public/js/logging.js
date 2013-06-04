@@ -64,6 +64,26 @@ Logging.prototype = {
 		console.log('record not found when applying log:' + JSON.stringify(log));
 	    }
 	    break
+	case 'set-tags':
+	    var start = log.args.start && new Date(Date.parse(log.args.start)) || log.args.start;
+	    var end = log.args.end && new Date(Date.parse(log.args.end)) || log.args.end;
+	    var record = Woodpecker.timeline.content.filter(function(record) {
+		return ((record.start == start || 
+			 record.start.getTime() == start.getTime()) &&
+			(record.end == end || 
+			 record.end.getTime() == end.getTime()))
+	    })[0];
+	    if (record) {
+		ret = RSVP.all(log.args.tags.map(function(id) {
+		    return new Asana.Tag(id).load();
+		})).then(function(tags) {
+		    record.set('tags', tags);
+		    return tags;
+		});
+	    } else {
+		console.log('record not found when applying log:' + JSON.stringify(log));
+	    }
+	    break
 	case 'comment':
 	    var start = log.args.start && new Date(Date.parse(log.args.start)) || log.args.start;
 	    var end = log.args.end && new Date(Date.parse(log.args.end)) || log.args.end;
