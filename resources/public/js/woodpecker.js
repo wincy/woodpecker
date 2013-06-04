@@ -3,6 +3,7 @@ var logging = null;
 
 function rejectHandler(error) {
     console.log(error);
+    console.log(error.stack);
 }
 
 window.applicationCache.addEventListener('updateready', function() {
