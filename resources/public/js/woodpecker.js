@@ -119,12 +119,19 @@ window.Woodpecker = Ember.Application.create({
 			Woodpecker.Button.create({
 			    text: "Load",
 			    hit: function() {
+				Woodpecker.selector.set('content', []);
 				switch(Woodpecker.selector.type) {
 				case 'set-tasks':
-				    Woodpecker.selector.load_tasks();
+				    Woodpecker.selector.load_tasks()
+					.then(function() {
+					    Woodpecker.selector.set('content', Woodpecker.selector.tasks);
+					});
 				    break;
 				case 'set-tags':
-				    Woodpecker.selector.load_tags();
+				    Woodpecker.selector.load_tags()
+					.then(function() {
+					    Woodpecker.selector.set('content', Woodpecker.selector.tags);
+					});
 				    break;
 				default:
 				    console.log('selector load unknown type');
