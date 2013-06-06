@@ -100,14 +100,11 @@
 	{{/each}}
       </td>
     </script>
-    <div id="log"></div>
   </head>
   <body>
     <script type="text/x-handlebars">
-      <h3>
-	{{Woodpecker.timeline.date}}
-	{{view Woodpecker.network.view}}
-      </h3>
+      {{view Woodpecker.date.view}}
+      {{view Woodpecker.network.view}}
       {{#view Ember.View controllerBinding=Woodpecker.menu}}
       <div class="menu" {{action hit on="click"}}>Menu</div>
       {{/view}}
@@ -126,6 +123,7 @@
       {{view Woodpecker.timepicker.view}}
       {{view Woodpecker.selector.view}}
       {{view Woodpecker.comment_editor.view}}
+      <div style="height: 100px"></div>
     </script>
   </body>
 </html>

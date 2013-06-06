@@ -33,10 +33,16 @@ Asana = function(ns) {
 }
 
 Asana.prototype = {
+    delay: function (timeout) {
+	var p = RSVP.Promise(function(resolve, reject) {
+	    setTimeout(resolve, timeout);
+	});
+	return p;
+    },
     request: function(url, params, method) {
 	var key = JSON.stringify({url: url, params: params, method: method});
 	var cache = locache.get('req:' + key);
-	url = this.ns + url;
+	full_url = this.ns + url;
 	if (params == undefined) {
 	    params = {};
 	}
@@ -46,7 +52,7 @@ Asana.prototype = {
 	var promise = new RSVP.Promise(function(resolve, reject) {
 	    if (navigator.onLine && this.onLine) {
 		$.ajax({
-		    url: url,
+		    url: full_url,
 		    data: params,
 		    type: method,
 		    timeout: 20000,
@@ -56,10 +62,24 @@ Asana.prototype = {
 			resolve(data.data);
 		    })
 		    .fail(function(xhr, status, error) {
-			if (cache) {
-			    resolve(cache);
+			if (xhr.status == 429) {
+			    var timeout = JSON.parse(xhr.responseText).retry_after * 1000;
+			    asana.delay(timeout).then(function() {
+				console.log('retry:', url, params, method);
+				asana.request(url, params, method)
+				    .then(function(data) {
+					this.resolve(data);
+				    }.bind(this), function(error) {
+					console.log('reject @ retry:', error);
+					this.reject(error);
+				    }.bind(this));
+			    }.bind({resolve: resolve, reject: reject}))
 			} else {
-			    reject(xhr.responseText);
+			    if (cache) {
+				resolve(cache);
+			    } else {
+				reject(xhr.responseText);
+			    }
 			}
 		    });
 	    } else {

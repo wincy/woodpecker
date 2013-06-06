@@ -53,6 +53,23 @@ function check_online() {
 
 window.Woodpecker = Ember.Application.create({
     ready: function () {
+	Woodpecker.date = Ember.ObjectController.create();
+	Woodpecker.date.view = Ember.View.create({
+	    tagName: 'h3',
+	    template: Ember.Handlebars.compile('{{Woodpecker.timeline.date}}'),
+	    touchStart: function() {
+		Woodpecker.selector.type = 'set-dates';
+		Woodpecker.selector.set('content', Woodpecker.selector.dates);
+		Woodpecker.selector.view.set('scroll', window.scrollY);
+		Woodpecker.selector.view.set('isVisible', true);
+	    },
+	    click: function() {
+		Woodpecker.selector.type = 'set-dates';
+		Woodpecker.selector.set('content', Woodpecker.selector.dates);
+		Woodpecker.selector.view.set('scroll', window.scrollY);
+		Woodpecker.selector.view.set('isVisible', true);
+	    },
+	});
 	Woodpecker.network = Ember.ObjectController.create({
 	    status: true,
 	});
@@ -62,6 +79,7 @@ window.Woodpecker = Ember.Application.create({
 	    classNameBindings: ['controller.status::icon-plane']
 	});
 	Woodpecker.selector = Woodpecker.Selector.create();
+	Woodpecker.selector.load_dates();
 	Woodpecker.selector.view = Woodpecker.PopupView.create({
 	    childViews: [
 		Ember.CollectionView.create({
@@ -84,6 +102,9 @@ window.Woodpecker = Ember.Application.create({
 			    hit: function() {
 				var selected = Woodpecker.selector.get_selected();
 				switch(Woodpecker.selector.type) {
+				case 'set-dates':
+				    Woodpecker.timeline.set('date', selected[0].name);
+				    break;
 				case 'set-tasks':
 				    logging.log({
 					'type': Woodpecker.selector.type,
@@ -1018,9 +1039,24 @@ Woodpecker.Puncher.Buttons = Ember.ArrayController.extend({
 // Selector
 Woodpecker.Selector = Ember.ArrayController.extend({
     content: [],
+    dates: null,
     tasks: null,
     tags: null,
     type: null,
+    load_dates: function() {
+	var now = new Date();
+	this.set('dates', [0,1,2,3,4,5,6,7,8,9].map(function(offset) {
+	    var day = new Date();
+	    day.setTime(now.getTime() - 86400000 * offset);
+	    return Woodpecker.Selector.Option.create({
+		content: Ember.Object.create(
+		    {name: sprintf('%d-%02d-%02d',
+				   day.getFullYear(),
+				   day.getMonth() + 1,
+				   day.getDate())})
+	    });
+	}));
+    },
     load_tasks: function() {
 	return RSVP.all(asana.workspaces.map(function(workspace) {
 	    return workspace.Task.find({
@@ -1036,7 +1072,6 @@ Woodpecker.Selector = Ember.ArrayController.extend({
 		}).filter(function(task) {
 		    return task.assignee_status == 'today' && !task.completed;
 		}).map(function(task) {
-		    console.log(task);
 		    return Woodpecker.Selector.Option.create({content: task});
 		}));
 	}.bind(this), rejectHandler)
