@@ -52,8 +52,10 @@ Logging.prototype = {
 	    var end = log.args.end && new Date(Date.parse(log.args.end)) || log.args.end;
 	    var record = Woodpecker.timeline.content.filter(function(record) {
 		return ((record.start == start || 
+			 record.start && start &&
 			 record.start.getTime() == start.getTime()) &&
 			(record.end == end || 
+			 record.end && end &&
 			 record.end.getTime() == end.getTime()))
 	    })[0];
 	    if (record) {
@@ -72,8 +74,10 @@ Logging.prototype = {
 	    var end = log.args.end && new Date(Date.parse(log.args.end)) || log.args.end;
 	    var record = Woodpecker.timeline.content.filter(function(record) {
 		return ((record.start == start || 
+			 record.start && start &&
 			 record.start.getTime() == start.getTime()) &&
 			(record.end == end || 
+			 record.end && end &&
 			 record.end.getTime() == end.getTime()))
 	    })[0];
 	    if (record) {
@@ -92,8 +96,10 @@ Logging.prototype = {
 	    var end = log.args.end && new Date(Date.parse(log.args.end)) || log.args.end;
 	    var record = Woodpecker.timeline.content.filter(function(record) {
 		return ((record.start == start || 
+			 record.start && start &&
 			 record.start.getTime() == start.getTime()) &&
 			(record.end == end || 
+			 record.end && end &&
 			 record.end.getTime() == end.getTime()))
 	    })[0];
 	    if (record) {
@@ -116,8 +122,10 @@ Logging.prototype = {
 	    var end = log.args.end && new Date(Date.parse(log.args.end)) || log.args.end;
 	    var record = Woodpecker.timeline.content.filter(function(record) {
 		return ((record.start == start || 
+			 record.start && start &&
 			 record.start.getTime() == start.getTime()) &&
 			(record.end == end || 
+			 record.end && end &&
 			 record.end.getTime() == end.getTime()))
 	    })[0];
 	    if (record) {
@@ -132,8 +140,10 @@ Logging.prototype = {
 	    var end = log.args.end && new Date(Date.parse(log.args.end)) || log.args.end;
 	    var record = Woodpecker.timeline.content.filter(function(record) {
 		return ((record.start == start || 
+			 record.start && start &&
 			 record.start.getTime() == start.getTime()) &&
 			(record.end == end || 
+			 record.end && end &&
 			 record.end.getTime() == end.getTime()))
 	    })[0];
 	    if (record) {
@@ -148,8 +158,10 @@ Logging.prototype = {
 	    var end = log.args.end && new Date(Date.parse(log.args.end)) || log.args.end;
 	    var record = Woodpecker.timeline.content.filter(function(record) {
 		return ((record.start == start || 
+			 record.start && start &&
 			 record.start.getTime() == start.getTime()) &&
 			(record.end == end || 
+			 record.end && end &&
 			 record.end.getTime() == end.getTime()))
 	    })[0];
 	    if (record) {
