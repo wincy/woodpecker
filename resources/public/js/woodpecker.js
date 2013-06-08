@@ -1079,6 +1079,7 @@ Woodpecker.Selector = Ember.ArrayController.extend({
     load_tags: function() {
 	return asana.woodpecker.Tag.find()
 	    .then(function(tags) {
+		asana.woodpecker.tags = tags;
 		this.set('tags', tags.map(function(tag) {
 		    return Woodpecker.Selector.Option.create({content: tag});
 		}));

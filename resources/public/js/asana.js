@@ -445,6 +445,7 @@ Asana.User.prototype = {
 
 Asana.Tag = function(id) {
     this.id = id;
+    this.Task = bindAll(this.Task, this);
 }
 
 Asana.Tag.prototype = {
@@ -453,5 +454,14 @@ Asana.Tag.prototype = {
 	    .then(function(data) {
 		return $.extend(this, data);
 	    }.bind(this), rejectHandler);
+    },
+    Task: {
+	find: function(conds) {
+	    return asana.request('/tags/' + this.id + '/tasks').then(function(data) {
+		return data.map(function(elem) {
+		    return $.extend(new Asana.Task(elem.id), elem);
+		}.bind(this));
+	    }.bind(this), rejectHandler);
+	},
     },
 }
