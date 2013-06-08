@@ -795,8 +795,8 @@ Woodpecker.Timeline.Record = Ember.ObjectController.extend({
 		    return null;
 		}
 	    }),
-	    start: this.start,
-	    end: this.end,
+	    start: this.start && this.start.toString() || this.start,
+	    end: this.end && this.end.toString() || this.end,
 	    efficient: this.efficient,
 	    human: human_parts.join(' '),
 	}, undefined, 2);
