@@ -104,6 +104,7 @@ window.Woodpecker = Ember.Application.create({
 				switch(Woodpecker.selector.type) {
 				case 'set-dates':
 				    Woodpecker.timeline.set('date', selected[0].name);
+				    logging.key = 'logs-' + selected[0].name;
 				    break;
 				case 'set-tasks':
 				    logging.log({
