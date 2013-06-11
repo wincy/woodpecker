@@ -336,25 +336,26 @@ Asana.Project.prototype = {
 		}.bind(this), rejectHandler);
 	},
 	find: function(conds) {
-	    return asana.request('/projects/' + this.id + '/tasks').then(function(data) {
-		return data.map(function(elem) {
-		    if (this.id == asana.woodpecker.me.id) {
-			if (!RegExp('.*#.*').test(elem.name)) {
-			    console.log('task is not a record');
-			    return;
+	    return asana.request('/projects/' + this.id + '/tasks', conds)
+		.then(function(data) {
+		    return data.map(function(elem) {
+			if (this.id == asana.woodpecker.me.id) {
+			    if (!RegExp('.*#.*').test(elem.name)) {
+				console.log('task is not a record');
+				return;
+			    }
+			    var date = elem.name.split('#')[0];
+			    var index = elem.name.split('#')[1];
+			    var cache = locache.get(date);
+			    if (!cache) {
+				cache = {}
+			    }
+			    cache[index] = {name: elem.name, id: elem.id};
+			    locache.set(date, cache);
 			}
-			var date = elem.name.split('#')[0];
-			var index = elem.name.split('#')[1];
-			var cache = locache.get(date);
-			if (!cache) {
-			    cache = {}
-			}
-			cache[index] = {name: elem.name, id: elem.id};
-			locache.set(date, cache);
-		    }
-		    return $.extend(new Asana.Task(elem.id), elem);
-		}.bind(this));
-	    }.bind(this), rejectHandler)
+			return $.extend(new Asana.Task(elem.id), elem);
+		    }.bind(this));
+		}.bind(this), rejectHandler)
 	},
     }
 }

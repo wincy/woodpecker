@@ -1078,18 +1078,28 @@ Woodpecker.Selector = Ember.ArrayController.extend({
     },
     load_tasks: function() {
 	return RSVP.all(asana.workspaces.map(function(workspace) {
-	    return workspace.Task.find({
-		'assignee': 'me',
-		'opt_fields': ['name','assignee','projects',
-			       'assignee_status','completed'].join(','),
-	    });
-	})).then(function(tasks_list) {
+	    return workspace.Project.find();
+	})).then(function(projects_list) {
+	    return RSVP.all(
+		projects_list.reduce(function(s, a) {
+		    return s.concat(a);
+		}).map(function(project) {
+		    return project.Task.find({
+			'opt_fields': ['name','assignee','projects','followers',
+				       'assignee_status','completed'].join(','),
+		    });
+		}))
+	}, rejectHandler).then(function(tasks_list) {
 	    this.set(
 		'tasks',
  		tasks_list.reduce(function(s, a) {
 		    return s.concat(a);
 		}).filter(function(task) {
-		    return task.assignee_status == 'today' && !task.completed;
+		    return (task.assignee_status == 'today' &&
+			    !task.completed &&
+			    task.followers.map(function(follower) {
+				return follower.id;
+			    }).indexOf(asana.me.id) != -1);
 		}).map(function(task) {
 		    return Woodpecker.Selector.Option.create({content: task});
 		}));
