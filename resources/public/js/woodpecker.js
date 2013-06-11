@@ -277,6 +277,16 @@ window.Woodpecker = Ember.Application.create({
 			    },
 			}),
 			Woodpecker.Button.create({
+			    text: "Sleep stat",
+			    hit: function() {
+				$('.statistics').empty();
+				sleep_stat();
+				Woodpecker.puncher.view.set('isVisible', false);
+				Woodpecker.statistics.view.set('scroll', window.scrollY);
+				Woodpecker.statistics.view.set('isVisible', true);
+			    },
+			}),
+			Woodpecker.Button.create({
 			    text: "Cancel",
 			    hit: function() {
 				Woodpecker.puncher.view.set('isVisible', false);
@@ -329,6 +339,25 @@ window.Woodpecker = Ember.Application.create({
 		}),
 	    ],
 	});
+	Woodpecker.statistics = Ember.Object.create();
+	Woodpecker.statistics.view = Woodpecker.PopupView.create({
+	    childViews: [
+		Ember.View.create({
+		    classNames: ['statistics'],
+		}),
+		Ember.CollectionView.create({
+		    itemViewClass: Woodpecker.ButtonView,
+		    content: [
+			Woodpecker.Button.create({
+			    text: "Hide",
+			    hit: function() {
+				Woodpecker.statistics.view.set('isVisible', false);
+			    },
+			}),
+		    ],
+		}),
+	    ],
+	})
 	Woodpecker.menu = Woodpecker.Menu.create();
 	check_online();
 	asana.me = new Asana.User('me');
@@ -1046,6 +1075,7 @@ Woodpecker.Puncher.Buttons = Ember.ArrayController.extend({
 	    {text: "Add check in", type: "add-check-in"},
 	    {text: "Add check out", type: "add-check-out"},
 	    {text: "Flush date", type: "flush-date"},
+	    {text: "Sleep stat", type: "sleep-stat"},
 	    {text: "Cancel", type: "cancel"},
 	].map(function (elem) {
 	    return Woodpecker.Puncher.Button.create(elem);

@@ -1,9 +1,10 @@
 CACHE MANIFEST
-# Sat Jun  8 17:56:51 CST 2013
+# Tue Jun 11 15:03:51 CST 2013
 /css/bootstrap.min.css
 /css/cursor.css
 /css/timepicker.css
 /css/woodpecker.css
+/css/statistics.css
 /js/sprintf.js
 /js/jquery-2.0.0.js
 /js/bootstrap.js
@@ -16,6 +17,7 @@ CACHE MANIFEST
 /js/ember-data-0.13.js
 /js/ember-touch.js
 /js/rsvp.js
+/js/d3.v3.min.js
 /js/cursor.js
 /js/timepicker.js
 /js/timeline.js
@@ -33,3 +35,4 @@ CACHE MANIFEST
 NETWORK:
 /asana
 /ping.html
+/js/statistics.js
