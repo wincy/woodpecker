@@ -104,6 +104,7 @@ window.Woodpecker = Ember.Application.create({
 				switch(Woodpecker.selector.type) {
 				case 'set-dates':
 				    Woodpecker.timeline.set('date', selected[0].name);
+				    logging.key = 'logs-' + selected[0].name;
 				    break;
 				case 'set-tasks':
 				    logging.log({
@@ -168,6 +169,10 @@ window.Woodpecker = Ember.Application.create({
 	Woodpecker.timepicker.numpad_buttons = Woodpecker.Timepicker.NumpadButtons.create();
 	Woodpecker.timepicker.view = Woodpecker.PopupView.create({
 	    childViews: [
+		Ember.View.create({
+		    tagName: 'h4',
+		    template: Ember.Handlebars.compile('{{Woodpecker.timepicker.pretty_date}}'),
+		}),
 		Ember.CollectionView.create({
 		    classNames: ['clearfix'],
 		    controllerBinding: 'Woodpecker.timepicker.cursors',
@@ -195,7 +200,7 @@ window.Woodpecker = Ember.Application.create({
 			Woodpecker.Button.create({
 			    text: "Confirm",
 			    hit: function() {
-				var ts = new Date();
+				var ts = new Date(Woodpecker.timepicker.date);
 				var hours = parseInt(Woodpecker.timepicker.cursors.mget(0, 2).join(''));
 				var minutes = parseInt(Woodpecker.timepicker.cursors.mget(3, 5).join(''));
 				ts.setHours(hours);
@@ -291,6 +296,7 @@ window.Woodpecker = Ember.Application.create({
 	    itemViewClass: Woodpecker.Timeline.RecordView,
 	});
 	Woodpecker.timeline.set_date();
+	Woodpecker.timepicker.set('date', new Date(Woodpecker.timeline.date));
 	Woodpecker.comment_editor = Woodpecker.CommentEditor.create();
 	Woodpecker.comment_editor.view = Woodpecker.PopupView.create({
 	    childViews: [
@@ -702,6 +708,7 @@ Woodpecker.Timeline.Record = Ember.ObjectController.extend({
     set_start: function(sender, key) {
 	if (sender == undefined) {
 	    if (this.start) {
+		Woodpecker.timepicker.set('date', this.start);
 		Woodpecker.timepicker.cursors.mset(
 		    0, 2, sprintf("%02d", this.start.getHours()));
 		Woodpecker.timepicker.cursors.mset(
@@ -724,6 +731,7 @@ Woodpecker.Timeline.Record = Ember.ObjectController.extend({
     set_end: function(sender, key) {
 	if (sender == undefined) {
 	    if (this.end) {
+		Woodpecker.timepicker.set('date', this.end);
 		Woodpecker.timepicker.cursors.mset(
 		    0, 2, sprintf("%02d", this.end.getHours()));
 		Woodpecker.timepicker.cursors.mset(
@@ -795,8 +803,8 @@ Woodpecker.Timeline.Record = Ember.ObjectController.extend({
 		    return null;
 		}
 	    }),
-	    start: this.start,
-	    end: this.end,
+	    start: this.start && this.start.toString() || this.start,
+	    end: this.end && this.end.toString() || this.end,
 	    efficient: this.efficient,
 	    human: human_parts.join(' '),
 	}, undefined, 2);
@@ -841,9 +849,16 @@ Woodpecker.Timeline.RecordView = Ember.View.extend({
     },
 });
 Woodpecker.Timepicker = Ember.ObjectController.extend({
+    date: null,
     value: null,
     target: null,
     method: null,
+    pretty_date: function() {
+	return sprintf('%d-%02d-%02d',
+		       this.date.getFullYear(),
+		       this.date.getMonth() + 1,
+		       this.date.getDate())
+    }.property('date'),
     get_time: function(target, method) {
 	Woodpecker.timepicker.view.set('scroll', window.scrollY);
 	Woodpecker.timepicker.view.set('isVisible', true);
@@ -854,11 +869,13 @@ Woodpecker.Timepicker = Ember.ObjectController.extend({
     add_check_in: function() {
 	Woodpecker.timepicker.view.set('scroll', window.scrollY);
 	Woodpecker.timepicker.view.set('isVisible', true);
+	this.set('date', new Date(Woodpecker.timeline.date));
 	this.addObserver('value', Woodpecker.timeline, 'add_check_in');
     },
     add_check_out: function() {
 	Woodpecker.timepicker.view.set('scroll', window.scrollY);
 	Woodpecker.timepicker.view.set('isVisible', true);
+	this.set('date', new Date(Woodpecker.timeline.date));
 	this.addObserver('value', Woodpecker.timeline, 'add_check_out');
     },
 });
@@ -881,8 +898,10 @@ Woodpecker.Timepicker.NumpadButton = Woodpecker.Button.extend({
 	case "set-minutes":
 	    Woodpecker.timepicker.cursors.mset(3, 2, this.text.slice(1));
 	    break;
-	case "reset":
-	    Woodpecker.timepicker.cursors.reset();
+	case "-1d":
+	    var date = new Date(Woodpecker.timepicker.date);
+	    date.setDate(date.getDate() - 1);
+	    Woodpecker.timepicker.set('date', date);
 	    break;
 	case "now":
 	    var now = new Date();
@@ -960,7 +979,7 @@ Woodpecker.Timepicker.NumpadButtons = Ember.ArrayController.extend({
 		       {text: "8", type: "set-single"},
 		       {text: "9", type: "set-single"},
 		       {text: ":45", type: "set-minutes"},
-		       {text: "reset", type: "reset"},
+		       {text: "-1d", type: "-1d"},
 		       {text: "0", type: "set-single"},
 		       {text: "now", type: "now"},
 		       {text: ":00", type: "set-minutes"}].map(function (elem) {
