@@ -1,47 +1,74 @@
-function get_sleep_data() {
-    var tag = asana.woodpecker.tags.filter(function(tag) {
-	return tag.name == '睡眠';
-    })[0];
-    return tag.Task.find()
-	.then(function(tasks) {
-	    return RSVP.all(tasks.filter(function(task) {
-		return RegExp('^.*#.*$').test(task.name);
-	    }).map(function(task) {
-		return task.load();
-	    }));
-	}).then(function(tasks) {
-	    var stat = {};
-	    tasks.forEach(function(task) {
-		console.log(task);
-		var date = task.name.split('#')[0];
-		var record = JSON.parse(task.notes);
-		if (!stat[date]) {
-		    stat[date] = {length: 0};
-		}
-		if (record.start && record.end) {
-		    stat[date].length += (Date.parse(record.end) -
-					  Date.parse(record.start)) / 1000 / 60;
-		}
+var tag_names = ['睡眠','娱乐','运动','阅读',
+     // '计划','发现','反思'
+    ];
+
+function get_data_by_tags() {
+    var tags = asana.woodpecker.tags.filter(function(tag) {
+	return tag_names.indexOf(tag.name) != -1;
+    });
+    return RSVP.all(tags.map(function(tag) {
+	return tag.Task.find()
+	    .then(function(tasks) {
+		return RSVP.all(tasks.filter(function(task) {
+		    return RegExp('^.*#.*$').test(task.name);
+		}).map(function(task) {
+		    return task.load();
+		}));
+	    }).then(function(tasks) {
+		var stat = {};
+		tasks.forEach(function(task) {
+		    console.log(task);
+		    var date = task.name.split('#')[0];
+		    var record = JSON.parse(task.notes);
+		    if (!stat[date]) {
+			stat[date] = {};
+			stat[date][tag.name] = 0;
+		    }
+		    if (record.start && record.end) {
+			stat[date][tag.name] += (Date.parse(record.end) -
+						 Date.parse(record.start)) / 1000 / 60;
+		    }
+		});
+		return stat;
 	    });
-	    return Object.keys(stat).sort().map(function(k) {
-		return {date: k, length: stat[k].length};
+    })).then(function(stats) {
+	var stat = stats.reduce(function(s, a) {
+	    Object.keys(a).forEach(function(date) {
+		$.extend(s[date], a[date]);
 	    });
+	    return s;
 	});
+	
+	return Object.keys(stat).sort().map(function(date) {
+	    tag_names.forEach(function(name) {
+		if (!stat[date][name]) {
+		    stat[date][name] = 0;
+		}
+	    });
+	    return $.extend(stat[date], {date: date});
+	})
+    });
 }
 
-function sleep_stat() {
-    get_sleep_data().then(function(data) {
+function stat_by_tags() {
+    get_data_by_tags().then(function(data) {
 	var margin = {top: 20, right: 20, bottom: 30, left: 50},
 	width = 300 - margin.left - margin.right,
 	height = 200 - margin.top - margin.bottom;
 
 	var parseDate = d3.time.format("%Y-%m-%d").parse;
 
+	data.forEach(function(d) {
+	    d.date = parseDate(d.date);
+	});
+
 	var x = d3.time.scale()
 	    .range([0, width]);
 
 	var y = d3.scale.linear()
 	    .range([height, 0]);
+
+	var color = d3.scale.category10();
 
 	var xAxis = d3.svg.axis()
 	    .scale(x)
@@ -62,13 +89,23 @@ function sleep_stat() {
 	    .append("g")
 	    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-	data.forEach(function(d) {
-	    d.date = parseDate(d.date);
-	    d.length = +d.length;
+	color.domain(d3.keys(data[0]).filter(function(key) { return key !== "date"; }));
+
+	var categories = color.domain().map(function(name) {
+	    return {
+		name: name,
+		values: data.map(function(d) {
+		    return {date: d.date, length: +d[name]};
+		})
+	    };
 	});
 
 	x.domain(d3.extent(data, function(d) { return d.date; }));
-	y.domain(d3.extent(data, function(d) { return d.length; }));
+
+	y.domain([
+	    d3.min(categories, function(c) { return d3.min(c.values, function(v) { return v.length; }); }),
+	    d3.max(categories, function(c) { return d3.max(c.values, function(v) { return v.length; }); })
+	]);
 
 	svg.append("g")
 	    .attr("class", "x axis")
@@ -85,9 +122,33 @@ function sleep_stat() {
 	    .style("text-anchor", "end")
 	    .text("Minutes");
 
-	svg.append("path")
-	    .datum(data)
+	var category = svg.selectAll(".category")
+	    .data(categories)
+	    .enter().append("g")
+	    .attr("class", "category");
+
+	category.append("path")
 	    .attr("class", "line")
-	    .attr("d", line);
-    })
+	    .attr("d", function(d) { return line(d.values); })
+	    .style("stroke", function(d) { return color(d.name); });
+
+	var legend = svg.selectAll(".legend")
+	    .data(color.domain().slice().reverse())
+	    .enter().append("g")
+	    .attr("class", "legend")
+	    .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+	legend.append("rect")
+	    .attr("x", width - 18)
+	    .attr("width", 18)
+	    .attr("height", 18)
+	    .style("fill", color);
+
+	legend.append("text")
+	    .attr("x", width - 24)
+	    .attr("y", 9)
+	    .attr("dy", ".35em")
+	    .style("text-anchor", "end")
+	    .text(function(d) { return d; });
+    });
 }

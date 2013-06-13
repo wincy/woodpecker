@@ -277,10 +277,10 @@ window.Woodpecker = Ember.Application.create({
 			    },
 			}),
 			Woodpecker.Button.create({
-			    text: "Sleep stat",
+			    text: "Statistics",
 			    hit: function() {
 				$('.statistics').empty();
-				sleep_stat();
+				stat_by_tags();
 				Woodpecker.puncher.view.set('isVisible', false);
 				Woodpecker.statistics.view.set('scroll', window.scrollY);
 				Woodpecker.statistics.view.set('isVisible', true);
@@ -1075,7 +1075,7 @@ Woodpecker.Puncher.Buttons = Ember.ArrayController.extend({
 	    {text: "Add check in", type: "add-check-in"},
 	    {text: "Add check out", type: "add-check-out"},
 	    {text: "Flush date", type: "flush-date"},
-	    {text: "Sleep stat", type: "sleep-stat"},
+	    {text: "Statistics", type: "statistics"},
 	    {text: "Cancel", type: "cancel"},
 	].map(function (elem) {
 	    return Woodpecker.Puncher.Button.create(elem);
