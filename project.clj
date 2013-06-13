@@ -8,4 +8,5 @@
                  [compojure "1.1.5"]
                  [ring/ring-json "0.2.0"]
                  [org.clojure/data.json "0.2.2"]
-                 [http-kit "2.1.2"]])
+                 [http-kit "2.1.2"]]
+  :min-lein-version "2.0.0")
