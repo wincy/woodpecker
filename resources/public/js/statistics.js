@@ -1,11 +1,4 @@
-var tag_names = ['睡眠','娱乐','运动','阅读',
-     // '计划','发现','反思'
-    ];
-
-function get_data_by_tags() {
-    var tags = asana.woodpecker.tags.filter(function(tag) {
-	return tag_names.indexOf(tag.name) != -1;
-    });
+function get_data_by_tags(tags) {
     return RSVP.all(tags.map(function(tag) {
 	return tag.Task.find()
 	    .then(function(tasks) {
@@ -40,9 +33,9 @@ function get_data_by_tags() {
 	});
 	
 	return Object.keys(stat).sort().map(function(date) {
-	    tag_names.forEach(function(name) {
-		if (!stat[date][name]) {
-		    stat[date][name] = 0;
+	    tags.forEach(function(tag) {
+		if (!stat[date][tag.name]) {
+		    stat[date][tag.name] = 0;
 		}
 	    });
 	    return $.extend(stat[date], {date: date});
@@ -50,8 +43,9 @@ function get_data_by_tags() {
     });
 }
 
-function stat_by_tags() {
-    get_data_by_tags().then(function(data) {
+function stat_by_tags(tags) {
+    get_data_by_tags(tags).then(function(data) {
+	console.log(data);
 	var margin = {top: 20, right: 20, bottom: 30, left: 50},
 	width = 300 - margin.left - margin.right,
 	height = 200 - margin.top - margin.bottom;

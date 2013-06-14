@@ -132,6 +132,13 @@ window.Woodpecker = Ember.Application.create({
 				    });
 				    Woodpecker.selector.target.set('tags', selected);
 				    break;
+				case 'statistics-tags':
+				    var tags = Woodpecker.selector.get_selected();
+				    console.log(tags);
+				    stat_by_tags(tags);
+				    Woodpecker.statistics.view.set('scroll', window.scrollY);
+				    Woodpecker.statistics.view.set('isVisible', true);
+				    break;
 				default:
 				    console.log('selector type error');
 				}
@@ -280,10 +287,8 @@ window.Woodpecker = Ember.Application.create({
 			    text: "Statistics",
 			    hit: function() {
 				$('.statistics').empty();
-				stat_by_tags();
 				Woodpecker.puncher.view.set('isVisible', false);
-				Woodpecker.statistics.view.set('scroll', window.scrollY);
-				Woodpecker.statistics.view.set('isVisible', true);
+				Woodpecker.selector.select_statistics_tags();
 			    },
 			}),
 			Woodpecker.Button.create({
@@ -1133,6 +1138,12 @@ Woodpecker.Selector = Ember.ArrayController.extend({
 		    return Woodpecker.Selector.Option.create({content: tag});
 		}));
 	    }.bind(this), rejectHandler);
+    },
+    select_statistics_tags: function() {
+	Woodpecker.selector.type = 'statistics-tags';
+	Woodpecker.selector.set('content', Woodpecker.selector.tags);
+	Woodpecker.selector.view.set('scroll', window.scrollY);
+	Woodpecker.selector.view.set('isVisible', true);
     },
     get_selected: function() {
 	return this.content.filter(function (elem) {
