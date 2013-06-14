@@ -134,8 +134,9 @@ window.Woodpecker = Ember.Application.create({
 				    break;
 				case 'statistics-tags':
 				    var tags = Woodpecker.selector.get_selected();
-				    console.log(tags);
 				    stat_by_tags(tags);
+				    Woodpecker.statistics.view.set('scroll', window.scrollY);
+				    Woodpecker.statistics.view.set('isVisible', true);
 				    break;
 				default:
 				    console.log('selector type error');
