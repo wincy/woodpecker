@@ -132,6 +132,12 @@ window.Woodpecker = Ember.Application.create({
 				    });
 				    Woodpecker.selector.target.set('tags', selected);
 				    break;
+				case 'statistics-tags':
+				    var tags = Woodpecker.selector.get_selected();
+				    stat_by_tags(tags);
+				    Woodpecker.statistics.view.set('scroll', window.scrollY);
+				    Woodpecker.statistics.view.set('isVisible', true);
+				    break;
 				default:
 				    console.log('selector type error');
 				}
@@ -277,6 +283,14 @@ window.Woodpecker = Ember.Application.create({
 			    },
 			}),
 			Woodpecker.Button.create({
+			    text: "Statistics",
+			    hit: function() {
+				$('.statistics').empty();
+				Woodpecker.puncher.view.set('isVisible', false);
+				Woodpecker.selector.select_statistics_tags();
+			    },
+			}),
+			Woodpecker.Button.create({
 			    text: "Cancel",
 			    hit: function() {
 				Woodpecker.puncher.view.set('isVisible', false);
@@ -329,6 +343,25 @@ window.Woodpecker = Ember.Application.create({
 		}),
 	    ],
 	});
+	Woodpecker.statistics = Ember.Object.create();
+	Woodpecker.statistics.view = Woodpecker.PopupView.create({
+	    childViews: [
+		Ember.View.create({
+		    classNames: ['statistics'],
+		}),
+		Ember.CollectionView.create({
+		    itemViewClass: Woodpecker.ButtonView,
+		    content: [
+			Woodpecker.Button.create({
+			    text: "Hide",
+			    hit: function() {
+				Woodpecker.statistics.view.set('isVisible', false);
+			    },
+			}),
+		    ],
+		}),
+	    ],
+	})
 	Woodpecker.menu = Woodpecker.Menu.create();
 	check_online();
 	asana.me = new Asana.User('me');
@@ -1045,6 +1078,7 @@ Woodpecker.Puncher.Buttons = Ember.ArrayController.extend({
 	    {text: "Add check in", type: "add-check-in"},
 	    {text: "Add check out", type: "add-check-out"},
 	    {text: "Flush date", type: "flush-date"},
+	    {text: "Statistics", type: "statistics"},
 	    {text: "Cancel", type: "cancel"},
 	].map(function (elem) {
 	    return Woodpecker.Puncher.Button.create(elem);
@@ -1107,10 +1141,17 @@ Woodpecker.Selector = Ember.ArrayController.extend({
     load_tags: function() {
 	return asana.woodpecker.Tag.find()
 	    .then(function(tags) {
+		asana.woodpecker.tags = tags;
 		this.set('tags', tags.map(function(tag) {
 		    return Woodpecker.Selector.Option.create({content: tag});
 		}));
 	    }.bind(this), rejectHandler);
+    },
+    select_statistics_tags: function() {
+	Woodpecker.selector.type = 'statistics-tags';
+	Woodpecker.selector.set('content', Woodpecker.selector.tags);
+	Woodpecker.selector.view.set('scroll', window.scrollY);
+	Woodpecker.selector.view.set('isVisible', true);
     },
     get_selected: function() {
 	return this.content.filter(function (elem) {

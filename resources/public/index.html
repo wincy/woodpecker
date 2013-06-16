@@ -8,6 +8,7 @@
     <link href="/css/cursor.css" rel="stylesheet" media="screen">
     <link href="/css/timepicker.css" rel="stylesheet" media="screen">
     <link href="/css/woodpecker.css" rel="stylesheet" media="screen">
+    <link href="/css/statistics.css" rel="stylesheet" media="screen">
     <script src="/js/sprintf.js"></script>
     <script src="/js/jquery-2.0.0.js"></script>
     <script src="/js/bootstrap.js"></script>
@@ -16,6 +17,7 @@
     <script src="/js/ember-data-0.13.js"></script>
     <script src="/js/ember-touch.js"></script>
     <script src="/js/rsvp.js"></script>
+    <script src="/js/d3.v3.min.js"></script>
     <script src="/js/cursor.js"></script>
     <script src="/js/timepicker.js"></script>
     <script src="/js/timeline.js"></script>
@@ -23,6 +25,7 @@
     <script src="/js/asana.js"></script>
     <script src="/js/logging.js"></script>
     <script src="/js/woodpecker.js"></script>
+    <script src="/js/statistics.js"></script>
     <script type="text/x-handlebars" data-template-name="tag-selector">
       <div>
 	{{#each Woodpecker.tag_selector}}
@@ -123,6 +126,7 @@
       {{view Woodpecker.timepicker.view}}
       {{view Woodpecker.selector.view}}
       {{view Woodpecker.comment_editor.view}}
+      {{view Woodpecker.statistics.view}}
       <div style="height: 100px"></div>
     </script>
   </body>
