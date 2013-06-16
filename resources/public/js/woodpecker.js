@@ -788,8 +788,7 @@ Woodpecker.Timeline.Record = Ember.ObjectController.extend({
 	var human_parts = [];
 	human_parts.push(this.get('use_time'));
 	for (var i = 0; i < this.tasks.length; i++) {
-	    human_parts.push(sprintf('https://app.asana.com/0/%d/%d',
-				     this.tasks[i].projects[0].id, this.tasks[i].id));
+	    human_parts.push('https://app.asana.com/0/0/' + this.tasks[i].id);
 	    human_parts.push(this.comments[i].content);
 	}
 	return JSON.stringify({
