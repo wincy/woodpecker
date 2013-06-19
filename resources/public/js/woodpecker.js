@@ -392,8 +392,10 @@ window.Woodpecker = Ember.Application.create({
 	}, rejectHandler).then(function() {
 	    return logging.apply_all();
 	}, rejectHandler).then(function() {
-	    return RSVP.all([Woodpecker.selector.load_tasks(),
-			     Woodpecker.selector.load_tags()])
+	    return RSVP.all([
+		Woodpecker.selector.load_tasks(),
+		Woodpecker.selector.load_tags()
+	    ]);
 	}, rejectHandler);
     },
 });
@@ -1097,7 +1099,7 @@ Woodpecker.Selector = Ember.ArrayController.extend({
     type: null,
     load_dates: function() {
 	var now = new Date();
-	this.set('dates', [0,1,2,3,4,5,6,7,8,9].map(function(offset) {
+	this.set('dates', [-1,0,1,2,3,4,5,6,7,8,9,11,12,13,14,15,16,17,18,19,20].map(function(offset) {
 	    var day = new Date();
 	    day.setTime(now.getTime() - 86400000 * offset);
 	    return Woodpecker.Selector.Option.create({
@@ -1126,7 +1128,14 @@ Woodpecker.Selector = Ember.ArrayController.extend({
 	    this.set(
 		'tasks',
  		tasks_list.reduce(function(s, a) {
-		    return s.concat(a);
+		    a.forEach(function(task) {
+			if (!s.some(function(e) {
+			    return e.id == task.id;
+			})) {
+			    s.push(task);
+			}
+		    });
+		    return s;
 		}).filter(function(task) {
 		    return (task.assignee_status == 'today' &&
 			    !task.completed &&
