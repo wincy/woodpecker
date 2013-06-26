@@ -3,7 +3,9 @@ var logging = null;
 
 function rejectHandler(error) {
     console.log(error);
-    console.log(error.stack);
+    if (error && error.stack) {
+	console.log(error.stack);
+    }
 }
 
 window.applicationCache.addEventListener('updateready', function() {
@@ -394,7 +396,7 @@ window.Woodpecker = Ember.Application.create({
 	}, rejectHandler).then(function() {
 	    return RSVP.all([
 		Woodpecker.selector.load_tasks(),
-		Woodpecker.selector.load_tags()
+		Woodpecker.selector.load_tags(),
 	    ]);
 	}, rejectHandler);
     },
@@ -939,6 +941,7 @@ Woodpecker.Timepicker.NumpadButton = Woodpecker.Button.extend({
 	    break;
 	case "now":
 	    var now = new Date();
+	    Woodpecker.timepicker.set('date', now);
 	    Woodpecker.timepicker.cursors.mset(0, 2, sprintf("%02d", now.getHours()));
 	    Woodpecker.timepicker.cursors.mset(3, 2, sprintf("%02d", now.getMinutes()));
 	    break;
@@ -1128,14 +1131,15 @@ Woodpecker.Selector = Ember.ArrayController.extend({
 	    this.set(
 		'tasks',
  		tasks_list.reduce(function(s, a) {
+		    var result = s.copy();
 		    a.forEach(function(task) {
-			if (!s.some(function(e) {
+			if (!result.some(function(e) {
 			    return e.id == task.id;
 			})) {
-			    s.push(task);
+			    result.push(task);
 			}
 		    });
-		    return s;
+		    return result;
 		}).filter(function(task) {
 		    return (task.assignee_status == 'today' &&
 			    !task.completed &&

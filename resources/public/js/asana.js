@@ -55,15 +55,18 @@ Asana.prototype = {
 		    url: full_url,
 		    data: params,
 		    type: method,
-		    timeout: 20000,
+		    timeout: 30000,
 		})
 		    .done(function(data, status, xhr) {
 			locache.set('req:' + key, data.data, 86400);
 			resolve(data.data);
 		    })
 		    .fail(function(xhr, status, error) {
-			if (xhr.status == 429) {
-			    var timeout = JSON.parse(xhr.responseText).retry_after * 1000;
+			if (xhr.status == 429 || error == 'timeout') {
+			    var timeout = 0;
+			    if (xhr.status == 429) {
+				timeout = JSON.parse(xhr.responseText).retry_after * 1000;
+			    }
 			    asana.delay(timeout).then(function() {
 				console.log('retry:', url, params, method);
 				asana.request(url, params, method)
@@ -78,6 +81,7 @@ Asana.prototype = {
 			    if (cache) {
 				resolve(cache);
 			    } else {
+				console.log(error);
 				reject(xhr.responseText);
 			    }
 			}
