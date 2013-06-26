@@ -55,6 +55,12 @@ function check_online() {
 
 window.Woodpecker = Ember.Application.create({
     ready: function () {
+	Woodpecker.loader = Ember.ObjectController.create();
+	Woodpecker.loader.view = Ember.View.create({
+	    tagName: 'i',
+	    classNames: ['loader icon-refresh'],
+	    isVisible: false,
+	});
 	Woodpecker.date = Ember.ObjectController.create();
 	Woodpecker.date.view = Ember.View.create({
 	    tagName: 'h3',
@@ -152,15 +158,19 @@ window.Woodpecker = Ember.Application.create({
 				Woodpecker.selector.set('content', []);
 				switch(Woodpecker.selector.type) {
 				case 'set-tasks':
+				    Woodpecker.loader.view.set('isVisible', true);
 				    Woodpecker.selector.load_tasks()
 					.then(function() {
 					    Woodpecker.selector.set('content', Woodpecker.selector.tasks);
+					    Woodpecker.loader.view.set('isVisible', false);
 					});
 				    break;
 				case 'set-tags':
+				    Woodpecker.loader.view.set('isVisible', true);
 				    Woodpecker.selector.load_tags()
 					.then(function() {
 					    Woodpecker.selector.set('content', Woodpecker.selector.tags);
+					    Woodpecker.loader.view.set('isVisible', false);
 					});
 				    break;
 				default:
@@ -233,18 +243,24 @@ window.Woodpecker = Ember.Application.create({
 			Woodpecker.Button.create({
 			    text: "Save",
 			    hit: function() {
+				Woodpecker.loader.view.set('isVisible', true);
 				Woodpecker.timeline.save().then(function() {
 				    return logging.clear();
-				}, rejectHandler);
+				}, rejectHandler).then(function() {
+				    Woodpecker.loader.view.set('isVisible', false);
+				});
 				Woodpecker.puncher.view.set('isVisible', false);
 			    },
 			}),
 			Woodpecker.Button.create({
 			    text: "Load",
 			    hit: function() {
+				Woodpecker.loader.view.set('isVisible', true);
 				Woodpecker.timeline.load().then(function() {
 				    return logging.apply_all();
-				}, rejectHandler);
+				}, rejectHandler).then(function() {
+				    Woodpecker.loader.view.set('isVisible', false);
+				});
 				Woodpecker.puncher.view.set('isVisible', false);
 			    },
 			}),
@@ -279,8 +295,11 @@ window.Woodpecker = Ember.Application.create({
 			Woodpecker.Button.create({
 			    text: "Flush date",
 			    hit: function() {
+				Woodpecker.loader.view.set('isVisible', true);
 				Woodpecker.timeline.set_date();
-				Woodpecker.timeline.load();
+				Woodpecker.timeline.load().then(function() {
+				    Woodpecker.loader.view.set('isVisible', false);
+				});
 				Woodpecker.puncher.view.set('isVisible', false);
 			    },
 			}),
@@ -367,6 +386,7 @@ window.Woodpecker = Ember.Application.create({
 	Woodpecker.menu = Woodpecker.Menu.create();
 	check_online();
 	asana.me = new Asana.User('me');
+	Woodpecker.loader.view.set('isVisible', true);
 	RSVP.all([
 	    asana.Workspace.find()
 		.then(function(workspaces) {
@@ -398,7 +418,9 @@ window.Woodpecker = Ember.Application.create({
 		Woodpecker.selector.load_tasks(),
 		Woodpecker.selector.load_tags(),
 	    ]);
-	}, rejectHandler);
+	}, rejectHandler).then(function() {
+	    Woodpecker.loader.view.set('isVisible', false);
+	});
     },
 });
 Woodpecker.ApplicationController = Ember.Controller.extend({
@@ -447,6 +469,7 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
     id: null,
     content: [],
     save: function() {
+	Woodpecker.loader.view.set('isVisible', true);
 	return RSVP.all(this.content.map(function(record) {
 	    return record.save_comments();
 	})).then(function(records) {
@@ -1033,13 +1056,17 @@ Woodpecker.Puncher.Button = Woodpecker.Button.extend({
 	case "save":
 	    Woodpecker.timeline.save().then(function() {
 		logging.clear();
-	    }, rejectHandler);
+	    }, rejectHandler).then(function() {
+		Woodpecker.loader.view.set('isVisible', false);
+	    });
 	    Woodpecker.puncher.view.set('isVisible', false);
 	    break;
 	case "load":
 	    Woodpecker.timeline.load().then(function() {
 		return logging.apply_all();
-	    }, rejectHandler);
+	    }, rejectHandler).then(function() {
+	    	Woodpecker.loader.view.set('isVisible', false);
+	    });
 	    Woodpecker.puncher.view.set('isVisible', false);
 	    break;
 	case "check-in":
@@ -1060,7 +1087,10 @@ Woodpecker.Puncher.Button = Woodpecker.Button.extend({
 	    break;
 	case "flush-date":
 	    Woodpecker.timeline.set_date();
-	    Woodpecker.timeline.load();
+	    Woodpecker.loader.view.set('isVisible', true);
+	    Woodpecker.timeline.load().then(function() {
+		Woodpecker.loader.view.set('isVisible', false);
+	    });
 	    Woodpecker.puncher.view.set('isVisible', false);
 	    break;
 	case "cancel":

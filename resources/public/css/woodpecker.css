@@ -69,3 +69,13 @@ textarea {
 .efficient {
     background-color: #EBF2B6;
 }
+
+.loader {
+    position: fixed;
+    top: 0px;
+    right: 0px;
+    width: 14px;
+    height: 14px;
+    margin: 10px;
+    z-index: 200;
+}
