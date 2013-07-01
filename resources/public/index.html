@@ -40,7 +40,7 @@
     </script>
     <script type="text/x-handlebars" data-template-name="selector-option">
       <div {{bindAttr class=":option marked:marked"}} {{action toggle on="click"}} {{action toggle on="touchStart"}}>
-	{{view.content.name}}
+	{{wrap content.name}}
       </div>
     </script>
     <script type="text/x-handlebars" data-template-name="button">

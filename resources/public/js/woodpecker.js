@@ -1304,3 +1304,12 @@ Woodpecker.Menu = Ember.ObjectController.extend({
 	Woodpecker.puncher.view.set('isVisible', ! visible);
     },
 });
+// Handlebars Helpers
+Ember.Handlebars.registerHelper('wrap', function(property, options) {
+    var content = Ember.get(this, property);
+    if (content.length > 17) {
+	return content.slice(0, 17) + '...';
+    } else {
+	return content;
+    }
+});
