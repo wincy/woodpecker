@@ -81,6 +81,7 @@ Asana.prototype = {
 			    if (cache) {
 				resolve(cache);
 			    } else {
+				console.log(xhr);
 				console.log(error);
 				reject(xhr.responseText);
 			    }
@@ -260,6 +261,10 @@ Asana.Workspace.prototype = {
 	create: function(data) {
 	    return asana.request('/workspaces/' + this.id + '/tasks', data, 'POST')
 		.then(function(data) {
+		    new Persistent('tasks').set(data.id + '.json', JSON.stringify(data));
+		    return data;
+		})
+		.then(function(data) {
 		    return $.extend(new Asana.Task(data.id), data);
 		}.bind(this), rejectHandler);
 	},
@@ -325,6 +330,10 @@ Asana.Project.prototype = {
 	create: function(data) {
 	    data['projects[0]'] = this.id;
 	    return asana.request('/workspaces/' + this.workspace.id + '/tasks', data, 'POST')
+		.then(function(data) {
+		    new Persistent('tasks').set(data.id + '.json', JSON.stringify(data));
+		    return data;
+		})
 		.then(function(task) {
 		    if (this.id == asana.woodpecker.me.id) {
 			var date = data.name.split('#')[0];
@@ -352,11 +361,22 @@ Asana.Project.prototype = {
 			    var index = elem.name.split('#')[1];
 			    var cache = locache.get(date);
 			    if (!cache) {
-				cache = {}
+				cache = {};
 			    }
 			    cache[index] = {name: elem.name, id: elem.id};
 			    locache.set(date, cache);
 			}
+			var tasks = locache.get('tasks');
+			if (!tasks) {
+			    tasks = {};
+			}
+			if (!tasks[this.id]) {
+			    tasks[this.id] = [];
+			}
+			if (tasks[this.id].indexOf(elem.id) == -1) {
+			    tasks[this.id].push(elem.id);
+			}
+			locache.set('tasks', tasks);
 			return $.extend(new Asana.Task(elem.id), elem);
 		    }.bind(this));
 		}.bind(this), rejectHandler)
@@ -367,26 +387,52 @@ Asana.Project.prototype = {
 Asana.Task = function(id) {
     this.id = id;
     this.Story = bindAll(this.Story, this);
+    this.Tag = bindAll(this.Tag, this);
 }
 
 Asana.Task.prototype = {
     load: function() {
-	return asana.request('/tasks/' + this.id)
-	    .then(function(data) {
-		return $.extend(new Asana.Task(data.id), data);
-	    }.bind(this), rejectHandler)
-	    .then(function(task) {
-		return asana.request('/tasks/' + task.id + '/tags')
-		    .then(function(data) {
-			task.tags = data.map(function(tag) {
-			    return $.extend(new Asana.Tag(tag.id), tag);
-			});
-			return task;
-		    }.bind(this), rejectHandler);
+	var dataToTask = function(data) {
+	    $.extend(this, data);
+	    return this.Tag.find().then(function(tags) {
+		this.tags = tags;
+		return this;
 	    }.bind(this), rejectHandler);
+	};
+	var tasks = locache.get('tasks');
+	if (tasks &&
+	    tasks[asana.woodpecker.me.id] &&
+	    tasks[asana.woodpecker.me.id].indexOf(this.id) != -1) {
+	    return new Persistent('tasks').get(this.id + '.json')
+		.then(function(data) {
+		    return JSON.parse(data);
+		})
+		.then(
+		    dataToTask.bind(this),
+		    function() {
+			return asana.request('/tasks/' + this.id)
+			    .then(function(data) {
+				new Persistent('tasks').set(data.id + '.json', JSON.stringify(data));
+				return data;
+			    })
+			    .then(dataToTask.bind(this), rejectHandler);
+		    }.bind(this)
+		);
+	} else {
+	    return asana.request('/tasks/' + this.id)
+		.then(function(data) {
+		    new Persistent('tasks').set(data.id + '.json', JSON.stringify(data));
+		    return data;
+		})
+		.then(dataToTask.bind(this), rejectHandler);
+	}
     },
     update: function(kvs) {
 	return asana.request('/tasks/' + this.id, kvs, 'PUT')
+	    .then(function(data) {
+		new Persistent('tasks').set(data.id + '.json', JSON.stringify(data));
+		return data;
+	    })
 	    .then(function(data) {
 		return $.extend(this, data);
 	    }.bind(this), rejectHandler);
@@ -394,12 +440,26 @@ Asana.Task.prototype = {
     addTag: function(tag) {
 	return asana.request('/tasks/' + this.id + '/addTag', {tag: tag.id}, 'POST')
 	    .then(function(data) {
+		new Persistent('task-tags').get(this.id + '.json').then(
+		    function(data) {
+			var tags = JSON.parse(data);
+			tags.push({id: tag.id, name: tag.name});
+			return new Persistent('task-tags').set(
+			    this.id + '.json', JSON.stringify(tags));
+		    }.bind(this));
 		return true;
 	    }.bind(this), rejectHandler);
     },
     removeTag: function(tag) {
 	return asana.request('/tasks/' + this.id + '/removeTag', {tag: tag.id}, 'POST')
 	    .then(function(data) {
+		new Persistent('task-tags').get(this.id + '.json')
+		    .then(function(data) {
+			var tags = JSON.parse(data);
+			tags.removeObject({id: tag.id, name: tag.name});
+			return new Persistent('task-tags').set(
+			    this.id + '.json', JSON.stringify(tags));
+		    }.bind(this), rejectHandler);
 		return true;
 	    }.bind(this), rejectHandler);
     },
@@ -419,7 +479,30 @@ Asana.Task.prototype = {
 		return new Asana.Story(elem.id);
 	    });
 	},
-    }
+    },
+    Tag: {
+	find: function() {
+	    var dataToTags = function(data) {
+		return data.map(function(tag) {
+		    return $.extend(new Asana.Tag(tag.id), tag);
+		});
+	    };
+	    return new Persistent('task-tags').get(this.id + '.json')
+		.then(function(data) {
+		    return JSON.parse(data);
+		})
+		.then(dataToTags,
+		      function() {
+			  return asana.request('/tasks/' + this.id + '/tags')
+			      .then(function(data) {
+				  new Persistent('task-tags')
+				      .set(this.id + '.json', JSON.stringify(data));
+				  return data;
+			      }.bind(this))
+			      .then(dataToTags, rejectHandler);
+		      }.bind(this));
+	},
+    },
 }
 
 Asana.Story = function(id) {
