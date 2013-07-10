@@ -1,7 +1,11 @@
 var asana = new Asana('/asana');
 var logging = null;
+var result = null;
 
 function rejectHandler(error) {
+    if (this.info) {
+	console.log(this.info);
+    }
     console.log(error);
     if (error && error.stack) {
 	console.log(error.stack);
@@ -385,42 +389,47 @@ window.Woodpecker = Ember.Application.create({
 	})
 	Woodpecker.menu = Woodpecker.Menu.create();
 	check_online();
-	asana.me = new Asana.User('me');
 	Woodpecker.loader.view.set('isVisible', true);
-	RSVP.all([
-	    asana.Workspace.find()
-		.then(function(workspaces) {
-		    asana.workspaces = workspaces;
-		    asana.woodpecker = workspaces.filter(function(workspace) {
-			return workspace.name == 'Woodpecker';
-		    })[0];
-		    asana.workspaces.removeObject(asana.woodpecker);
-		    return true;
-		}, rejectHandler),
-	    asana.me.load(),
-	]).then(function (){
-	    return asana.woodpecker.Project.find()
-		.then(function(projects) {
-		    asana.woodpecker.me = projects.filter(function(project) {
-			return project.name == asana.me.name;
-		    })[0];
-		    return RSVP.all([
-			asana.woodpecker.me.load(),
-			asana.woodpecker.me.Task.find(), // updating cache
-			]);
-		}, rejectHandler)
-	}, rejectHandler).then(function() {
-	    return Woodpecker.timeline.load();
-	}, rejectHandler).then(function() {
-	    return logging.apply_all();
-	}, rejectHandler).then(function() {
-	    return RSVP.all([
-		Woodpecker.selector.load_tasks(),
-		Woodpecker.selector.load_tags(),
-	    ]);
-	}, rejectHandler).then(function() {
-	    Woodpecker.loader.view.set('isVisible', false);
-	});
+	asana.me = new Asana.User('me');
+	result = asana.sync().then(function() {
+	    RSVP.all([
+		asana.Workspace.find()
+		    .then(function(workspaces) {
+			asana.workspaces = workspaces;
+			asana.woodpecker = workspaces.filter(function(workspace) {
+			    return workspace.name == 'Woodpecker';
+			})[0];
+			asana.workspaces.removeObject(asana.woodpecker);
+		    }, rejectHandler),
+		asana.me.load(),
+	    ]).then(function (){
+		return asana.woodpecker.Project.find()
+		    .then(function(projects) {
+			console.log('Projects:', projects);
+			return new RSVP.Promise(function(resolve, reject) {
+			    asana.woodpecker.me = projects.filter(function(project) {
+				return project.name == asana.me.name;
+			    })[0];
+			    if (asana.woodpecker.me) {
+				resolve(asana.woodpecker.me);
+			    } else {
+				reject('asana.woodpecker.me not found');
+			    }
+			})
+		    }, rejectHandler);
+	    }, rejectHandler).then(function() {
+		return Woodpecker.timeline.load();
+	    }, rejectHandler).then(function() {
+		return logging.apply_all();
+	    }, rejectHandler).then(function() {
+		return RSVP.all([
+		    Woodpecker.selector.load_tasks(),
+		    Woodpecker.selector.load_tags(),
+		]);
+	    }, rejectHandler).then(function() {
+		Woodpecker.loader.view.set('isVisible', false);
+	    }, rejectHandler);
+	}, rejectHandler);
     },
 });
 Woodpecker.ApplicationController = Ember.Controller.extend({
@@ -1152,33 +1161,36 @@ Woodpecker.Selector = Ember.ArrayController.extend({
 		projects_list.reduce(function(s, a) {
 		    return s.concat(a);
 		}).map(function(project) {
-		    return project.Task.find({
-			'opt_fields': ['name','assignee','projects','followers',
-				       'assignee_status','completed'].join(','),
-		    });
+		    return project.Task.find();
 		}))
 	}, rejectHandler).then(function(tasks_list) {
-	    this.set(
-		'tasks',
- 		tasks_list.reduce(function(s, a) {
-		    var result = s.copy();
-		    a.forEach(function(task) {
-			if (!result.some(function(e) {
-			    return e.id == task.id;
-			})) {
-			    result.push(task);
-			}
-		    });
-		    return result;
-		}).filter(function(task) {
+	    RSVP.all(tasks_list.reduce(function(s, a) {
+		var result = s.copy();
+		a.forEach(function(task) {
+		    if (!result.some(function(e) {
+			return e.id == task.id;
+		    })) {
+			result.push(task);
+		    }
+		});
+		return result;
+	    }).filter(function(task) {
+		return !task.completed;
+	    }).map(function(task) {
+		return new Asana.Task(task.id).load();
+	    })).then(function(tasks) {
+		return tasks.filter(function(task) {
 		    return (task.assignee_status == 'today' &&
 			    !task.completed &&
 			    task.followers.map(function(follower) {
 				return follower.id;
 			    }).indexOf(asana.me.id) != -1);
-		}).map(function(task) {
+		})
+	    }).then(function(tasks) {
+		this.set('tasks', tasks.map(function(task) {
 		    return Woodpecker.Selector.Option.create({content: task});
 		}));
+	    }.bind(this));
 	}.bind(this), rejectHandler)
     },
     load_tags: function() {
