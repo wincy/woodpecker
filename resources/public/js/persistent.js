@@ -21,7 +21,7 @@ Persistent.prototype = {
     flush: function() {
 	return this.init().then(function() {
 	    return new RSVP.Promise(function(resolve, reject) {
-		this.keys().then(function(keys) {
+		this.keys(true).then(function(keys) {
 		    RSVP.all(keys.map(function(key) {
 			return new RSVP.Promise(function(resolve, reject) {
 			    this.root.getDirectory(key, {}, function(entry) {
@@ -124,16 +124,19 @@ Persistent.prototype = {
 	    var promise = new RSVP.Promise(function(resolve, reject) {
 		this.root.getFile(key, {create: true}, function(fileEntry) {
 		    fileEntry.createWriter(function(writer) {
-			writer.onwriteend = resolve;
 			writer.onerror = reject;
-			writer.write(new Blob([value], {type: 'application/json'}))
+			writer.onwriteend = function() {
+			    writer.onwriteend = resolve;
+			    writer.write(new Blob([value], {type: 'application/json'}))
+			}
+			writer.truncate(0);
 		    }, reject);
 		}, reject);
 	    }.bind(this));
 	}.bind(this), rejectHandler.bind({info: [key, value]}));
 	return promise;
     },
-    keys: function() {
+    keys: function(with_affix) {
 	return this.init().then(function() {
 	    return new RSVP.Promise(function(resolve, reject) {
 		var reader = this.root.createReader();
@@ -153,7 +156,7 @@ Persistent.prototype = {
 		readEntries([]);
 	    }.bind(this)).then(function(keys) {
 		return keys.map(function(key) {
-		    if (key.match(/.*\.dat$/)) {
+		    if (key.match(/.*\.dat$/) && !with_affix) {
 			return key.substr(0, key.length - 4);
 		    } else {
 			return key;
@@ -162,9 +165,11 @@ Persistent.prototype = {
 	    }, rejectHandler);
 	}.bind(this), rejectHandler);
     },
-    remove: function(key) {
+    remove: function(key, with_affix) {
 	// console.log('Persistent("' + this.ns + '").remove("' + key + '")');
-	key = key + '.dat';
+	if (!with_affix) {
+	    key = key + '.dat';
+	}
 	return this.init().then(function() {
 	    var promise = new RSVP.Promise(function(resolve, reject) {
 		this.root.getFile(key, {create: false}, function(fileEntry) {

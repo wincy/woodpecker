@@ -163,19 +163,27 @@ window.Woodpecker = Ember.Application.create({
 				switch(Woodpecker.selector.type) {
 				case 'set-tasks':
 				    Woodpecker.loader.view.set('isVisible', true);
-				    Woodpecker.selector.load_tasks()
-					.then(function() {
-					    Woodpecker.selector.set('content', Woodpecker.selector.tasks);
-					    Woodpecker.loader.view.set('isVisible', false);
+				    asana.sync().then(function() {
+					Woodpecker.selector.load_tasks()
+					    .then(function() {
+						Woodpecker.selector.set(
+						    'content', Woodpecker.selector.tasks);
+						Woodpecker.loader.view.set(
+						    'isVisible', false);
 					});
+				    });
 				    break;
 				case 'set-tags':
 				    Woodpecker.loader.view.set('isVisible', true);
-				    Woodpecker.selector.load_tags()
-					.then(function() {
-					    Woodpecker.selector.set('content', Woodpecker.selector.tags);
-					    Woodpecker.loader.view.set('isVisible', false);
-					});
+				    asana.sync().then(function() {
+					Woodpecker.selector.load_tags()
+					    .then(function() {
+						Woodpecker.selector.set(
+						    'content', Woodpecker.selector.tags);
+						Woodpecker.loader.view.set(
+						    'isVisible', false);
+					    });
+				    });
 				    break;
 				default:
 				    console.log('selector load unknown type');
@@ -388,7 +396,8 @@ window.Woodpecker = Ember.Application.create({
 	    ],
 	})
 	Woodpecker.menu = Woodpecker.Menu.create();
-	check_online();
+	// check_online();
+	asana.onLine = true;
 	Woodpecker.loader.view.set('isVisible', true);
 	asana.me = new Asana.User('me');
 	result = asana.sync().then(function() {
@@ -405,7 +414,6 @@ window.Woodpecker = Ember.Application.create({
 	    ]).then(function (){
 		return asana.woodpecker.Project.find()
 		    .then(function(projects) {
-			console.log('Projects:', projects);
 			return new RSVP.Promise(function(resolve, reject) {
 			    asana.woodpecker.me = projects.filter(function(project) {
 				return project.name == asana.me.name;
