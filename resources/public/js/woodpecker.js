@@ -1194,11 +1194,12 @@ Woodpecker.Selector = Ember.ArrayController.extend({
 				return follower.id;
 			    }).indexOf(asana.me.id) != -1);
 		})
-	    }).then(function(tasks) {
+	    }, rejectHandler).then(function(tasks) {
 		this.set('tasks', tasks.map(function(task) {
 		    return Woodpecker.Selector.Option.create({content: task});
 		}));
-	    }.bind(this));
+		return this;
+	    }.bind(this), rejectHandler);
 	}.bind(this), rejectHandler)
     },
     load_tags: function() {
