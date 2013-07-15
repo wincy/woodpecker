@@ -183,9 +183,9 @@ Persistent.prototype = {
 	key = key + '.dat';
 	return this.init().then(function() {
 	    return new RSVP.Promise(function(resolve, reject) {
-		if (!date.getTime()) {
-		    reject('Date error:', key, date);
-		}
+		// if (!date.getTime()) {
+		//     reject('Date error:', key, date);
+		// }
 		// if (date.getTime() < new Date(
 		//     Date.parse('Tue Jul 09 2013 00:00:00 GMT+0800 (CST)')).getTime()) {
 		//     resolve(false);

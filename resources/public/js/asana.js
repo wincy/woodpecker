@@ -58,6 +58,9 @@ Asana.prototype = {
 		    // },
 		})
 		    .done(function(data, status, xhr) {
+			if (!asana.onLine) {
+			    asana.onLine = true;
+			}
 			resolve(data.data);
 		    })
 		    .fail(function(xhr, status, error) {
@@ -117,7 +120,7 @@ Asana.prototype = {
 				if (!last_update) {
 				    last_update = new Date();
 				}
-				return new klass(item.id).sync(last_update);
+				return new klass(item.id).sync(last_update, true);
 			    }));
 			}, rejectHandler);
 		})).then(function() {
@@ -134,7 +137,10 @@ Asana.prototype = {
 			return JSON.parse(data);
 		    } catch (e) {
 			console.log('Load error:', this.key, this.id);
-			return this.sync(new Date()).User.find();
+			return this.sync(new Date(), true)
+			    .then(function(item) {
+				return item.User.find();
+			    });
 		    }
 		}.bind(this), rejectHandler)
 		.then(function(items) {
@@ -152,7 +158,10 @@ Asana.prototype = {
 			return JSON.parse(data);
 		    } catch (e) {
 			console.log('Load error:', this.key, this.id);
-			return this.sync(new Date()).Workspace.find();
+			return this.sync(new Date(), true)
+			    .then(function(item) {
+				return item.Workspace.find();
+			    });
 		    }
 		}.bind(this), rejectHandler)
 		.then(function(items) {
@@ -173,7 +182,7 @@ Asana.Workspace = function(id) {
 
 Asana.Workspace.prototype = {
     key: 'workspaces',
-    sync: function(last_update) {
+    sync: function(last_update, deep) {
 	return new Persistent(this.key).outdated(this.id, last_update)
 	    .then(function(outdated) {
 		if (!outdated) {
@@ -190,6 +199,9 @@ Asana.Workspace.prototype = {
 		    }.bind(this), rejectHandler);
 	    }.bind(this), rejectHandler)
 	    .then(function(item) {
+		if (!deep) {
+		    return this;
+		}
 		return RSVP.all([
 		    asana.request('/' + item.key + '/' + item.id + '/' + 'projects',
 				  {opt_fields: 'modified_at'})
@@ -203,7 +215,7 @@ Asana.Workspace.prototype = {
 			.then(function(items) {
 			    return RSVP.all(items.map(function(item) {
 				return new Asana.Project(item.id).sync(
-				    new Date(Date.parse(item.modified_at)));
+				    new Date(Date.parse(item.modified_at)), false);
 			    }));
 			}, rejectHandler),
 		    asana.request('/' + item.key + '/' + item.id + '/' + 'tags',
@@ -218,7 +230,7 @@ Asana.Workspace.prototype = {
 			.then(function(items) {
 			    return RSVP.all(items.map(function(item) {
 				return new Asana.Tag(item.id).sync(
-				    new Date(Date.parse(item.created_at)));
+				    new Date(Date.parse(item.created_at)), false);
 			    }));
 			}, rejectHandler),
 		]).then(function() {
@@ -235,19 +247,11 @@ Asana.Workspace.prototype = {
 			return $.extend(this, JSON.parse(data));
 		    } catch (e) {
 			console.log('Load error:', this.key, this.id);
-			return this.sync(new Date());
+			return this.sync(new Date(), true);
 		    }
 		}.bind(this), rejectHandler);
 	    } else {
-		return this.sync(new Date());
-	    }
-	}.bind(this), rejectHandler);
-	return new Persistent(this.key).get(this.id).then(function(data) {
-	    try {
-		return $.extend(this, JSON.parse(data));
-	    } catch (e) {
-		console.log('Load error:', this.key, this.id);
-		return this.sync(new Date());
+		return this.sync(new Date(), true);
 	    }
 	}.bind(this), rejectHandler);
     },
@@ -259,7 +263,10 @@ Asana.Workspace.prototype = {
 			return JSON.parse(data);
 		    } catch (e) {
 			console.log('Load error:', this.key, this.id);
-			return this.sync(new Date()).Project.find();
+			return this.sync(new Date(), true)
+			    .then(function(item) {
+				return item.Project.find();
+			    });
 		    }
 		    return JSON.parse(data);
 		}.bind(this), rejectHandler)
@@ -278,7 +285,10 @@ Asana.Workspace.prototype = {
 			return JSON.parse(data);
 		    } catch (e) {
 			console.log('Load error:', this.key, this.id);
-			return this.sync(new Date()).Tag.find();
+			return this.sync(new Date(), true)
+			    .then(function(item) {
+				return item.Tag.find();
+			    });
 		    }
 		}.bind(this), rejectHandler)
 		.then(function(items) {
@@ -299,7 +309,7 @@ Asana.Project = function(id) {
 
 Asana.Project.prototype = {
     key: 'projects',
-    sync: function(last_update) {
+    sync: function(last_update, deep) {
 	return new Persistent(this.key).outdated(this.id, last_update)
 	    .then(function(outdated) {
 		if (!outdated) {
@@ -316,6 +326,9 @@ Asana.Project.prototype = {
 		    }.bind(this), rejectHandler);
 	    }.bind(this), rejectHandler)
 	    .then(function(item) {
+		if (!deep) {
+		    return this;
+		}
 		return RSVP.all([
 		    asana.request('/' + item.key + '/' + item.id + '/' + 'tasks',
 				  {opt_fields: 'modified_at'})
@@ -329,7 +342,7 @@ Asana.Project.prototype = {
 			.then(function(items) {
 			    return RSVP.all(items.map(function(item) {
 				return new Asana.Task(item.id).sync(
-				    new Date(Date.parse(item.modified_at)));
+				    new Date(Date.parse(item.modified_at)), false);
 			    }));
 			}, rejectHandler),
 		]).then(function() {
@@ -346,11 +359,11 @@ Asana.Project.prototype = {
 			return $.extend(this, JSON.parse(data));
 		    } catch (e) {
 			console.log('Load error:', this.key, this.id);
-			return this.sync(new Date());
+			return this.sync(new Date(), true);
 		    }
 		}.bind(this), rejectHandler);
 	    } else {
-		return this.sync(new Date());
+		return this.sync(new Date(), true);
 	    }
 	}.bind(this), rejectHandler);
     },
@@ -409,7 +422,10 @@ Asana.Project.prototype = {
 			return JSON.parse(data);
 		    } catch (e) {
 			console.log('Load error:', this.key, this.id);
-			return this.sync(new Date()).Task.find();
+			return this.sync(new Date(), true)
+			    .then(function(item) {
+				return item.Task.find();
+			    });
 		    }
 		}.bind(this), rejectHandler)
 		.then(function(items) {
@@ -430,7 +446,7 @@ Asana.Task = function(id) {
 
 Asana.Task.prototype = {
     key: 'tasks',
-    sync: function(last_update) {
+    sync: function(last_update, deep) {
 	return new Persistent(this.key).outdated(this.id, last_update)
 	    .then(function(outdated) {
 		if (!outdated) {
@@ -447,6 +463,9 @@ Asana.Task.prototype = {
 		    }.bind(this), rejectHandler);
 	    }.bind(this), rejectHandler)
 	    // .then(function(item) {
+	    // 	if (!deep) {
+	    // 	    return this;
+	    // 	}
 	    // 	return RSVP.all([
 	    // 	    asana.request('/' + item.key + '/' + item.id + '/' + 'stories',
 	    // 	    		  {opt_fields: 'created_at'})
@@ -493,19 +512,11 @@ Asana.Task.prototype = {
 			return $.extend(this, JSON.parse(data));
 		    } catch (e) {
 			console.log('Load error:', this.key, this.id);
-			return this.sync(new Date());
+			return this.sync(new Date(), true);
 		    }
 		}.bind(this), rejectHandler);
 	    } else {
-		return this.sync(new Date());
-	    }
-	}.bind(this), rejectHandler);
-	return new Persistent(this.key).get(this.id).then(function(data) {
-	    try {
-		return $.extend(this, JSON.parse(data));
-	    } catch (e) {
-		console.log('Load error:', this.key, this.id);
-		return this.sync(new Date());
+		return this.sync(new Date(), true);
 	    }
 	}.bind(this), rejectHandler);
     },
@@ -566,7 +577,9 @@ Asana.Task.prototype = {
 		.then(function(item) {
 		    return item.sync(new Date(Date.parse(item.created_at)))
 			.then(function() {
-			    return this.sync(new Date(0));
+			    return this.sync(new Date(0)).then(function() {
+				return item;
+			    });
 			}.bind(this), rejectHandler);
 		}.bind(this), rejectHandler);
 	},
@@ -577,7 +590,10 @@ Asana.Task.prototype = {
 			return JSON.parse(data);
 		    } catch (e) {
 			console.log('Load error:', this.key, this.id);
-			return this.sync(new Date()).Story.find();
+			return this.sync(new Date(), true)
+			    .then(function(item) {
+				return item.Story.find();
+			    });
 		    }
 		}.bind(this), rejectHandler)
 		.then(function(items) {
@@ -595,7 +611,10 @@ Asana.Task.prototype = {
 			return JSON.parse(data);
 		    } catch (e) {
 			console.log('Load error:', this.key, this.id);
-			return this.sync(new Date()).Tag.find();
+			return this.sync(new Date(), true)
+			    .then(function(item) {
+				return item.Tag.find();
+			    });
 		    }
 		}.bind(this), rejectHandler)
 		.then(function(items) {
@@ -614,33 +633,7 @@ Asana.Story = function(id) {
 
 Asana.Story.prototype = {
     key: 'stories',
-    sync: function(last_update) {
-	return new Persistent(this.key).outdated(this.id, last_update)
-	    .then(function(outdated) {
-		if (!outdated) {
-		    return this;
-		}
-		console.log('Sync:', this.key, this.id);
-		return asana.request('/' + this.key + '/' + this.id)
-		    .then(function(data) {
-			new Persistent(this.key).set(this.id, JSON.stringify(data));
-			return data;
-		    }.bind(this), rejectHandler)
-		    .then(function(data) {
-			return $.extend(this, data);
-		    }.bind(this), rejectHandler);
-	    }.bind(this), rejectHandler);
-    },
-}
-
-Asana.User = function(id) {
-    this.key = 'users';
-    this.id = id;
-}
-
-Asana.User.prototype = {
-    key: 'users',
-    sync: function(last_update) {
+    sync: function(last_update, deep) {
 	return new Persistent(this.key).outdated(this.id, last_update)
 	    .then(function(outdated) {
 		if (!outdated) {
@@ -673,11 +666,46 @@ Asana.User.prototype = {
 		return this.sync(new Date());
 	    }
 	}.bind(this), rejectHandler);
-	return new Persistent(this.key).get(this.id).then(function(data) {
-	    try {
-		return $.extend(this, JSON.parse(data));
-	    } catch (e) {
-		console.log('Load error:', this.key, this.id);
+    },
+}
+
+Asana.User = function(id) {
+    this.key = 'users';
+    this.id = id;
+}
+
+Asana.User.prototype = {
+    key: 'users',
+    sync: function(last_update, deep) {
+	return new Persistent(this.key).outdated(this.id, last_update)
+	    .then(function(outdated) {
+		if (!outdated) {
+		    return this;
+		}
+		console.log('Sync:', this.key, this.id);
+		return asana.request('/' + this.key + '/' + this.id)
+		    .then(function(data) {
+			new Persistent(this.key).set(this.id, JSON.stringify(data));
+			return data;
+		    }.bind(this), rejectHandler)
+		    .then(function(data) {
+			return $.extend(this, data);
+		    }.bind(this), rejectHandler);
+	    }.bind(this), rejectHandler);
+    },
+    load: function() {
+	var p = new Persistent(this.key);
+	return p.exists(this.id).then(function(exists) {
+	    if (exists) {
+		return p.get(this.id).then(function(data) {
+		    try {
+			return $.extend(this, JSON.parse(data));
+		    } catch (e) {
+			console.log('Load error:', this.key, this.id);
+			return this.sync(new Date());
+		    }
+		}.bind(this), rejectHandler);
+	    } else {
 		return this.sync(new Date());
 	    }
 	}.bind(this), rejectHandler);
@@ -692,7 +720,7 @@ Asana.Tag = function(id) {
 
 Asana.Tag.prototype = {
     key: 'tags',
-    sync: function(last_update) {
+    sync: function(last_update, deep) {
 	return new Persistent(this.key).outdated(this.id, last_update)
 	    .then(function(outdated) {
 		if (!outdated) {
@@ -747,15 +775,6 @@ Asana.Tag.prototype = {
 		return this.sync(new Date());
 	    }
 	}.bind(this), rejectHandler);
-	return new Persistent(this.key).get(this.id).then(function(data) {
-	    try {
-		return $.extend(this, JSON.parse(data));
-	    } catch (e) {
-		console.log('Load error:', this.key, this.id);
-		return this.sync(new Date());
-	    }
-	    return $.extend(this, JSON.parse(data));
-	}.bind(this), rejectHandler);
     },
     Task: {
 	find: function() {
@@ -765,7 +784,10 @@ Asana.Tag.prototype = {
 			return JSON.parse(data);
 		    } catch (e) {
 			console.log('Load error:', this.key, this.id);
-			return this.sync(new Date()).Task.find();
+			return this.sync(new Date(), true)
+			    .then(function(item) {
+				return item.Task.find();
+			    });
 		    }
 		    return JSON.parse(data);
 		}.bind(this), rejectHandler)

@@ -396,8 +396,8 @@ window.Woodpecker = Ember.Application.create({
 	    ],
 	})
 	Woodpecker.menu = Woodpecker.Menu.create();
-	// check_online();
-	asana.onLine = true;
+	check_online();
+	// asana.onLine = true;
 	Woodpecker.loader.view.set('isVisible', true);
 	asana.me = new Asana.User('me');
 	result = asana.sync().then(function() {
