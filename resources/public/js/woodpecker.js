@@ -163,7 +163,7 @@ window.Woodpecker = Ember.Application.create({
 				switch(Woodpecker.selector.type) {
 				case 'set-tasks':
 				    Woodpecker.loader.view.set('isVisible', true);
-				    asana.sync().then(function() {
+				    asana.sync([Asana.Project]).then(function() {
 					Woodpecker.selector.load_tasks()
 					    .then(function() {
 						Woodpecker.selector.set(
@@ -175,7 +175,7 @@ window.Woodpecker = Ember.Application.create({
 				    break;
 				case 'set-tags':
 				    Woodpecker.loader.view.set('isVisible', true);
-				    asana.sync().then(function() {
+				    asana.sync([Asana.Workspace]).then(function() {
 					Woodpecker.selector.load_tags()
 					    .then(function() {
 						Woodpecker.selector.set(
@@ -400,7 +400,12 @@ window.Woodpecker = Ember.Application.create({
 	// asana.onLine = true;
 	Woodpecker.loader.view.set('isVisible', true);
 	asana.me = new Asana.User('me');
-	result = asana.sync().then(function() {
+	result = asana.sync([
+	    Asana.User,
+	    Asana.Workspace,
+	    Asana.Project,
+	    Asana.Tag,
+	]).then(function() {
 	    RSVP.all([
 		asana.Workspace.find()
 		    .then(function(workspaces) {

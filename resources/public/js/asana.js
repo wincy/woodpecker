@@ -90,18 +90,13 @@ Asana.prototype = {
 	}.bind(this));
 	return promise;
     },
-    sync: function() {
+    sync: function(types) {
 	return new RSVP.Promise(function(resolve, reject) {
 	    if (!navigator.onLine || !this.onLine) {
 		console.log('offline now, using cache');
 		resolve(this);
 	    } else {
-		resolve(RSVP.all([
-		    Asana.User,
-		    Asana.Workspace,
-		    Asana.Project,
-		    Asana.Tag,
-		].map(function(klass) {
+		resolve(RSVP.all(types.map(function(klass) {
 		    return asana.request('/' + klass.prototype.key,
 					 {opt_fields: 'modified_at,created_at'})
 			.then(function(data) {
@@ -188,7 +183,6 @@ Asana.Workspace.prototype = {
 		if (!outdated) {
 		    return this;
 		}
-		console.log('Sync:', this.key, this.id);
 		return asana.request('/' + this.key + '/' + this.id)
 		    .then(function(data) {
 			new Persistent(this.key).set(this.id, JSON.stringify(data));
@@ -315,7 +309,6 @@ Asana.Project.prototype = {
 		if (!outdated) {
 		    return this;
 		}
-		console.log('Sync:', this.key, this.id);
 		return asana.request('/' + this.key + '/' + this.id)
 		    .then(function(data) {
 			new Persistent(this.key).set(this.id, JSON.stringify(data));
@@ -452,56 +445,57 @@ Asana.Task.prototype = {
 		if (!outdated) {
 		    return this;
 		}
-		console.log('Sync:', this.key, this.id);
 		return asana.request('/' + this.key + '/' + this.id)
 		    .then(function(data) {
 			new Persistent(this.key).set(this.id, JSON.stringify(data));
 			return data;
 		    }.bind(this), rejectHandler)
 		    .then(function(data) {
+			console.log('Sync:', this.key, this.id);
 			return $.extend(this, data);
 		    }.bind(this), rejectHandler);
 	    }.bind(this), rejectHandler)
-	    // .then(function(item) {
-	    // 	if (!deep) {
-	    // 	    return this;
-	    // 	}
-	    // 	return RSVP.all([
-	    // 	    asana.request('/' + item.key + '/' + item.id + '/' + 'stories',
-	    // 	    		  {opt_fields: 'created_at'})
-	    // 	    	.then(function(data) {
-	    // 	    	    return new Persistent(item.key + '/' + item.id)
-	    // 	    		.set('tasks', JSON.stringify(data))
-	    // 	    		.then(function() {
-	    // 	    		    return data;
-	    // 	    		}, rejectHandler);
-	    // 	    	}, rejectHandler)
-	    // 	    	.then(function(items) {
-	    // 	    	    return RSVP.all(items.map(function(item) {
-	    // 	    		return new Asana.Story(item.id).sync(
-	    // 	    		    new Date(Date.parse(item.created_at)));
-	    // 	    	    }));
-	    // 	    	}, rejectHandler),
-	    // 	    asana.request('/' + item.key + '/' + item.id + '/' + 'tags',
-	    // 	    		  {opt_fields: 'created_at'})
-	    // 	    	.then(function(data) {
-	    // 	    	    return new Persistent(item.key + '/' + item.id)
-	    // 	    		.set('tags', JSON.stringify(data))
-	    // 	    		.then(function() {
-	    // 	    		    return data;
-	    // 	    		}, rejectHandler);
-	    // 	    	}, rejectHandler)
-	    // 	    	.then(function(items) {
-	    // 	    	    return RSVP.all(items.map(function(item) {
-	    // 	    		return new Asana.Tag(item.id).sync(
-	    // 	    		    new Date(Date.parse(item.created_at)));
-	    // 	    	    }));
-	    // 	    	}, rejectHandler),
-	    // 	]).then(function() {
-	    // 	    return this;
-	    // 	}.bind(this), rejectHandler);
-	    // }.bind(this), rejectHandler)
-	;
+	    .then(function(item) {
+	    	if (!deep) {
+	    	    return this;
+	    	}
+	    	return RSVP.all([
+	    	    asana.request('/' + item.key + '/' + item.id + '/' + 'stories',
+	    	    		  {opt_fields: 'created_at'})
+	    	    	.then(function(data) {
+	    	    	    return new Persistent(item.key + '/' + item.id)
+	    	    		.set('tasks', JSON.stringify(data))
+	    	    		.then(function() {
+	    	    		    return data;
+	    	    		}, rejectHandler);
+	    	    	}, rejectHandler)
+	    	    	.then(function(items) {
+	    	    	    return RSVP.all(items.map(function(item) {
+	    	    		return new Asana.Story(item.id).sync(
+	    	    		    new Date(Date.parse(item.created_at)),
+				    false);
+	    	    	    }));
+	    	    	}, rejectHandler),
+	    	    asana.request('/' + item.key + '/' + item.id + '/' + 'tags',
+	    	    		  {opt_fields: 'created_at'})
+	    	    	.then(function(data) {
+	    	    	    return new Persistent(item.key + '/' + item.id)
+	    	    		.set('tags', JSON.stringify(data))
+	    	    		.then(function() {
+	    	    		    return data;
+	    	    		}, rejectHandler);
+	    	    	}, rejectHandler)
+	    	    	.then(function(items) {
+	    	    	    return RSVP.all(items.map(function(item) {
+	    	    		return new Asana.Tag(item.id).sync(
+	    	    		    new Date(Date.parse(item.created_at)),
+				    false);
+	    	    	    }));
+	    	    	}, rejectHandler),
+	    	]).then(function() {
+	    	    return this;
+	    	}.bind(this), rejectHandler);
+	    }.bind(this), rejectHandler);
     },
     load: function() {
 	var p = new Persistent(this.key);
@@ -639,13 +633,13 @@ Asana.Story.prototype = {
 		if (!outdated) {
 		    return this;
 		}
-		console.log('Sync:', this.key, this.id);
 		return asana.request('/' + this.key + '/' + this.id)
 		    .then(function(data) {
 			new Persistent(this.key).set(this.id, JSON.stringify(data));
 			return data;
 		    }.bind(this), rejectHandler)
 		    .then(function(data) {
+			console.log('Sync:', this.key, this.id);
 			return $.extend(this, data);
 		    }.bind(this), rejectHandler);
 	    }.bind(this), rejectHandler);
@@ -682,13 +676,13 @@ Asana.User.prototype = {
 		if (!outdated) {
 		    return this;
 		}
-		console.log('Sync:', this.key, this.id);
 		return asana.request('/' + this.key + '/' + this.id)
 		    .then(function(data) {
 			new Persistent(this.key).set(this.id, JSON.stringify(data));
 			return data;
 		    }.bind(this), rejectHandler)
 		    .then(function(data) {
+			console.log('Sync:', this.key, this.id);
 			return $.extend(this, data);
 		    }.bind(this), rejectHandler);
 	    }.bind(this), rejectHandler);
@@ -726,13 +720,13 @@ Asana.Tag.prototype = {
 		if (!outdated) {
 		    return this;
 		}
-		console.log('Sync:', this.key, this.id);
 		return asana.request('/' + this.key + '/' + this.id)
 		    .then(function(data) {
 			new Persistent(this.key).set(this.id, JSON.stringify(data));
 			return data;
 		    }.bind(this), rejectHandler)
 		    .then(function(data) {
+			console.log('Sync:', this.key, this.id);
 			return $.extend(this, data);
 		    }.bind(this), rejectHandler);
 	    }.bind(this), rejectHandler)
