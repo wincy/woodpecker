@@ -118,9 +118,7 @@ Asana.prototype = {
 				return new klass(item.id).sync(last_update, true);
 			    }));
 			}, rejectHandler);
-		})).then(function() {
-		    return asana.me.sync(new Date());
-		}, rejectHandler));
+		})));
 	    }
 	}.bind(this));
     },
@@ -730,28 +728,27 @@ Asana.Tag.prototype = {
 			return $.extend(this, data);
 		    }.bind(this), rejectHandler);
 	    }.bind(this), rejectHandler)
-	    // .then(function(item) {
-	    // 	return RSVP.all([
-	    // 	    asana.request('/' + item.key + '/' + item.id + '/' + 'tasks',
-	    // 			  {opt_fields: 'modified_at'})
-	    // 		.then(function(data) {
-	    // 		    return new Persistent(item.key + '/' + item.id)
-	    // 			.set('tasks', JSON.stringify(data))
-	    // 			.then(function() {
-	    // 			    return data;
-	    // 			}, rejectHandler);
-	    // 		}, rejectHandler)
-	    // 		.then(function(items) {
-	    // 		    return RSVP.all(items.map(function(item) {
-	    // 			return new Asana.Task(item.id).sync(
-	    // 			    new Date(Date.parse(item.modified_at)));
-	    // 		    }));
-	    // 		}, rejectHandler),
-	    // 	]).then(function() {
-	    // 	    return this;
-	    // 	}.bind(this), rejectHandler);
-	    // }.bind(this))
-	;
+	    .then(function(item) {
+	    	return RSVP.all([
+	    	    asana.request('/' + item.key + '/' + item.id + '/' + 'tasks',
+	    			  {opt_fields: 'modified_at'})
+	    		.then(function(data) {
+	    		    return new Persistent(item.key + '/' + item.id)
+	    			.set('tasks', JSON.stringify(data))
+	    			.then(function() {
+	    			    return data;
+	    			}, rejectHandler);
+	    		}, rejectHandler)
+	    		.then(function(items) {
+	    		    return RSVP.all(items.map(function(item) {
+	    			return new Asana.Task(item.id).sync(
+	    			    new Date(Date.parse(item.modified_at)));
+	    		    }));
+	    		}, rejectHandler),
+	    	]).then(function() {
+	    	    return this;
+	    	}.bind(this), rejectHandler);
+	    }.bind(this));
     },
     load: function() {
 	var p = new Persistent(this.key);

@@ -406,7 +406,9 @@ window.Woodpecker = Ember.Application.create({
 	    Asana.Project,
 	    Asana.Tag,
 	]).then(function() {
-	    RSVP.all([
+	    return asana.me.sync(new Date());
+	}, rejectHandler).then(function() {
+	    return RSVP.all([
 		asana.Workspace.find()
 		    .then(function(workspaces) {
 			asana.workspaces = workspaces;
@@ -1177,7 +1179,7 @@ Woodpecker.Selector = Ember.ArrayController.extend({
 		    return project.Task.find();
 		}))
 	}, rejectHandler).then(function(tasks_list) {
-	    RSVP.all(tasks_list.reduce(function(s, a) {
+	    return RSVP.all(tasks_list.reduce(function(s, a) {
 		var result = s.copy();
 		a.forEach(function(task) {
 		    if (!result.some(function(e) {

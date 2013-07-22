@@ -22,7 +22,7 @@ Persistent.prototype = {
 	return this.init().then(function() {
 	    return new RSVP.Promise(function(resolve, reject) {
 		this.keys(true).then(function(keys) {
-		    RSVP.all(keys.map(function(key) {
+		    return RSVP.all(keys.map(function(key) {
 			return new RSVP.Promise(function(resolve, reject) {
 			    this.root.getDirectory(key, {}, function(entry) {
 				if (entry.isDirectory) {
@@ -121,7 +121,7 @@ Persistent.prototype = {
 	// console.log('Persistent("' + this.ns + '").set("' + key + '", "' + value + '")');
 	key = key + '.dat';
 	return this.init().then(function() {
-	    var promise = new RSVP.Promise(function(resolve, reject) {
+	    return new RSVP.Promise(function(resolve, reject) {
 		this.root.getFile(key, {create: true}, function(fileEntry) {
 		    fileEntry.createWriter(function(writer) {
 			writer.onerror = reject;
@@ -134,7 +134,6 @@ Persistent.prototype = {
 		}, reject);
 	    }.bind(this));
 	}.bind(this), rejectHandler.bind({info: [key, value]}));
-	return promise;
     },
     keys: function(with_affix) {
 	return this.init().then(function() {
