@@ -1,3 +1,12 @@
+function to_monday(date) {
+    var d = new Date(Date.parse(date));
+    d = new Date(d.getTime() - 86400 * 1000 * d.getDay());
+    return sprintf('%d-%02d-%02d',
+		   d.getFullYear(),
+		   d.getMonth() + 1,
+		   d.getDate())
+}
+
 function get_data_by_tags(tags) {
     return RSVP.all(tags.map(function(tag) {
 	return tag.Task.find()
@@ -11,7 +20,7 @@ function get_data_by_tags(tags) {
 		var stat = {};
 		tasks.forEach(function(task) {
 		    console.log(task);
-		    var date = task.name.split('#')[0];
+		    var date = to_monday(task.name.split('#')[0]);
 		    var record = JSON.parse(task.notes);
 		    if (!stat[date]) {
 			stat[date] = {};
