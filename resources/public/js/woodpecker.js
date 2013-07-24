@@ -324,6 +324,21 @@ window.Woodpecker = Ember.Application.create({
 			    },
 			}),
 			Woodpecker.Button.create({
+			    text: "Sync",
+			    hit: function() {
+				Woodpecker.loader.view.set('isVisible', true);
+				asana.sync([
+				    Asana.User,
+				    Asana.Workspace,
+				    Asana.Project,
+				    Asana.Tag,
+				]).then(function() {
+				    Woodpecker.loader.view.set('isVisible', false);
+				});
+				Woodpecker.puncher.view.set('isVisible', false);
+			    },
+			}),
+			Woodpecker.Button.create({
 			    text: "Cancel",
 			    hit: function() {
 				Woodpecker.puncher.view.set('isVisible', false);
@@ -400,50 +415,41 @@ window.Woodpecker = Ember.Application.create({
 	check_online();
 	Woodpecker.loader.view.set('isVisible', true);
 	asana.me = new Asana.User('me');
-	result = asana.sync([
-	    Asana.User,
-	    Asana.Workspace,
-	    Asana.Project,
-	    Asana.Tag,
-	]).then(function() {
-	    return asana.me.sync(new Date());
+	result = RSVP.all([
+	    asana.Workspace.find()
+		.then(function(workspaces) {
+		    asana.workspaces = workspaces;
+		    asana.woodpecker = workspaces.filter(function(workspace) {
+			return workspace.name == 'Woodpecker';
+		    })[0];
+		    asana.workspaces.removeObject(asana.woodpecker);
+		}, rejectHandler),
+	    asana.me.load(),
+	]).then(function (){
+	    return asana.woodpecker.Project.find()
+		.then(function(projects) {
+		    return new RSVP.Promise(function(resolve, reject) {
+			asana.woodpecker.me = projects.filter(function(project) {
+			    return project.name == asana.me.name;
+			})[0];
+			if (asana.woodpecker.me) {
+			    resolve(asana.woodpecker.me);
+			} else {
+			    reject('asana.woodpecker.me not found');
+			}
+		    })
+		}, rejectHandler);
+	}, rejectHandler).then(function() {
+	    return Woodpecker.timeline.load();
+	}, rejectHandler).then(function() {
+	    return logging.apply_all();
 	}, rejectHandler).then(function() {
 	    return RSVP.all([
-		asana.Workspace.find()
-		    .then(function(workspaces) {
-			asana.workspaces = workspaces;
-			asana.woodpecker = workspaces.filter(function(workspace) {
-			    return workspace.name == 'Woodpecker';
-			})[0];
-			asana.workspaces.removeObject(asana.woodpecker);
-		    }, rejectHandler),
-		asana.me.load(),
-	    ]).then(function (){
-		return asana.woodpecker.Project.find()
-		    .then(function(projects) {
-			return new RSVP.Promise(function(resolve, reject) {
-			    asana.woodpecker.me = projects.filter(function(project) {
-				return project.name == asana.me.name;
-			    })[0];
-			    if (asana.woodpecker.me) {
-				resolve(asana.woodpecker.me);
-			    } else {
-				reject('asana.woodpecker.me not found');
-			    }
-			})
-		    }, rejectHandler);
-	    }, rejectHandler).then(function() {
-		return Woodpecker.timeline.load();
-	    }, rejectHandler).then(function() {
-		return logging.apply_all();
-	    }, rejectHandler).then(function() {
-		return RSVP.all([
-		    Woodpecker.selector.load_tasks(),
-		    Woodpecker.selector.load_tags(),
-		]);
-	    }, rejectHandler).then(function() {
-		Woodpecker.loader.view.set('isVisible', false);
-	    }, rejectHandler);
+		Woodpecker.selector.load_tasks(),
+		Woodpecker.selector.load_tags(),
+	    ]);
+	}, rejectHandler).then(function() {
+	    Woodpecker.loader.view.set('isVisible', false);
 	}, rejectHandler);
     },
 });
@@ -1138,6 +1144,7 @@ Woodpecker.Puncher.Buttons = Ember.ArrayController.extend({
 	    {text: "Add check out", type: "add-check-out"},
 	    {text: "Flush date", type: "flush-date"},
 	    {text: "Statistics", type: "statistics"},
+	    {text: "Sync", type: "sync"},
 	    {text: "Cancel", type: "cancel"},
 	].map(function (elem) {
 	    return Woodpecker.Puncher.Button.create(elem);
