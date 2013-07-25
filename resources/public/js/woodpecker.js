@@ -19,43 +19,12 @@ window.applicationCache.addEventListener('updateready', function() {
 
 window.applicationCache.addEventListener('error', function() {
     console.log('error when update cache');
-    asana.onLine = false;
 });
 
 setInterval(function() {
     console.log('flush expire cache');
     locache.cleanup();
 }, 86400000);
-
-var delay = 1000;
-function check_online() {
-    $.ajax({
-	method: 'GET',
-	url: '/ping.html',
-	timeout: 10000,
-	cache: false,
-    })
-	.success(function() {
-	    if (!asana.onLine) {
-		console.log('online now');
-	    }
-	    asana.onLine = true;
-	    Woodpecker.network.set('status', true);
-	    delay = 1000;
-	    setTimeout(check_online, delay);
-	})
-	.error(function() {
-	    if (asana.onLine) {
-		console.log('offline now');
-	    }
-	    asana.onLine = false;
-	    Woodpecker.network.set('status', false);
-	    if (delay < 64000) {
-		delay = delay * 2;
-	    }
-	    setTimeout(check_online, delay);
-	});
-}
 
 window.Woodpecker = Ember.Application.create({
     ready: function () {
@@ -81,14 +50,6 @@ window.Woodpecker = Ember.Application.create({
 		Woodpecker.selector.view.set('scroll', window.scrollY);
 		Woodpecker.selector.view.set('isVisible', true);
 	    },
-	});
-	Woodpecker.network = Ember.ObjectController.create({
-	    status: true,
-	});
-	Woodpecker.network.view = Ember.View.create({
-	    tagName: 'i',
-	    controller: Woodpecker.network,
-	    classNameBindings: ['controller.status::icon-plane']
 	});
 	Woodpecker.selector = Woodpecker.Selector.create();
 	Woodpecker.selector.load_dates();
@@ -411,8 +372,6 @@ window.Woodpecker = Ember.Application.create({
 	    ],
 	})
 	Woodpecker.menu = Woodpecker.Menu.create();
-	asana.onLine = false;
-	check_online();
 	Woodpecker.loader.view.set('isVisible', true);
 	asana.me = new Asana.User('me');
 	result = RSVP.all([
