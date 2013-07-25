@@ -22,7 +22,6 @@ function bindAll(target, that) {
 }
 
 Asana = function(ns) {
-    this.onLine = true;
     this.ns = ns;
     this.User = bindAll(this.User, this);
     this.Workspace = bindAll(this.Workspace, this);
@@ -58,9 +57,6 @@ Asana.prototype = {
 		    // },
 		})
 		    .done(function(data, status, xhr) {
-			if (!asana.onLine) {
-			    asana.onLine = true;
-			}
 			resolve(data.data);
 		    })
 		    .fail(function(xhr, status, error) {
@@ -92,7 +88,7 @@ Asana.prototype = {
     },
     sync: function(types) {
 	return new RSVP.Promise(function(resolve, reject) {
-	    if (!navigator.onLine || !this.onLine) {
+	    if (!navigator.onLine) {
 		console.log('offline now, using cache');
 		resolve(this);
 	    } else {
