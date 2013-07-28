@@ -308,8 +308,7 @@ window.Woodpecker = Ember.Application.create({
 		    ],
 		}),
 	    ],
-	    classNames: ["box", "row-fluid"],
-	    templateName: "puncher",
+	    classNames: ["row-fluid"],
 	});
 	Woodpecker.timeline = Woodpecker.Timeline.create();
 	Woodpecker.timeline.view = Ember.CollectionView.create({
@@ -1357,8 +1356,8 @@ Woodpecker.CommentEditor = Ember.ObjectController.extend({
 });
 Woodpecker.Menu = Ember.ObjectController.extend({
     hit: function() {
-	var visible = Woodpecker.puncher.view.isVisible;
-	Woodpecker.puncher.view.set('isVisible', ! visible);
+	Woodpecker.puncher.view.set('scroll', window.scrollY);
+	Woodpecker.puncher.view.toggleProperty('isVisible');
     },
 });
 // Handlebars Helpers

@@ -13,17 +13,6 @@ body {
     overflow: hidden;
 }
 
-.box {
-    background-color: #D9D1BA;
-    position: fixed;
-    top: 60px;
-    margin: 5%;
-    padding: 5%;
-    width: 80%;
-    overflow: hidden;
-    z-index: 100;
-}
-
 .punch {
     color: #F2E9D8;
     background-color: #8094A6;
