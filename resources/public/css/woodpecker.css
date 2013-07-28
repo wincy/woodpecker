@@ -42,11 +42,13 @@ body {
     line-height: 50px;
     text-align: center;
     margin: 1%;
+    position: relative;
 }
 
 .marked {
     color: #F2E9D8;
     background-color: #4C6173;
+    position: relative;
 }
 
 textarea {

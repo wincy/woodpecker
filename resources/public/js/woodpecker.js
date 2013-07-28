@@ -1270,9 +1270,72 @@ Woodpecker.Selector.Option = Ember.ObjectController.extend({
     },
 });
 Woodpecker.Selector.OptionView = Ember.View.extend({
+    scroll: false,
+    swipe: false,
+    start: null,
     templateName: "selector-option",
     controllerBinding: 'content',
     classNameBindings: ["marked"],
+    touchStart: function(evt) {
+	this.scroll = false;
+	this.swipe = false;
+	this.start = {
+	    x: evt.originalEvent.changedTouches[0].screenX,
+	    y: evt.originalEvent.changedTouches[0].screenY,
+	};
+	this.current = null;
+	this.origin = $(evt.currentTarget.firstElementChild).offset();
+    },
+    touchMove: function(evt) {
+	if (!this.swipe && !this.scroll) {
+	    if (Math.abs(evt.originalEvent.changedTouches[0].screenX
+			 - this.start.x) > 8) {
+		this.swipe = true;
+		console.log('swipe');
+		evt.preventDefault();
+	    } else if (Math.abs(evt.originalEvent.changedTouches[0].screenY
+				- this.start.y) > 10) {
+		this.scroll = true;
+		console.log('scroll');
+	    }
+	} else if (this.swipe) {
+	    this.current = {
+		left: (this.origin.left
+		       + evt.originalEvent.changedTouches[0].screenX
+		       - this.start.x),
+	    };
+	    $(evt.currentTarget.firstElementChild).offset(this.current);
+	    console.log(evt);
+	}
+    },
+    touchEnd: function(evt) {
+	var prefix = null;
+	if (this.current.left - this.origin.left >= 0) {
+	    prefix = '-=';
+	} else {
+	    prefix = '+=';
+	}
+	$(evt.currentTarget.firstElementChild).animate({
+	    left: prefix + Math.abs(this.current.left - this.origin.left) + 'px',
+	}, 'fast');
+	this.scroll = false;
+	this.swipe = false;
+	this.start = null;
+    },
+    touchCancel: function(evt) {
+	var prefix = null;
+	if (this.current.left - this.origin.left >= 0) {
+	    prefix = '-=';
+	} else {
+	    prefix = '+=';
+	}
+	$(evt.currentTarget.firstElementChild).animate({
+	    left: prefix + Math.abs(this.current.left - this.origin.left) + 'px',
+	}, 'fast');
+	this.scroll = false;
+	this.swipe = false;
+	this.start = null;
+    },
 });
 
 // Comment Editor
