@@ -300,6 +300,28 @@ window.Woodpecker = Ember.Application.create({
 			    },
 			}),
 			Woodpecker.Button.create({
+			    text: "Clean",
+			    hit: function() {
+				Woodpecker.loader.view.set('isVisible', true);
+				asana.woodpecker.me.Task.find().then(function(tasks) {
+				    return RSVP.all(tasks.filter(function(task) {
+					console.log(task.name, ':', (
+					    Date.parse(Woodpecker.timeline.date) -
+						Date.parse(task.name.split('#')[0]) >
+						86400 * 1000 * 10));
+					return (Date.parse(Woodpecker.timeline.date) -
+						Date.parse(task.name.split('#')[0]) >
+						86400 * 1000 * 10);
+				    }).map(function(task) {
+					return task.update({completed: true});
+				    }));
+				}, rejectHandler).then(function() {
+				    Woodpecker.loader.view.set('isVisible', false);
+				}, rejectHandler);
+				Woodpecker.puncher.view.set('isVisible', false);
+			    },
+			}),
+			Woodpecker.Button.create({
 			    text: "Cancel",
 			    hit: function() {
 				Woodpecker.puncher.view.set('isVisible', false);
