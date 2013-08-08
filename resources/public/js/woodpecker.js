@@ -517,6 +517,8 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 	    return RSVP.all(Object.keys(records).map(function(idx) {
 		return asana.woodpecker.me.Task.get({
 		    name: sprintf('%s#%s', this.date, idx),
+		    assignee: 'me',
+		    assignee_status: 'today',
 		}).then(function(task) {
 		    var idx = parseInt(task.name.split('#')[1]);
 		    var promises = [];
