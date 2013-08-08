@@ -21,6 +21,17 @@ function bindAll(target, that) {
     return result;
 }
 
+function rejectHandler(error) {
+    if (this.info) {
+	console.log(this.info);
+    }
+    console.log(error);
+    if (error && error.stack) {
+	console.log(error.stack);
+    }
+    throw error;
+}
+
 Asana = function(ns) {
     this.ns = ns;
     this.User = bindAll(this.User, this);
@@ -50,6 +61,7 @@ Asana.prototype = {
 		    data: params,
 		    type: method,
 		    timeout: 30000,
+		    dataType: 'json',
 		    // error: function(xhr, status, error) {
 		    // 	if (xhr.status == 429 || error == 'timeout') {
 		    // 	    console.log('will retry');
@@ -565,9 +577,9 @@ Asana.Task.prototype = {
 		.then(function(item) {
 		    return item.sync(new Date(Date.parse(item.created_at)))
 			.then(function() {
-			    return this.sync(new Date(0)).then(function() {
+			    // return this.sync(new Date(0)).then(function() {
 				return item;
-			    });
+			    // });
 			}.bind(this), rejectHandler);
 		}.bind(this), rejectHandler);
 	},
