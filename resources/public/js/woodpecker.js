@@ -10,6 +10,7 @@ function rejectHandler(error) {
     if (error && error.stack) {
 	console.log(error.stack);
     }
+    throw error;
 }
 
 window.applicationCache.addEventListener('updateready', function() {
@@ -25,6 +26,35 @@ setInterval(function() {
     console.log('flush expire cache');
     locache.cleanup();
 }, 86400000);
+
+function init_efficient_tags() {
+    return asana.Workspace.get({
+	name: 'Woodpecker',
+    }).then(function (woodpecker) {
+	if (!woodpecker) {
+	    return new Promise(function(resolve, reject) {
+		alert("Workspace 'Woodpecker' is not found, please create one.");
+		reject("Workspace 'Woodpecker' is not found, please create one.");
+	    });
+	} else {
+	    return woodpecker.Project.get({
+		name: '.woodpecker',
+	    }).then(function(dot_wp) {
+		return RSVP.all([1, 2, 3].map(function(level) {
+		    return woodpecker.Tag.get({
+			name: '效率-' + level,
+		    }).then(function(tag) {
+			return dot_wp.Task.get({
+			    name: 'tags',
+			}).then(function(tags_container) {
+			    return tags_container.addTag(tag);
+			})
+		    });
+		}));
+	    });
+	}
+    });
+}
 
 window.Woodpecker = Ember.Application.create({
     ready: function () {
@@ -374,6 +404,7 @@ window.Woodpecker = Ember.Application.create({
 	Woodpecker.loader.view.set('isVisible', true);
 	asana.me = new Asana.User('me');
 	result = RSVP.all([
+	    // init_efficient_tags(),
 	    asana.Workspace.find()
 		.then(function(workspaces) {
 		    asana.workspaces = workspaces;
@@ -443,7 +474,7 @@ Woodpecker.Comment = Ember.ObjectController.extend({
     },
     save: function() {
 	if (! this.story && this.content && this.content.length > 0) {
-	    return this.task.Story.create(this.content)
+	    return this.task.Story.create({text: this.content})
 		.then(function(story) {
 		    this.set('story', story);
 		    return this;
@@ -462,33 +493,30 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 	    return record.save_comments();
 	})).then(function(records) {
 	    return RSVP.all(Object.keys(records).map(function(idx) {
-		return asana.woodpecker.me
-		    .Task.getByName(sprintf('%s#%s', this.date, idx))
-		    .then(function(task) {
-			return task.load();
-		    }, rejectHandler)
-		    .then(function(task) {
-			var idx = parseInt(task.name.split('#')[1]);
-			var promises = [];
-			promises.push(task.update({notes: this.content[idx].toJSON()}));
-			var old_ids = task.tags.map(function(tag) {
-			    return tag.id;
-			});
-			var new_ids = this.content[idx].tags.map(function(tag) {
-			    return tag.id;
-			});
-			this.content[idx].tags.forEach(function(tag) {
-			    if (old_ids.indexOf(tag.id) == -1) {
-				promises.push(task.addTag(tag));
-			    }
-			});
-			task.tags.forEach(function(tag) {
-			    if (new_ids.indexOf(tag.id) == -1) {
-				promises.push(task.removeTag(tag));
-			    }
-			});
-			return RSVP.all(promises);
-		    }.bind(this), rejectHandler);
+		return asana.woodpecker.me.Task.get({
+		    name: sprintf('%s#%s', this.date, idx),
+		}).then(function(task) {
+		    var idx = parseInt(task.name.split('#')[1]);
+		    var promises = [];
+		    promises.push(task.update({notes: this.content[idx].toJSON()}));
+		    var old_ids = task.tags.map(function(tag) {
+			return tag.id;
+		    });
+		    var new_ids = this.content[idx].tags.map(function(tag) {
+			return tag.id;
+		    });
+		    this.content[idx].tags.forEach(function(tag) {
+			if (old_ids.indexOf(tag.id) == -1) {
+			    promises.push(task.addTag(tag));
+			}
+		    });
+		    task.tags.forEach(function(tag) {
+			if (new_ids.indexOf(tag.id) == -1) {
+			    promises.push(task.removeTag(tag));
+			}
+		    });
+		    return RSVP.all(promises);
+		}.bind(this), rejectHandler);
 	    }.bind(this)));
 	}.bind(this), rejectHandler);
     },
@@ -696,7 +724,7 @@ Woodpecker.Timeline.Record = Ember.ObjectController.extend({
 	    data.tasks.map(function(id) {
 		return new Asana.Task(id).load();
 	    })).then(function(tasks) {
-		this.set('tasks', tasks);
+		this.tasks = tasks;
 		return RSVP.all(
 		    data.comments.map(function(id) {
 			if (id) {
@@ -1323,6 +1351,9 @@ Woodpecker.Selector.OptionView = Ember.View.extend({
     },
     touchCancel: function(evt) {
 	var prefix = null;
+	if (!this.current) {
+	    return;
+	}
 	if (this.current.left - this.origin.left >= 0) {
 	    prefix = '-=';
 	} else {

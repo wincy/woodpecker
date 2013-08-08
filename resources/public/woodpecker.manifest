@@ -28,10 +28,10 @@ CACHE MANIFEST
 /index.html
 /test.html
 /js/asana.js
+/js/woodpecker.js
 /js/logging.js
 /js/persistent.js
 /js/statistics.js
-/js/woodpecker.js
 /js/test.js
 
 NETWORK:

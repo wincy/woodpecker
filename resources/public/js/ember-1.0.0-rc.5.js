@@ -2983,6 +2983,7 @@ Ember.Descriptor = function() {};
 //
 
 var MANDATORY_SETTER_FUNCTION = Ember.MANDATORY_SETTER_FUNCTION = function(value) {
+    console.log('Value:', value);
   Ember.assert("You must use Ember.set() to access this property (of " + this + ")", false);
 };
 
@@ -3040,6 +3041,9 @@ var DEFAULT_GETTER_FUNCTION = Ember.DEFAULT_GETTER_FUNCTION = function(name) {
     become the explicit value of this property.
 */
 Ember.defineProperty = function(obj, keyName, desc, data, meta) {
+    if (obj.id == 7155868500950) {
+	console.log(obj, keyName, desc, data, meta);
+    }
   var descs, existingDesc, watching, value;
 
   if (!meta) meta = metaFor(obj);
