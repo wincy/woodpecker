@@ -1,5 +1,5 @@
 CACHE MANIFEST
-# Fri Aug  9 07:30:52 CST 2013
+# Fri Aug  9 17:47:46 CST 2013
 /css/bootstrap.min.css
 /css/cursor.css
 /css/timepicker.css
@@ -32,6 +32,8 @@ CACHE MANIFEST
 /js/logging.js
 /js/persistent.js
 /js/statistics.js
+/js/index.js
+/js/lock.js
 /js/test.js
 
 NETWORK:

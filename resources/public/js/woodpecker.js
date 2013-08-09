@@ -46,6 +46,7 @@ function init_efficient_tags() {
 		    }).then(function(tag) {
 			return dot_wp.Task.get({
 			    name: 'tags',
+			    assignee: 'me',
 			}).then(function(tags_container) {
 			    return tags_container.addTag(tag);
 			})
@@ -348,6 +349,22 @@ window.Woodpecker = Ember.Application.create({
 				}, rejectHandler).then(function() {
 				    Woodpecker.loader.view.set('isVisible', false);
 				}, rejectHandler);
+				Woodpecker.puncher.view.set('isVisible', false);
+			    },
+			}),
+			Woodpecker.Button.create({
+			    text: "Update Index",
+			    hit: function() {
+				Woodpecker.loader.view.set('isVisible', true);
+				var index = new Index('task.name', 'task.id');
+				return asana.woodpecker.me.Task.find()
+				    .then(function(tasks) {
+					return RSVP.all(tasks.map(function(task) {
+					    return index.set(task.name, task.id);
+					}));
+				    }).then(function() {
+					Woodpecker.loader.view.set('isVisible', false);
+				    }, rejectHandler);
 				Woodpecker.puncher.view.set('isVisible', false);
 			    },
 			}),

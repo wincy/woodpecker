@@ -483,16 +483,11 @@ Asana.Project.prototype = {
     Task: {
 	get: function(conditions) {
 	    var klass = this.Task;
-	    return klass.find().then(function(items) {
-		var matched = items.filter(function(item) {
-		    return Object.keys(conditions).every(function(field) {
-			return conditions[field] == item[field];
-		    });
-		});
-		if (matched.length == 0) {
+	    return klass.filter(conditions).then(function(task) {
+		if (!task) {
 		    return klass.create(conditions);
 		} else {
-		    return matched[0];
+		    return task;
 		}
 	    })
 	},
@@ -560,6 +555,20 @@ Asana.Project.prototype = {
 		    }));
 		}, rejectHandler);
 	},
+	filter: function(conditions) {
+	    if (conditions.name) {
+		return new Index('task.name', 'task.id').get(conditions.name)
+		    .then(function(id) {
+			if (id) {
+			    return new Asana.Task(id).load();
+			} else {
+			    return id;
+			}
+		    });
+	    } else {
+		throw "Filter not support yet."
+	    }
+	},
     }
 }
 
@@ -585,8 +594,6 @@ Asana.Task.prototype = {
 		    }.bind(this), rejectHandler)
 		    .then(function(data) {
 			console.log('Sync:', this.key, this.id);
-			console.log('This:', this);
-			console.log('Data:', JSON.stringify(data));
 			return $.extend(this, data);
 		    }.bind(this), rejectHandler);
 	    }.bind(this), rejectHandler)
