@@ -534,7 +534,14 @@ Asana.Project.prototype = {
 				return item;
 			    });
 			}.bind(this), rejectHandler);
-		}.bind(this), rejectHandler);
+		}.bind(this), rejectHandler)
+		.then(function(item) {
+		    return new Index('task.name', 'task.id')
+			.set(item.name, item.id)
+			.then(function() {
+			    return item;
+			}, rejectHandler);
+		}, rejectHandler);
 	},
 	find: function() {
 	    return new Persistent(this.key + '/' + this.id).get('tasks')
@@ -597,6 +604,13 @@ Asana.Task.prototype = {
 			return $.extend(this, data);
 		    }.bind(this), rejectHandler);
 	    }.bind(this), rejectHandler)
+	    .then(function(item) {
+		return new Index('task.name', 'task.id')
+		    .set(item.name, item.id)
+		    .then(function() {
+			return item;
+		    }, rejectHandler);
+	    }, rejectHandler)
 	    .then(function(item) {
 	    	if (!deep) {
 	    	    return this;
