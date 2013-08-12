@@ -532,7 +532,7 @@ Asana.Project.prototype = {
 			.then(function() {
 			    return this.sync(new Date()).then(function() {
 				return item;
-			    });
+			    }, rejectHandler);
 			}.bind(this), rejectHandler);
 		}.bind(this), rejectHandler)
 		.then(function(item) {
@@ -605,6 +605,7 @@ Asana.Task.prototype = {
 		    }.bind(this), rejectHandler);
 	    }.bind(this), rejectHandler)
 	    .then(function(item) {
+		console.log('Item:', item);
 		return new Index('task.name', 'task.id')
 		    .set(item.name, item.id)
 		    .then(function() {

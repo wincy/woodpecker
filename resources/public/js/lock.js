@@ -30,7 +30,7 @@ Lock.prototype = {
 		if (this.lock()) {
 		    resolve();
 		} else {
-		    setTimeout(check, 50);
+		    setTimeout(check, 5);
 		}
 	    }.bind(this);
 	    check();

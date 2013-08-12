@@ -16,6 +16,7 @@ function rejectHandler(error) {
 window.applicationCache.addEventListener('updateready', function() {
     console.log('update to newest');
     window.applicationCache.swapCache();
+    location.reload();
 });
 
 window.applicationCache.addEventListener('error', function() {
