@@ -597,6 +597,7 @@ Asana.Task.prototype = {
 		return asana.request('/' + this.key + '/' + this.id)
 		    .then(function(data) {
 			new Persistent(this.key).set(this.id, JSON.stringify(data));
+			new Index('task.name', 'task.id').set(data.name, data.id);
 			return data;
 		    }.bind(this), rejectHandler)
 		    .then(function(data) {
@@ -604,14 +605,6 @@ Asana.Task.prototype = {
 			return $.extend(this, data);
 		    }.bind(this), rejectHandler);
 	    }.bind(this), rejectHandler)
-	    .then(function(item) {
-		console.log('Item:', item);
-		return new Index('task.name', 'task.id')
-		    .set(item.name, item.id)
-		    .then(function() {
-			return item;
-		    }, rejectHandler);
-	    }, rejectHandler)
 	    .then(function(item) {
 	    	if (!deep) {
 	    	    return this;
