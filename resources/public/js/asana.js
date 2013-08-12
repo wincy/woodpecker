@@ -596,9 +596,12 @@ Asana.Task.prototype = {
 		}
 		return asana.request('/' + this.key + '/' + this.id)
 		    .then(function(data) {
-			new Persistent(this.key).set(this.id, JSON.stringify(data));
-			new Index('task.name', 'task.id').set(data.name, data.id);
-			return data;
+			return RSVP.all([
+			    new Persistent(this.key).set(this.id, JSON.stringify(data)),
+			    new Index('task.name', 'task.id').set(data.name, data.id),
+			]).then(function() {
+			    return data;
+			}, rejectHandler);
 		    }.bind(this), rejectHandler)
 		    .then(function(data) {
 			console.log('Sync:', this.key, this.id);
