@@ -688,32 +688,10 @@ Asana.Task.prototype = {
 	    }.bind(this), rejectHandler);
     },
     addTag: function(tag) {
-	return asana.request('/tasks/' + this.id + '/addTag', {tag: tag.id}, 'POST')
-	    .then(function(data) {
-		return new Persistent('task-tags').get(this.id).then(
-		    function(data) {
-			var tags = JSON.parse(data);
-			tags.push({id: tag.id, name: tag.name});
-			return new Persistent('task-tags').set(
-			    this.id, JSON.stringify(tags));
-		    }.bind(this), rejectHandler).then(function() {
-			return true;
-		    }, rejectHandler);
-	    }.bind(this), rejectHandler);
+	return asana.request('/tasks/' + this.id + '/addTag', {tag: tag.id}, 'POST');
     },
     removeTag: function(tag) {
-	return asana.request('/tasks/' + this.id + '/removeTag', {tag: tag.id}, 'POST')
-	    .then(function(data) {
-		return new Persistent('task-tags').get(this.id)
-		    .then(function(data) {
-			var tags = JSON.parse(data);
-			tags.removeObject({id: tag.id, name: tag.name});
-			return new Persistent('task-tags').set(
-			    this.id, JSON.stringify(tags));
-		    }.bind(this), rejectHandler).then(function() {
-			return true;
-		    }, rejectHandler);
-	    }.bind(this), rejectHandler);
+	return asana.request('/tasks/' + this.id + '/removeTag', {tag: tag.id}, 'POST');
     },
     Story: {
 	create: function(data) {
