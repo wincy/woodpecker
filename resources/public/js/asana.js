@@ -880,7 +880,7 @@ Asana.Tag.prototype = {
 		return asana.request('/' + this.key + '/' + this.id)
 		    .then(function(data) {
 			new Persistent(this.key).set(this.id, JSON.stringify(data));
-			new Index('tag.name', 'tag.id').set(data.name, data.id),
+			new Index('tag.name', 'tag.id').set(data.name, data.id);
 			return data;
 		    }.bind(this), rejectHandler)
 		    .then(function(data) {
