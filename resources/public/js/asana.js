@@ -358,16 +358,11 @@ Asana.Workspace.prototype = {
     Tag: {
 	get: function(conditions) {
 	    var klass = this.Tag;
-	    return klass.find().then(function(items) {
-		var matched = items.filter(function(item) {
-		    return Object.keys(conditions).every(function(field) {
-			return conditions[field] == item[field];
-		    });
-		});
-		if (matched.length == 0) {
+	    return klass.filter(conditions).then(function(item) {
+		if (!item) {
 		    return klass.create(conditions);
 		} else {
-		    return matched[0];
+		    return item;
 		}
 	    })
 	},
@@ -393,7 +388,14 @@ Asana.Workspace.prototype = {
 				return item;
 			    });
 			}.bind(this), rejectHandler);
-		}.bind(this), rejectHandler);
+		}.bind(this), rejectHandler)
+		.then(function(item) {
+		    return new Index('tag.name', 'tag.id')
+			.set(item.name, item.id)
+			.then(function() {
+			    return item;
+			}, rejectHandler);
+		}, rejectHandler);
 	},
 	find: function() {
 	    return new Persistent(this.key + '/' + this.id).get('tags')
@@ -413,6 +415,20 @@ Asana.Workspace.prototype = {
 			return new Asana.Tag(item.id).load();
 		    }));
 		}, rejectHandler);
+	},
+	filter: function(conditions) {
+	    if (conditions.name) {
+		return new Index('tag.name', 'tag.id').get(conditions.name)
+		    .then(function(id) {
+			if (id) {
+			    return new Asana.Tag(id).load();
+			} else {
+			    return id;
+			}
+		    });
+	    } else {
+		throw "Filter not support yet."
+	    }
 	},
     },
 }
@@ -486,11 +502,11 @@ Asana.Project.prototype = {
     Task: {
 	get: function(conditions) {
 	    var klass = this.Task;
-	    return klass.filter(conditions).then(function(task) {
-		if (!task) {
+	    return klass.filter(conditions).then(function(item) {
+		if (!item) {
 		    return klass.create(conditions);
 		} else {
-		    return task;
+		    return item;
 		}
 	    })
 	},
@@ -864,6 +880,7 @@ Asana.Tag.prototype = {
 		return asana.request('/' + this.key + '/' + this.id)
 		    .then(function(data) {
 			new Persistent(this.key).set(this.id, JSON.stringify(data));
+			new Index('tag.name', 'tag.id').set(data.name, data.id),
 			return data;
 		    }.bind(this), rejectHandler)
 		    .then(function(data) {
