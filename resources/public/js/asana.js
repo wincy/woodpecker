@@ -28,6 +28,9 @@ function rejectHandler(error) {
     console.log(error);
     if (error && error.stack) {
 	console.log(error.stack);
+    } else {
+	var trace = printStackTrace();
+        console.log(trace.join('\n'));
     }
     throw error;
 }
