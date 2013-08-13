@@ -927,6 +927,16 @@ Asana.Tag.prototype = {
 	    }
 	}.bind(this), rejectHandler);
     },
+    update: function(kvs) {
+	return asana.request('/tags/' + this.id, kvs, 'PUT')
+	    .then(function(data) {
+		new Persistent('tasks').set(data.id, JSON.stringify(data));
+		return data;
+	    }, rejectHandler)
+	    .then(function(data) {
+		return $.extend(this, data);
+	    }.bind(this), rejectHandler);
+    },
     Task: {
 	find: function() {
 	    return new Persistent(this.key + '/' + this.id).get('tasks')

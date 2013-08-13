@@ -47,6 +47,9 @@ function init_efficient_tags() {
 		return RSVP.all([1, 2, 3].map(function(level) {
 		    return woodpecker.Tag.get({
 			name: '效率-' + level,
+			notes: JSON.stringify({
+			    used_times: 100000,
+			})
 		    }).then(function(tag) {
 			return dot_wp.Task.get({
 			    name: 'tags',
@@ -557,11 +560,35 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 		    this.content[idx].tags.forEach(function(tag) {
 			if (old_ids.indexOf(tag.id) == -1) {
 			    promises.push(task.addTag(tag));
+			    var meta = null;
+			    try {
+				meta = JSON.parse(tag.notes);
+			    } catch (e) {
+				meta = {
+				    used_times: 0,
+				};
+			    }
+			    meta.used_times += 1;
+			    promises.push(tag.update({
+				notes: JSON.stringify(meta),
+			    }));
 			}
 		    });
 		    task.tags.forEach(function(tag) {
 			if (new_ids.indexOf(tag.id) == -1) {
 			    promises.push(task.removeTag(tag));
+			    var meta = null;
+			    try {
+				meta = JSON.parse(tag.notes);
+			    } catch (e) {
+				meta = {
+				    used_times: 0,
+				};
+			    }
+			    meta.used_times -= 1;
+			    promises.push(tag.update({
+				notes: JSON.stringify(meta),
+			    }));
 			}
 		    });
 		    return RSVP.all(promises);
@@ -1255,7 +1282,19 @@ Woodpecker.Selector = Ember.ArrayController.extend({
 	return asana.woodpecker.Tag.find()
 	    .then(function(tags) {
 		asana.woodpecker.tags = tags;
-		this.set('tags', tags.map(function(tag) {
+		this.set('tags', tags.sort(function(a, b) {
+		    var ut1 = 0;
+		    var ut2 = 0;
+		    try {
+			ut1 = JSON.parse(a.notes)['used_times'];
+		    } catch (e) {
+		    }
+		    try {
+			ut2 = JSON.parse(b.notes)['used_times'];
+		    } catch (e) {
+		    }
+		    return ut2 - ut1;
+		}).map(function(tag) {
 		    return Woodpecker.Selector.Option.create({content: tag});
 		}));
 	    }.bind(this), rejectHandler);
