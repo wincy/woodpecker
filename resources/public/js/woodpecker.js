@@ -451,7 +451,7 @@ window.Woodpecker = Ember.Application.create({
 	Woodpecker.loader.view.set('isVisible', true);
 	asana.me = new Asana.User('me');
 	result = RSVP.all([
-	    // init_efficient_tags(),
+	    init_efficient_tags(),
 	    asana.Workspace.find()
 		.then(function(workspaces) {
 		    asana.workspaces = workspaces;
