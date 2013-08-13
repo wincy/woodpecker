@@ -98,7 +98,7 @@ Persistent.prototype = {
 	}.bind(this), rejectHandler);
     },
     get: function(key) {
-	// console.log('Persistent("' + this.ns + '").get("' + key + '")');
+	console.log('Persistent("' + this.ns + '").get("' + key + '")');
 	key = key + '.dat';
 	return this.init().then(function() {
 	    return new RSVP.Promise(function(resolve, reject) {
@@ -110,7 +110,11 @@ Persistent.prototype = {
 			reader.onloadend = function(e) {
 			    resolve(this.result);
 			};
-			reader.onerror = reject;
+			reader.onerror = function(e) {
+			    console.log('Get file error:' + key);
+			    console.log(e.getMessage());
+			    reject(e);
+			};
 			reader.readAsText(file);
 		    }, reject);
 		}, reject);
@@ -118,13 +122,17 @@ Persistent.prototype = {
 	}.bind(this), rejectHandler.bind({info: [key]}));
     },
     set: function(key, value) {
-	// console.log('Persistent("' + this.ns + '").set("' + key + '", "' + value + '")');
+	console.log('Persistent("' + this.ns + '").set("' + key + '", "' + value + '")');
 	key = key + '.dat';
 	return this.init().then(function() {
 	    return new RSVP.Promise(function(resolve, reject) {
 		this.root.getFile(key, {create: true}, function(fileEntry) {
 		    fileEntry.createWriter(function(writer) {
-			writer.onerror = reject;
+			writer.onerror = function(e) {
+			    console.log('Write file error:' + key);
+			    console.log(e.getMessage());
+			    reject(e);
+			};
 			writer.onwriteend = function() {
 			    writer.onwriteend = resolve;
 			    writer.write(new Blob([value], {type: 'application/json'}))
