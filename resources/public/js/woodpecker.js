@@ -258,7 +258,7 @@ window.Woodpecker = Ember.Application.create({
 				Woodpecker.timeline.save().then(function() {
 				    return logging.clear();
 				}, rejectHandler).then(function() {
-				    return asana.woodpecker.me.sync(new Date());
+				    return asana.woodpecker.me.sync(new Date(), true);
 				}, rejectHandler).then(function() {
 				    Woodpecker.loader.view.set('isVisible', false);
 				}, rejectHandler);
