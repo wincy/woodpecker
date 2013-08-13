@@ -1,12 +1,12 @@
 CACHE MANIFEST
-# Tue Aug 13 10:15:25 CST 2013
+# Tue Aug 13 10:19:20 CST 2013
 /css/bootstrap.min.css
 /css/cursor.css
 /css/timepicker.css
 /css/woodpecker.css
 /css/statistics.css
 /js/sprintf.js
-/js/stacktrace-0.4.js
+/js/stacktrace.js
 /js/jquery-2.0.0.js
 /js/bootstrap.js
 /js/handlebars.js
