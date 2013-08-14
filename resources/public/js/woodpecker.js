@@ -45,18 +45,29 @@ function init_efficient_tags() {
 		name: '.woodpecker',
 	    }).then(function(dot_wp) {
 		return RSVP.all([1, 2, 3].map(function(level) {
-		    return woodpecker.Tag.get({
+		    return woodpecker.Tag.filter({
 			name: '效率-' + level,
 			notes: JSON.stringify({
 			    used_times: 100000,
 			})
 		    }).then(function(tag) {
-			return dot_wp.Task.get({
-			    name: 'tags',
-			    assignee: 'me',
-			}).then(function(tags_container) {
-			    return tags_container.addTag(tag);
-			})
+			if (!tag) {
+			    return woodpecker.Tag.create({
+				name: '效率-' + level,
+				notes: JSON.stringify({
+				    used_times: 100000,
+				})
+			    }).then(function(tag) {
+				return dot_wp.Task.get({
+				    name: 'tags',
+				    assignee: 'me',
+				}).then(function(tags_container) {
+				    return tags_container.addTag(tag);
+				})
+			    });
+			} else {
+			    return tag;
+			}
 		    }, rejectHandler);
 		}));
 	    });
