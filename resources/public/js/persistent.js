@@ -98,7 +98,7 @@ Persistent.prototype = {
 	}.bind(this), rejectHandler);
     },
     get: function(key) {
-	console.log('Persistent("' + this.ns + '").get("' + key + '")');
+	// console.log('Persistent("' + this.ns + '").get("' + key + '")');
 	key = key + '.dat';
 	return this.init().then(function() {
 	    return new RSVP.Promise(function(resolve, reject) {
@@ -122,7 +122,7 @@ Persistent.prototype = {
 	}.bind(this), rejectHandler.bind({info: [key]}));
     },
     set: function(key, value) {
-	console.log('Persistent("' + this.ns + '").set("' + key + '", "' + value + '")');
+	// console.log('Persistent("' + this.ns + '").set("' + key + '", "' + value + '")');
 	key = key + '.dat';
 	return this.init().then(function() {
 	    return new RSVP.Promise(function(resolve, reject) {

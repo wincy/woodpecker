@@ -675,13 +675,6 @@ Asana.Task.prototype = {
 	    if (exists) {
 		return p.get(this.id).then(function(data) {
 		    try {
-			if (Object.getOwnPropertyNames(this).filter(
-			    function (s) {
-				return !s.search(/__ember/);
-			    })[0]) {
-			    console.log('Gotcha:', this);
-			    throw this;
-			}
 			return $.extend(this, JSON.parse(data));
 		    } catch (e) {
 			console.log('Load error:', this.key, this.id);

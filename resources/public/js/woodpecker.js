@@ -638,8 +638,12 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 			console.log('cannot parse', task);
 		    }
 		    var record = Woodpecker.Timeline.Record.create();
-		    record.tags = task.tags;
-		    return record.load(JSON.parse(task.notes));
+		    return RSVP.all(task.tags.map(function(tag) {
+			return new Asana.Tag(tag.id).load();
+		    })).then(function(tags) {
+			record.tags = tags;
+			return record.load(JSON.parse(task.notes));
+		    }, rejectHandler);
 		})).then(function(records) {
 		    this.set('content', records);
 		    return records;
