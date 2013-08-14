@@ -675,7 +675,14 @@ Asana.Task.prototype = {
 	    if (exists) {
 		return p.get(this.id).then(function(data) {
 		    try {
-			return $.extend(this, JSON.parse(data));
+			var data = JSON.parse(data);
+			return RSVP.all(data.tags.map(function(tag) {
+			    return new Asana.Tag(tag.id).load();
+			})).then(function(tags) {
+			    $.extend(this, data);
+			    this.tags = tags;
+			    return this;
+			}.bind(this), rejectHandler);
 		    } catch (e) {
 			console.log('Load error:', this.key, this.id);
 			return this.sync(new Date(), true);
