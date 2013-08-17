@@ -186,6 +186,20 @@ Persistent.prototype = {
 	    return promise;
 	}.bind(this), rejectHandler);
     },
+    modifiedAt: function(key) {
+	key = key + '.dat';
+	return this.init().then(function() {
+	    return new RSVP.Promise(function(resolve, reject) {
+		this.root.getFile(key, {}, function(fileEntry) {
+		    fileEntry.getMetadata(function(meta) {
+			resolve(meta.modificationTime);
+		    }, reject);
+		}.bind(this), function() {
+		    resolve(new Date(0));
+		});
+	    }.bind(this), rejectHandler);
+	}.bind(this), rejectHandler);
+    },
     outdated: function(key, date) {
 	key = key + '.dat';
 	return this.init().then(function() {

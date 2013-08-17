@@ -20,7 +20,7 @@ function rejectHandler(error) {
 Index.prototype = {
     set: function(key, value) {
 	return new Lock(this.from + '/' + this.to).wait().then(function() {
-	    console.log('Lock for:', key, value);
+	    // console.log('Lock for:', key, value);
 	    return new Persistent(this.from).exists(this.to)
 		.then(function(exists) {
 		    if (exists) {
@@ -28,20 +28,20 @@ Index.prototype = {
 			    .then(function(data) {
 				var index = JSON.parse(data);
 				index[key] = value;
-				console.log("Set index:", JSON.stringify(index));
+				// console.log("Set index:", JSON.stringify(index));
 				return new Persistent(this.from)
 				    .set(this.to, JSON.stringify(index));
 			    }.bind(this), rejectHandler);
 		    } else {
 			var index = {};
 			index[key] = value;
-			console.log("Set index:", JSON.stringify(index));
+			// console.log("Set index:", JSON.stringify(index));
 			return new Persistent(this.from)
 			    .set(this.to, JSON.stringify(index));
 		    }
 		}.bind(this), rejectHandler);
 	}.bind(this), rejectHandler).then(function() {
-	    console.log('Release for:', key, value);
+	    // console.log('Release for:', key, value);
 	    return new Lock(this.from + '/' + this.to).release();
 	}.bind(this), rejectHandler);
     },

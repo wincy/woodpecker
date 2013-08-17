@@ -461,20 +461,28 @@ Asana.Project.prototype = {
 		if (!deep) {
 		    return this;
 		}
+		var ns = item.key + '/' + item.id;
 		return RSVP.all([
-		    asana.request('/' + item.key + '/' + item.id + '/' + 'tasks',
+		    asana.request('/' + ns + '/' + 'tasks',
 				  {opt_fields: 'modified_at'})
 			.then(function(data) {
-			    return new Persistent(item.key + '/' + item.id)
-				.set('tasks', JSON.stringify(data))
-				.then(function() {
-				    return data;
-				}, rejectHandler);
+			    return new Persistent(ns).modifiedAt('tasks')
+				.then(function(modified_at) {
+				    item.last_sync = modified_at;
+				}, rejectHandler).then(function() {
+				    return new Persistent(ns)
+					.set('tasks', JSON.stringify(data))
+					.then(function() {
+					    return data;
+					}, rejectHandler);
+				}, rejectHandler)
 			}, rejectHandler)
-			.then(function(items) {
-			    return RSVP.all(items.map(function(item) {
-				return new Asana.Task(item.id).sync(
-				    new Date(Date.parse(item.modified_at)), false);
+			.then(function(subitems) {
+			    return RSVP.all(subitems.filter(function(subitem) {
+				return new Date(Date.parse(subitem.modified_at)) > item.last_sync;
+			    }).map(function(subitem) {
+				return new Asana.Task(subitem.id).sync(
+				    new Date(Date.parse(subitem.modified_at)), false);
 			    }));
 			}, rejectHandler),
 		]).then(function() {
