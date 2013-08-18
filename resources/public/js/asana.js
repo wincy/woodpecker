@@ -113,13 +113,16 @@ Asana.prototype = {
 	    } else {
 		resolve(RSVP.all(types.map(function(klass) {
 		    return asana.request('/' + klass.prototype.key,
-					 {opt_fields: 'modified_at,created_at'})
+					 {opt_fields: 'modified_at,created_at,archived'})
 			.then(function(data) {
 			    new Persistent().set(klass.prototype.key, JSON.stringify(data));
 			    return data;
 			}, rejectHandler)
 			.then(function(items) {
-			    return RSVP.all(items.map(function(item) {
+			    return RSVP.all(items.filter(function(item) {
+				return (item.archived == false || 
+					item.archived == undefined);
+			    }).map(function(item) {
 				var last_update = null;
 				if (item.created_at) {
 				    last_update = new Date(Date.parse(item.created_at));
@@ -207,6 +210,43 @@ Asana.prototype = {
 		.then(function(items) {
 		    return RSVP.all(items.map(function(item) {
 			return new Asana.Workspace(item.id).load();
+		    }));
+		}, rejectHandler);
+	},
+    },
+    Project: {
+	get: function(conditions) {
+	    var klass = this.Project;
+	    return klass.find().then(function(items) {
+		var matched = items.filter(function(item) {
+		    return Object.keys(conditions).every(function(field) {
+			return conditions[field] == item[field];
+		    });
+		});
+		if (matched.length == 0) {
+		    alert(sprintf("Project is not found. %s",
+				  JSON.stringify(conditions)))
+		} else {
+		    return matched[0];
+		}
+	    });
+	},
+	find: function() {
+	    return new Persistent().get('projects')
+		.then(function(data) {
+		    try {
+			return JSON.parse(data);
+		    } catch (e) {
+			console.log('Load error:', this.key, this.id);
+			return this.sync(new Date(), true)
+			    .then(function(item) {
+				return item.Project.find();
+			    });
+		    }
+		}.bind(this), rejectHandler)
+		.then(function(items) {
+		    return RSVP.all(items.map(function(item) {
+			return new Asana.Project(item.id).load();
 		    }));
 		}, rejectHandler);
 	},

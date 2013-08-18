@@ -173,7 +173,11 @@ window.Woodpecker = Ember.Application.create({
 				switch(Woodpecker.selector.type) {
 				case 'set-tasks':
 				    Woodpecker.loader.view.set('isVisible', true);
-				    asana.sync([Asana.Project]).then(function() {
+				    asana.Project.find().then(function(projects) {
+					return RSVP.all(projects.map(function(project) {
+					    return project.sync(new Date(), true);
+					}));
+				    }, rejectHandler).then(function() {
 					Woodpecker.selector.load_tasks()
 					    .then(function() {
 						Woodpecker.selector.set(

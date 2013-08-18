@@ -28,14 +28,18 @@ Index.prototype = {
 			    .then(function(data) {
 				var index = JSON.parse(data);
 				index[key] = value;
-				// console.log("Set index:", JSON.stringify(index));
+				console.log(sprintf("Set index %s -> %s:",
+						    this.from, this.to,
+						    key, value));
 				return new Persistent(this.from)
 				    .set(this.to, JSON.stringify(index));
 			    }.bind(this), rejectHandler);
 		    } else {
 			var index = {};
 			index[key] = value;
-			// console.log("Set index:", JSON.stringify(index));
+			console.log(sprintf("Set index %s -> %s:",
+					    this.from, this.to,
+					    key, value));
 			return new Persistent(this.from)
 			    .set(this.to, JSON.stringify(index));
 		    }
