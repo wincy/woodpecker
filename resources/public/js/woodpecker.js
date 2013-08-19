@@ -570,19 +570,54 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 		    name: sprintf('%s#%s', this.date, idx),
 		    assignee: 'me',
 		    assignee_status: 'today',
-		}).then(function(task) {
-		    var idx = parseInt(task.name.split('#')[1]);
+		}, rejectHandler).then(function(record) {
+		    var idx = parseInt(record.name.split('#')[1]);
 		    var promises = [];
-		    promises.push(task.update({notes: this.content[idx].toJSON()}));
-		    var old_ids = task.tags.map(function(tag) {
+		    promises.push(record.update({notes: this.content[idx].toJSON()}));
+		    var old_ids = record.tags.map(function(tag) {
 			return tag.id;
 		    });
 		    var new_ids = this.content[idx].tags.map(function(tag) {
 			return tag.id;
 		    });
+		    this.content[idx].tasks.forEach(function(task) {
+			promises.push(
+			    new Lock('/tasks/' + task.id).wait()
+				.then(function() {
+				    return new Asana.Task(task.id).sync(new Date())
+					.then(function(task) {
+					    var result = task.name.match(/\[(\d*)\/(\d*)\](.*)/);
+					    var used_time = null;
+					    var plan_time = null;
+					    var title = null;
+					    if (!result) {
+						used_time = 0;
+						plan_time = 0;
+						title = task.name;
+					    } else {
+						used_time = parseInt(result[1]);
+						plan_time = parseInt(result[2]);
+						title = result[3];
+					    }
+					    if (record.just_created) {
+						used_time += Math.round(
+						    (this.end - this.start) / 1000 / 60);
+					    }
+					    return task.update({
+						name: sprintf("[%s/%s]%s",
+							      used_time,
+							      plan_time,
+							      title),
+					    });
+					}.bind(this), rejectHandler);
+				}.bind(this), rejectHandler)
+				.then(function() {
+				    return new Lock('/tasks/' + task.id).release();
+				}, rejectHandler));
+		    }.bind(this.content[idx]));
 		    this.content[idx].tags.forEach(function(tag) {
 			if (old_ids.indexOf(tag.id) == -1) {
-			    promises.push(task.addTag(tag));
+			    promises.push(record.addTag(tag));
 			    var meta = null;
 			    try {
 				meta = JSON.parse(tag.notes);
@@ -597,9 +632,9 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 			    }));
 			}
 		    });
-		    task.tags.forEach(function(tag) {
+		    record.tags.forEach(function(tag) {
 			if (new_ids.indexOf(tag.id) == -1) {
-			    promises.push(task.removeTag(tag));
+			    promises.push(record.removeTag(tag));
 			    var meta = null;
 			    try {
 				meta = JSON.parse(tag.notes);

@@ -592,7 +592,7 @@ Asana.Project.prototype = {
 			}, rejectHandler);
 		}, rejectHandler)
 		.then(function(data) {
-		    return $.extend(new Asana.Task(data.id), data);
+		    return $.extend(new Asana.Task(data.id), data, {just_created: true});
 		}, rejectHandler)
 		.then(function(item) {
 		    return item.sync(new Date(Date.parse(item.created_at)))
