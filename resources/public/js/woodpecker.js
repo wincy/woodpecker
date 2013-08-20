@@ -353,7 +353,7 @@ window.Woodpecker = Ember.Application.create({
 				    asana.woodpecker.Tag.find().then(function(tags) {
 					return RSVP.all(tags.map(function(tag) {
 					    // force sync for notes
-					    return tag.sync(new Date());
+					    return tag.sync(new Date(), true);
 					}))
 				    }),
 				]).then(function() {
