@@ -36,11 +36,13 @@ function get_data_by_tags(tags) {
     })).then(function(stats) {
 	var stat = stats.reduce(function(s, a) {
 	    Object.keys(a).forEach(function(date) {
+		if (s[date] == undefined) {
+		    s[date] = {};
+		}
 		$.extend(s[date], a[date]);
 	    });
 	    return s;
 	});
-	
 	return Object.keys(stat).sort().map(function(date) {
 	    tags.forEach(function(tag) {
 		if (!stat[date][tag.name]) {
