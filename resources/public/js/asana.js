@@ -9,6 +9,12 @@ Function.prototype.partial = function() {
     };
 };
 
+Array.prototype.flatten = function flatten(){
+    return $.map(this, function recurs(item) {
+	return ($.isArray(item) ? $.map(item, recurs): item);
+    });
+};
+
 function bindAll(target, that) {
     var result = {};
     for (var key in target) {
@@ -651,6 +657,8 @@ Asana.Task = function(id) {
     this.id = id;
     this.Story = bindAll(this.Story, this);
     this.Tag = bindAll(this.Tag, this);
+    this.Subtask = bindAll(this.Subtask, this);
+    this.Offspring = bindAll(this.Offspring, this);
 }
 
 Asana.Task.prototype = {
@@ -710,6 +718,22 @@ Asana.Task.prototype = {
 	    	    		return new Asana.Tag(item.id).sync(
 	    	    		    new Date(Date.parse(item.created_at)),
 				    false);
+	    	    	    }));
+	    	    	}, rejectHandler),
+	    	    asana.request('/' + item.key + '/' + item.id + '/' + 'subtasks',
+	    	    		  {opt_fields: 'modified_at'})
+	    	    	.then(function(data) {
+	    	    	    return new Persistent(item.key + '/' + item.id)
+	    	    		.set('subtasks', JSON.stringify(data))
+	    	    		.then(function() {
+	    	    		    return data;
+	    	    		}, rejectHandler);
+	    	    	}, rejectHandler)
+	    	    	.then(function(items) {
+	    	    	    return RSVP.all(items.map(function(item) {
+	    	    		return new Asana.Task(item.id).sync(
+	    	    		    new Date(Date.parse(item.modified_at)),
+				    true);
 	    	    	    }));
 	    	    	}, rejectHandler),
 	    	]).then(function() {
@@ -823,6 +847,42 @@ Asana.Task.prototype = {
 		}, rejectHandler);
 	},
     },
+    Subtask: {
+	find: function() {
+	    return new Persistent(this.key + '/' + this.id).get('subtasks')
+		.then(function(data) {
+		    try {
+			return JSON.parse(data);
+		    } catch (e) {
+			console.log('Load error:', this.key, this.id);
+			return this.sync(new Date(), true)
+			    .then(function(item) {
+				return item.Subtask.find();
+			    });
+		    }
+		}.bind(this), rejectHandler)
+		.then(function(items) {
+		    return RSVP.all(items.map(function(item) {
+			return new Asana.Task(item.id).load();
+		    }));
+		}, rejectHandler);
+	},
+    },
+    Offspring: {
+	find: function() {
+	    return this.Subtask.find().then(function(items) {
+		return RSVP.all(items.map(function(item) {
+		    return item.Offspring.find();
+		})).then(function(items) {
+		    if (items.length > 0) {
+			return [this, items];
+		    } else {
+			return this;
+		    }
+		}.bind(this), rejectHandler);
+	    }.bind(this), rejectHandler);
+	},
+    }
 }
 
 Asana.Story = function(id) {

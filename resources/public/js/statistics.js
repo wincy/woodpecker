@@ -157,3 +157,22 @@ function stat_by_tags(tags) {
 	    .text(function(d) { return d; });
     });
 }
+
+function stat_by_tasks(targets) {
+    return asana.woodpecker.me.Task.find().then(function(items) {
+	return items.filter(function(t) {
+		var r = JSON.parse(t.notes);
+		return targets.reduce(function(exists, task) {
+		    return exists || r.tasks.indexOf(task.id) != -1;
+		}, false);
+	    }).map(function(t) {
+		var r = JSON.parse(t.notes);
+		var name = r.tasks.map(function(t) {
+		    return new Asana.Task(t).load();
+		});
+		return (Date.parse(r.end) - Date.parse(r.start)) / 1000 / 3600;
+	    }).reduce(function(sum, time) {
+		return sum + time;
+	    }, 0);
+    }, rejectHandler);
+}
