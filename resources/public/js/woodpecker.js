@@ -389,14 +389,14 @@ window.Woodpecker = Ember.Application.create({
 			    hit: function() {
 				Woodpecker.loader.view.set('isVisible', true);
 				var index = new Index('task.name', 'task.id');
-				return RSVP.all([
+				return RSVP.all(
 				    asana.woodpecker.me.Task.find()
 					.then(function(tasks) {
-					    return RSVP.all(tasks.map(function(task) {
+					    return tasks.map(function(task) {
 						return index.set(task.name, task.id);
-					    }));
-					}, rejectHandler),
-				]).then(function() {
+					    });
+					}, rejectHandler)
+				).then(function() {
 				    Woodpecker.loader.view.set('isVisible', false);
 				}, rejectHandler);
 				Woodpecker.puncher.view.set('isVisible', false);

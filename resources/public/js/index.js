@@ -26,7 +26,10 @@ Index.prototype = {
 		    if (exists) {
 			return new Persistent(this.from).get(this.to)
 			    .then(function(data) {
-				var index = JSON.parse(data);
+				var index = {};
+				if (data.length() > 0) {
+				    index =  JSON.parse(data);
+				}
 				index[key] = value;
 				console.log(sprintf("Set index %s -> %s:",
 						    this.from, this.to,
@@ -44,7 +47,10 @@ Index.prototype = {
 			    .set(this.to, JSON.stringify(index));
 		    }
 		}.bind(this), rejectHandler);
-	}.bind(this), rejectHandler).then(function() {
+	}.bind(this), function(error) {
+	    new Lock(this.from + '/' + this.to).release();
+	    rejectHandler(error);
+	}).then(function() {
 	    // console.log('Release for:', key, value);
 	    return new Lock(this.from + '/' + this.to).release();
 	}.bind(this), rejectHandler);
