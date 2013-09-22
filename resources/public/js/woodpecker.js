@@ -388,15 +388,35 @@ window.Woodpecker = Ember.Application.create({
 			    text: "Update Index",
 			    hit: function() {
 				Woodpecker.loader.view.set('isVisible', true);
-				var index = new Index('task.name', 'task.id');
-				return RSVP.all(
-				    asana.woodpecker.me.Task.find()
-					.then(function(tasks) {
-					    return tasks.map(function(task) {
-						return index.set(task.name, task.id);
-					    });
-					}, rejectHandler)
-				).then(function() {
+				RSVP.all([
+				    RSVP.all(
+					asana.woodpecker.me.Task.find()
+					    .then(function(records) {
+						return records.map(function(record) {
+						    var notes = record.notes;
+						    if (notes.length == 0) {
+							throw sprintf("notes of record<%s> is empty.", record.id);
+						    }
+						    notes = JSON.parse(notes);
+						    return RSVP.all(
+							notes.tasks.map(function(task_id) {
+							    return new Index('task.id', 'record.ids')
+								.sadd(task_id, record.id);
+							})
+						    )
+						});
+					    })
+				    ),
+				    RSVP.all(
+					asana.woodpecker.me.Task.find()
+					    .then(function(tasks) {
+						return tasks.map(function(task) {
+						    return new Index('task.name', 'task.id')
+							.set(task.name, task.id);
+						});
+					    }, rejectHandler)
+				    ),
+				]).then(function() {
 				    Woodpecker.loader.view.set('isVisible', false);
 				}, rejectHandler);
 				Woodpecker.puncher.view.set('isVisible', false);

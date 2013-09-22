@@ -81,9 +81,9 @@ Index.prototype = {
 				if (index[key].indexOf(value) == -1) {
 				    index[key].push(value);
 				}
-				console.log(sprintf("Set index %s -> %s:",
-						    this.from, this.to,
-						    key, value));
+				console.log(sprintf("sadd(%s, %s) -> %s:",
+						    key, value,
+						    JSON.stringify(index)));
 				return new Persistent(this.from)
 				    .set(this.to, JSON.stringify(index));
 			    }.bind(this), rejectHandler);
