@@ -593,6 +593,11 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 		}).then(function(task) {
 		    var idx = parseInt(task.name.split('#')[1]);
 		    var promises = [];
+		    this.content[idx].tasks.forEach(function(task) {
+			promises.push(
+			    new Index('task.id', 'record.ids')
+				.sadd(task.id, this.id));
+		    }.bind(task));
 		    promises.push(task.update({notes: this.content[idx].toJSON()}));
 		    var old_ids = task.tags.map(function(tag) {
 			return tag.id;
