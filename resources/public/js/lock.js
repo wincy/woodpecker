@@ -1,62 +1,62 @@
+locks = {};
+
 function Lock(key) {
     this.key = key;
 }
 
 Lock.prototype = {
-    lock: function() {
-	var locks = locache.get('locks');
-	if (!locks) {
-	    locks = {};
-	}
-	if (!locks[this.key]) {
-	    locks[this.key] = true;
-	    locache.set('locks', locks);
-	    return true;
-	} else {
-	    return false;
-	}
-    },
-    release: function() {
-	var locks = locache.get('locks');
-	if (!locks) {
-	    locks = {};
-	}
-	delete locks[this.key];
-	locache.set('locks', locks);
-    },
     wait: function() {
-	return new RSVP.Promise(function(resolve, reject) {
-	    var check = function() {
-		if (this.lock()) {
-		    resolve();
-		} else {
-		    setTimeout(check, 5);
-		}
-	    }.bind(this);
-	    check();
-	}.bind(this));
+	if (locks[this.key] == undefined) {
+	    locks[this.key] = when.defer();
+	    this.release = locks[this.key].resolve;
+	    return when.promise(function(resolve) {
+		resolve(this);
+	    }.bind(this));
+	} else {
+	    var origin = locks[this.key];
+	    locks[this.key] = when.defer();
+	    this.release = locks[this.key].resolve;
+	    return origin.promise.then(function() {
+		return this;
+	    }.bind(this));
+	}
     },
 };
 
 function test_lock() {
-    new Lock('test').wait().then(function() {
+    new Lock('test').wait().then(function(lock) {
 	console.log('consumer 1');
 	setTimeout(function() {
-	    new Lock('test').release();
+	    lock.release();
 	}, 3000);
     });
-    new Lock('test').wait().then(function() {
+    new Lock('test').wait().then(function(lock) {
 	console.log('consumer 2');
-	new Lock('test').release();
+	lock.release();
     });
-    new Lock('test').wait().then(function() {
+    new Lock('test').wait().then(function(lock) {
 	console.log('consumer 3');
-	new Lock('test').release();
+	lock.release();
     });
     setTimeout(function() {
-	new Lock('test').wait().then(function() {
+	new Lock('test').wait().then(function(lock) {
 	    console.log('consumer 4');
-	    new Lock('test').release();
+	    lock.release();
 	});
     }, 5000);
+}
+
+function benchmark_lock() {
+    var MAX = 1000;
+    var start = new Date();
+    var promises = [];
+    for (var i = 0; i < MAX; i++) {
+	promises.push(new Lock('test').wait().then(function(lock) {
+	    lock.release();
+	}));
+    }
+    RSVP.all(promises).then(function() {
+	console.log(sprintf("lock %s times: %s seconds",
+			    MAX, (new Date() - start) / 1000));
+    })
 }

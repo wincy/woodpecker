@@ -1,5 +1,5 @@
 CACHE MANIFEST
-# Tue Sep 17 13:34:37 CST 2013
+# Tue Sep 24 06:05:32 CST 2013
 /css/bootstrap.min.css
 /css/cursor.css
 /css/timepicker.css
@@ -18,6 +18,7 @@ CACHE MANIFEST
 /js/ember-data-0.13.js
 /js/ember-touch.js
 /js/rsvp.js
+/js/when.js
 /js/d3.v3.min.js
 /js/cursor.js
 /js/timepicker.js
