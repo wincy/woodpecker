@@ -19,7 +19,7 @@ function rejectHandler(error) {
 
 Index.prototype = {
     set: function(key, value) {
-	return new Lock(this.from + '/' + this.to).wait().then(function() {
+	return new Lock(this.from + '/' + this.to).wait().then(function(lock) {
 	    // console.log('Lock for:', key, value);
 	    return new Persistent(this.from).exists(this.to)
 		.then(function(exists) {
@@ -31,25 +31,25 @@ Index.prototype = {
 				    index =  JSON.parse(data);
 				}
 				index[key] = value;
-				console.log(sprintf("Set index %s -> %s:",
-						    this.from, this.to,
-						    key, value));
+				// console.log(sprintf("Set index %s -> %s:",
+				// 		    this.from, this.to,
+				// 		    key, value));
 				return new Persistent(this.from)
 				    .set(this.to, JSON.stringify(index));
 			    }.bind(this), rejectHandler);
 		    } else {
 			var index = {};
 			index[key] = value;
-			console.log(sprintf("Set index %s -> %s:",
-					    this.from, this.to,
-					    key, value));
+			// console.log(sprintf("Set index %s -> %s:",
+			// 		    this.from, this.to,
+			// 		    key, value));
 			return new Persistent(this.from)
 			    .set(this.to, JSON.stringify(index));
 		    }
-		}.bind(this), rejectHandler);
-	}.bind(this), rejectHandler).then(function() {
-	    // console.log('Release for:', key, value);
-	    return new Lock(this.from + '/' + this.to).release();
+		}.bind(this), rejectHandler)
+		.then(function() {
+		    lock.release();
+		});
 	}.bind(this), rejectHandler);
     },
     get: function(key) {
@@ -64,7 +64,7 @@ Index.prototype = {
 	}.bind(this), rejectHandler);
     },
     sadd: function(key, value) {
-	return new Lock(this.from + '/' + this.to).wait().then(function() {
+	return new Lock(this.from + '/' + this.to).wait().then(function(lock) {
 	    // console.log('Lock for:', key, value);
 	    return new Persistent(this.from).exists(this.to)
 		.then(function(exists) {
@@ -80,12 +80,12 @@ Index.prototype = {
 				}
 				if (index[key].indexOf(value) == -1) {
 				    index[key].push(value);
+				    console.log(sprintf("sadd(%s, %s) -> %s:",
+							key, value,
+							JSON.stringify(index)));
+				    return new Persistent(this.from)
+					.set(this.to, JSON.stringify(index));
 				}
-				console.log(sprintf("sadd(%s, %s) -> %s:",
-						    key, value,
-						    JSON.stringify(index)));
-				return new Persistent(this.from)
-				    .set(this.to, JSON.stringify(index));
 			    }.bind(this), rejectHandler);
 		    } else {
 			var index = {};
@@ -96,17 +96,14 @@ Index.prototype = {
 			return new Persistent(this.from)
 			    .set(this.to, JSON.stringify(index));
 		    }
-		}.bind(this), rejectHandler);
-	}.bind(this), function(error) {
-	    new Lock(this.from + '/' + this.to).release();
-	    rejectHandler(error);
-	}).then(function() {
-	    // console.log('Release for:', key, value);
-	    return new Lock(this.from + '/' + this.to).release();
+		}.bind(this), rejectHandler)
+		.then(function() {
+		    lock.release();
+		});
 	}.bind(this), rejectHandler);
     },
     srem: function(key, value) {
-	return new Lock(this.from + '/' + this.to).wait().then(function() {
+	return new Lock(this.from + '/' + this.to).wait().then(function(lock) {
 	    // console.log('Lock for:', key, value);
 	    return new Persistent(this.from).exists(this.to)
 		.then(function(exists) {
@@ -122,21 +119,18 @@ Index.prototype = {
 				}
 				if (index[key].indexOf(value) != -1) {
 				    index[key].removeObject(value);
+				    console.log(sprintf("srem(%s, %s) -> %s:",
+				    			key, value,
+				    			JSON.stringify(index)));
+				    return new Persistent(this.from)
+					.set(this.to, JSON.stringify(index));
 				}
-				console.log(sprintf("srem(%s, %s) -> %s:",
-						    key, value,
-						    JSON.stringify(index)));
-				return new Persistent(this.from)
-				    .set(this.to, JSON.stringify(index));
 			    }.bind(this), rejectHandler);
 		    }
-		}.bind(this), rejectHandler);
-	}.bind(this), function(error) {
-	    new Lock(this.from + '/' + this.to).release();
-	    rejectHandler(error);
-	}).then(function() {
-	    // console.log('Release for:', key, value);
-	    return new Lock(this.from + '/' + this.to).release();
+		}.bind(this), rejectHandler)
+		.then(function() {
+		    lock.release();
+		});
 	}.bind(this), rejectHandler);
     },
     smembers: function(key) {
