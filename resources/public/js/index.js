@@ -137,7 +137,12 @@ Index.prototype = {
 	return new Persistent(this.from).exists(this.to).then(function(exists) {
 	    if (exists) {
 		return new Persistent(this.from).get(this.to).then(function(data) {
-		    return JSON.parse(data)[key];
+		    var index = JSON.parse(data);
+		    if (index[key] == undefined) {
+			return [];
+		    } else {
+			return index[key];
+		    }
 		}, rejectHandler);
 	    } else {
 		return [];

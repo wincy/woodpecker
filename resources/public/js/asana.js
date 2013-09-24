@@ -781,6 +781,42 @@ Asana.Task.prototype = {
     removeTag: function(tag) {
 	return asana.request('/tasks/' + this.id + '/removeTag', {tag: tag.id}, 'POST');
     },
+    useTime: function(recursive) {
+	if (recursive) {
+	    return RSVP.all([
+		this.useTime(false),
+		this.Subtask.find().then(function(tasks) {
+		    console.log('Tasks: ', tasks.length);
+		    return RSVP.all(tasks.map(function(task) {
+			return task.useTime(true);
+		    })).then(function(time_list) {
+			return time_list.reduce(function(sum, time) {
+			    return sum + time;
+			}, 0);
+		    }, rejectHandler);
+		}, rejectHandler)
+	    ]).then(function(time_list) {
+		console.log(time_list);
+		return time_list.reduce(function(sum, time) {
+		    return sum + time;
+		}, 0);
+	    });
+	} else {
+	    return new Index('task.id', 'record.ids').smembers(this.id)
+		.then(function(record_ids) {
+		    console.log('Records: ', record_ids.length);
+		    return RSVP.all(record_ids.map(function(id) {
+			return new Asana.Task(id).load();
+		    }));
+		})
+		.then(function(records) {
+		    return records.reduce(function(sum, record) {
+			var r = JSON.parse(record.notes);
+			return sum + (Date.parse(r.end) - Date.parse(r.start)) / 1000 / 60;
+		    }, 0);
+		}, rejectHandler);
+	}
+    },
     Story: {
 	create: function(data) {
 	    return asana.request(
