@@ -601,7 +601,7 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 			JSON.parse(task.notes).tasks.forEach(function(task_id) {
 			    promises.push(
 				new Index('task.id', 'record.ids')
-				    .srem(task.id, this.id));
+				    .srem(task_id, this.id));
 			}.bind(task));
 		    }
 		    this.content[idx].tasks.forEach(function(task) {
