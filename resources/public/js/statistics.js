@@ -8,10 +8,10 @@ function to_monday(date) {
 }
 
 function get_data_by_tags(tags) {
-    return RSVP.all(tags.map(function(tag) {
+    return when.all(tags.map(function(tag) {
 	return tag.Task.find()
 	    .then(function(tasks) {
-		return RSVP.all(tasks.filter(function(task) {
+		return when.all(tasks.filter(function(task) {
 		    return RegExp('^.*#.*$').test(task.name);
 		}).map(function(task) {
 		    return task.load();

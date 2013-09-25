@@ -49,7 +49,7 @@ Asana = function(ns) {
 
 Asana.prototype = {
     delay: function (timeout) {
-	var p = RSVP.Promise(function(resolve, reject) {
+	var p = when.promise(function(resolve, reject) {
 	    setTimeout(resolve, timeout);
 	});
 	return p;
@@ -63,7 +63,7 @@ Asana.prototype = {
 	if (method == undefined) {
 	    method = 'GET';
 	}
-	var promise = new RSVP.Promise(function(resolve, reject) {
+	var promise = when.promise(function(resolve, reject) {
 	    if (navigator.onLine) {
 		$.ajax({
 		    url: full_url,
@@ -112,12 +112,12 @@ Asana.prototype = {
 	return promise;
     },
     sync: function(types) {
-	return new RSVP.Promise(function(resolve, reject) {
+	return when.promise(function(resolve, reject) {
 	    if (!navigator.onLine) {
 		console.log('offline now, using cache');
 		resolve(this);
 	    } else {
-		resolve(RSVP.all(types.map(function(klass) {
+		resolve(when.all(types.map(function(klass) {
 		    return asana.request('/' + klass.prototype.key,
 					 {opt_fields: 'modified_at,created_at,archived'})
 			.then(function(data) {
@@ -125,7 +125,7 @@ Asana.prototype = {
 			    return data;
 			}, rejectHandler)
 			.then(function(items) {
-			    return RSVP.all(items.filter(function(item) {
+			    return when.all(items.filter(function(item) {
 				return (item.archived == false || 
 					item.archived == undefined);
 			    }).map(function(item) {
@@ -177,7 +177,7 @@ Asana.prototype = {
 		    }
 		}.bind(this), rejectHandler)
 		.then(function(items) {
-		    return RSVP.all(items.map(function(item) {
+		    return when.all(items.map(function(item) {
 			return new Asana.User(item.id).load();
 		    }));
 		}, rejectHandler);
@@ -214,7 +214,7 @@ Asana.prototype = {
 		    }
 		}.bind(this), rejectHandler)
 		.then(function(items) {
-		    return RSVP.all(items.map(function(item) {
+		    return when.all(items.map(function(item) {
 			return new Asana.Workspace(item.id).load();
 		    }));
 		}, rejectHandler);
@@ -251,7 +251,7 @@ Asana.prototype = {
 		    }
 		}.bind(this), rejectHandler)
 		.then(function(items) {
-		    return RSVP.all(items.map(function(item) {
+		    return when.all(items.map(function(item) {
 			return new Asana.Project(item.id).load();
 		    }));
 		}, rejectHandler);
@@ -287,7 +287,7 @@ Asana.Workspace.prototype = {
 		if (!deep) {
 		    return this;
 		}
-		return RSVP.all([
+		return when.all([
 		    asana.request('/' + item.key + '/' + item.id + '/' + 'projects',
 				  {opt_fields: 'modified_at'})
 			.then(function(data) {
@@ -298,7 +298,7 @@ Asana.Workspace.prototype = {
 				}, rejectHandler);
 			}, rejectHandler)
 			.then(function(items) {
-			    return RSVP.all(items.map(function(item) {
+			    return when.all(items.map(function(item) {
 				return new Asana.Project(item.id).sync(
 				    new Date(Date.parse(item.modified_at)), false);
 			    }));
@@ -313,7 +313,7 @@ Asana.Workspace.prototype = {
 				}, rejectHandler);
 			}, rejectHandler)
 			.then(function(items) {
-			    return RSVP.all(items.map(function(item) {
+			    return when.all(items.map(function(item) {
 				return new Asana.Tag(item.id).sync(
 				    new Date(Date.parse(item.created_at)), false);
 			    }));
@@ -395,7 +395,7 @@ Asana.Workspace.prototype = {
 		    return JSON.parse(data);
 		}.bind(this), rejectHandler)
 		.then(function(items) {
-		    return RSVP.all(items.map(function(item) {
+		    return when.all(items.map(function(item) {
 			return new Asana.Project(item.id).load();
 		    }));
 		}, rejectHandler);
@@ -457,7 +457,7 @@ Asana.Workspace.prototype = {
 		    }
 		}.bind(this), rejectHandler)
 		.then(function(items) {
-		    return RSVP.all(items.map(function(item) {
+		    return when.all(items.map(function(item) {
 			return new Asana.Tag(item.id).load();
 		    }));
 		}, rejectHandler);
@@ -508,7 +508,7 @@ Asana.Project.prototype = {
 		    return this;
 		}
 		var ns = item.key + '/' + item.id;
-		return RSVP.all([
+		return when.all([
 		    asana.request('/' + ns + '/' + 'tasks',
 				  {opt_fields: 'modified_at'})
 			.then(function(data) {
@@ -524,7 +524,7 @@ Asana.Project.prototype = {
 				}, rejectHandler)
 			}, rejectHandler)
 			.then(function(subitems) {
-			    return RSVP.all(subitems.filter(function(subitem) {
+			    return when.all(subitems.filter(function(subitem) {
 				return new Date(Date.parse(subitem.modified_at)) > item.last_sync;
 			    }).map(function(subitem) {
 				return new Asana.Task(subitem.id).sync(
@@ -630,7 +630,7 @@ Asana.Project.prototype = {
 		    }
 		}.bind(this), rejectHandler)
 		.then(function(items) {
-		    return RSVP.all(items.map(function(item) {
+		    return when.all(items.map(function(item) {
 			return new Asana.Task(item.id).load();
 		    }));
 		}, rejectHandler);
@@ -671,7 +671,7 @@ Asana.Task.prototype = {
 		}
 		return asana.request('/' + this.key + '/' + this.id)
 		    .then(function(data) {
-			return RSVP.all([
+			return when.all([
 			    new Persistent(this.key).set(this.id, JSON.stringify(data)),
 			    new Index('task.name', 'task.id').set(data.name, data.id),
 			]).then(function() {
@@ -687,7 +687,7 @@ Asana.Task.prototype = {
 	    	if (!deep) {
 	    	    return this;
 	    	}
-	    	return RSVP.all([
+	    	return when.all([
 	    	    asana.request('/' + item.key + '/' + item.id + '/' + 'stories',
 	    	    		  {opt_fields: 'created_at'})
 	    	    	.then(function(data) {
@@ -698,7 +698,7 @@ Asana.Task.prototype = {
 	    	    		}, rejectHandler);
 	    	    	}, rejectHandler)
 	    	    	.then(function(items) {
-	    	    	    return RSVP.all(items.map(function(item) {
+	    	    	    return when.all(items.map(function(item) {
 	    	    		return new Asana.Story(item.id).sync(
 	    	    		    new Date(Date.parse(item.created_at)),
 				    false);
@@ -714,7 +714,7 @@ Asana.Task.prototype = {
 	    	    		}, rejectHandler);
 	    	    	}, rejectHandler)
 	    	    	.then(function(items) {
-	    	    	    return RSVP.all(items.map(function(item) {
+	    	    	    return when.all(items.map(function(item) {
 	    	    		return new Asana.Tag(item.id).sync(
 	    	    		    new Date(Date.parse(item.created_at)),
 				    false);
@@ -730,7 +730,7 @@ Asana.Task.prototype = {
 	    	    		}, rejectHandler);
 	    	    	}, rejectHandler)
 	    	    	.then(function(items) {
-	    	    	    return RSVP.all(items.map(function(item) {
+	    	    	    return when.all(items.map(function(item) {
 	    	    		return new Asana.Task(item.id).sync(
 	    	    		    new Date(Date.parse(item.modified_at)),
 				    true);
@@ -748,7 +748,7 @@ Asana.Task.prototype = {
 		return p.get(this.id).then(function(data) {
 		    try {
 			var data = JSON.parse(data);
-			return RSVP.all(data.tags.map(function(tag) {
+			return when.all(data.tags.map(function(tag) {
 			    return new Asana.Tag(tag.id).load();
 			})).then(function(tags) {
 			    $.extend(this, data);
@@ -783,11 +783,11 @@ Asana.Task.prototype = {
     },
     useTime: function(recursive) {
 	if (recursive) {
-	    return RSVP.all([
+	    return when.all([
 		this.useTime(false),
 		this.Subtask.find().then(function(tasks) {
 		    console.log('Tasks: ', tasks.length);
-		    return RSVP.all(tasks.map(function(task) {
+		    return when.all(tasks.map(function(task) {
 			return task.useTime(true);
 		    })).then(function(time_list) {
 			return time_list.reduce(function(sum, time) {
@@ -805,7 +805,7 @@ Asana.Task.prototype = {
 	    return new Index('task.id', 'record.ids').smembers(this.id)
 		.then(function(record_ids) {
 		    console.log('Records: ', record_ids.length);
-		    return RSVP.all(record_ids.map(function(id) {
+		    return when.all(record_ids.map(function(id) {
 			return new Asana.Task(id).load();
 		    }));
 		})
@@ -856,7 +856,7 @@ Asana.Task.prototype = {
 		    }
 		}.bind(this), rejectHandler)
 		.then(function(items) {
-		    return RSVP.all(items.map(function(item) {
+		    return when.all(items.map(function(item) {
 			return new Asana.Story(item.id).load();
 		    }));
 		}, rejectHandler);
@@ -877,7 +877,7 @@ Asana.Task.prototype = {
 		    }
 		}.bind(this), rejectHandler)
 		.then(function(items) {
-		    return RSVP.all(items.map(function(item) {
+		    return when.all(items.map(function(item) {
 			return new Asana.Tag(item.id).load();
 		    }));
 		}, rejectHandler);
@@ -898,7 +898,7 @@ Asana.Task.prototype = {
 		    }
 		}.bind(this), rejectHandler)
 		.then(function(items) {
-		    return RSVP.all(items.map(function(item) {
+		    return when.all(items.map(function(item) {
 			return new Asana.Task(item.id).load();
 		    }));
 		}, rejectHandler);
@@ -907,7 +907,7 @@ Asana.Task.prototype = {
     Offspring: {
 	find: function() {
 	    return this.Subtask.find().then(function(items) {
-		return RSVP.all(items.map(function(item) {
+		return when.all(items.map(function(item) {
 		    return item.Offspring.find();
 		})).then(function(items) {
 		    if (items.length > 0) {
@@ -1033,7 +1033,7 @@ Asana.Tag.prototype = {
 		    }.bind(this), rejectHandler);
 	    }.bind(this), rejectHandler)
 	    .then(function(item) {
-	    	return RSVP.all([
+	    	return when.all([
 	    	    asana.request('/' + item.key + '/' + item.id + '/' + 'tasks',
 	    			  {opt_fields: 'modified_at'})
 	    		.then(function(data) {
@@ -1044,7 +1044,7 @@ Asana.Tag.prototype = {
 	    			}, rejectHandler);
 	    		}, rejectHandler)
 	    		.then(function(items) {
-	    		    return RSVP.all(items.map(function(item) {
+	    		    return when.all(items.map(function(item) {
 	    			return new Asana.Task(item.id).sync(
 	    			    new Date(Date.parse(item.modified_at)));
 	    		    }));
@@ -1097,7 +1097,7 @@ Asana.Tag.prototype = {
 		    return JSON.parse(data);
 		}.bind(this), rejectHandler)
 		.then(function(items) {
-		    return RSVP.all(items.map(function(item) {
+		    return when.all(items.map(function(item) {
 			return new Asana.Task(item.id).load();
 		    }));
 		}, rejectHandler);

@@ -25,6 +25,7 @@
     };
     window.define.amd = {};
     </script>
+
     <script src="/js/when.js"></script>
     <script src="/js/d3.v3.min.js"></script>
     <script src="/js/cursor.js"></script>
@@ -51,7 +52,7 @@
       </div>
     </script>
     <script type="text/x-handlebars" data-template-name="selector-option">
-      <div {{bindAttr class=":option marked:marked"}} {{action toggle on="click"}} {{action toggle on="touchStart"}}>
+      <div {{bindAttr class=":option marked:marked"}} {{action toggle on="click"}} {{action toggle on="touchStart"}} {{bindAttr style="view.style"}}>
 	{{wrap content.name}}
       </div>
     </script>

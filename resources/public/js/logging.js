@@ -59,7 +59,7 @@ Logging.prototype = {
 			 record.end.getTime() == end.getTime()))
 	    })[0];
 	    if (record) {
-		ret = RSVP.all(log.args.tasks.map(function(id) {
+		ret = when.all(log.args.tasks.map(function(id) {
 		    return new Asana.Task(id).load();
 		})).then(function(tasks) {
 		    record.set_tasks(tasks);
@@ -81,7 +81,7 @@ Logging.prototype = {
 			 record.end.getTime() == end.getTime()))
 	    })[0];
 	    if (record) {
-		ret = RSVP.all(log.args.tags.map(function(id) {
+		ret = when.all(log.args.tags.map(function(id) {
 		    return new Asana.Tag(id).load();
 		})).then(function(tags) {
 		    record.set('tags', tags);
@@ -171,6 +171,6 @@ Logging.prototype = {
 	    }
 	    break
 	}
-	return RSVP.all([ret]);
+	return when.all([ret]);
     }
 }

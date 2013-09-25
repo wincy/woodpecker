@@ -161,7 +161,7 @@ function test_index() {
 	    }
 	}, rejectHandler)
     };
-    return RSVP.all([
+    return when.all([
 	index.set('name-1', 'id-1'),
 	index.set('name-2', 'id-2'),
 	index.set('name-3', 'id-3'),
@@ -173,7 +173,7 @@ function test_index() {
 	index.set('name-9', 'id-9'),
 	index.sadd('name-10', 'id-10'),
     ]).then(function() {
-	return RSVP.all([
+	return when.all([
 	    assert('get', 'name-1', 'id-1'),
 	    assert('get', 'name-2', 'id-2'),
 	    assert('get', 'name-3', 'id-3'),
@@ -185,7 +185,7 @@ function test_index() {
 	    assert('get', 'name-9', 'id-9'),
 	    assert('smembers', 'name-10', ['id-10']),
 	]).then(function() {
-	    return RSVP.all([
+	    return when.all([
 		index.srem('name-10', 'id-10'),
 	    ]).then(function() {
 		return assert('smembers', 'name-10', []);

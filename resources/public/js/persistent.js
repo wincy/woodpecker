@@ -1,7 +1,7 @@
 var QUOTA = 100 * 1024 * 1024;
 
 function mkdir(base, dirs) {
-    return new RSVP.Promise(function(resolve, reject) {
+    return when.promise(function(resolve, reject) {
 	if (dirs.length == 0) {
 	    resolve(base);
 	} else {
@@ -20,10 +20,10 @@ function Persistent(ns) {
 Persistent.prototype = {
     flush: function() {
 	return this.init().then(function() {
-	    return new RSVP.Promise(function(resolve, reject) {
+	    return when.promise(function(resolve, reject) {
 		this.keys(true).then(function(keys) {
-		    return RSVP.all(keys.map(function(key) {
-			return new RSVP.Promise(function(resolve, reject) {
+		    return when.all(keys.map(function(key) {
+			return when.promise(function(resolve, reject) {
 			    this.root.getDirectory(key, {}, function(entry) {
 				if (entry.isDirectory) {
 				    console.log('Remove direcotory:', key);
@@ -48,11 +48,11 @@ Persistent.prototype = {
 	}.bind(this), rejectHandler);
     },
     init: function() {
-	return new RSVP.Promise(function(resolve, reject) {
+	return when.promise(function(resolve, reject) {
 	    if (this.root) {
 		resolve(this);
 	    } else {
-		return new RSVP.Promise(function(resolve, reject) {
+		return when.promise(function(resolve, reject) {
 		    navigator.webkitPersistentStorage.queryUsageAndQuota(
 			function(usage, quota) {
 			    if (quota < QUOTA) {
@@ -84,7 +84,7 @@ Persistent.prototype = {
     exists: function(key) {
 	key = key + '.dat';
 	return this.init().then(function() {
-	    return new RSVP.Promise(function(resolve, reject) {
+	    return when.promise(function(resolve, reject) {
 		this.root.getFile(key, {}, function() {
 		    resolve(true);
 		}, function(error) {
@@ -101,7 +101,7 @@ Persistent.prototype = {
 	console.log('Persistent("' + this.ns + '").get("' + key + '")');
 	key = key + '.dat';
 	return this.init().then(function() {
-	    return new RSVP.Promise(function(resolve, reject) {
+	    return when.promise(function(resolve, reject) {
 		this.root.getFile(key, {}, function(fileEntry) {
 		    fileEntry.file(function(file) {
 			var reader = new FileReader();
@@ -125,7 +125,7 @@ Persistent.prototype = {
 	// console.log('Persistent("' + this.ns + '").set("' + key + '", "' + value + '")');
 	key = key + '.dat';
 	return this.init().then(function() {
-	    return new RSVP.Promise(function(resolve, reject) {
+	    return when.promise(function(resolve, reject) {
 		this.root.getFile(key, {create: true}, function(fileEntry) {
 		    fileEntry.createWriter(function(writer) {
 			writer.onerror = function(e) {
@@ -145,7 +145,7 @@ Persistent.prototype = {
     },
     keys: function(with_affix) {
 	return this.init().then(function() {
-	    return new RSVP.Promise(function(resolve, reject) {
+	    return when.promise(function(resolve, reject) {
 		var reader = this.root.createReader();
 		readEntries = function(total) {
 		    reader.readEntries(function(results) {
@@ -178,7 +178,7 @@ Persistent.prototype = {
 	    key = key + '.dat';
 	}
 	return this.init().then(function() {
-	    var promise = new RSVP.Promise(function(resolve, reject) {
+	    var promise = when.promise(function(resolve, reject) {
 		this.root.getFile(key, {create: false}, function(fileEntry) {
 		    fileEntry.remove(resolve, reject);
 		}, reject);
@@ -189,7 +189,7 @@ Persistent.prototype = {
     modifiedAt: function(key) {
 	key = key + '.dat';
 	return this.init().then(function() {
-	    return new RSVP.Promise(function(resolve, reject) {
+	    return when.promise(function(resolve, reject) {
 		this.root.getFile(key, {}, function(fileEntry) {
 		    fileEntry.getMetadata(function(meta) {
 			resolve(meta.modificationTime);
@@ -203,7 +203,7 @@ Persistent.prototype = {
     outdated: function(key, date) {
 	key = key + '.dat';
 	return this.init().then(function() {
-	    return new RSVP.Promise(function(resolve, reject) {
+	    return when.promise(function(resolve, reject) {
 		// if (!date.getTime()) {
 		//     reject('Date error:', key, date);
 		// }

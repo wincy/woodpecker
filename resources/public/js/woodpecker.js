@@ -1,3 +1,7 @@
+$.ajaxSetup({
+    global: false,
+});
+
 var asana = new Asana('/asana');
 var logging = null;
 var result = null;
@@ -44,7 +48,7 @@ function init_efficient_tags() {
 	    return woodpecker.Project.get({
 		name: '.woodpecker',
 	    }).then(function(dot_wp) {
-		return RSVP.all([1, 2, 3].map(function(level) {
+		return when.all([1, 2, 3].map(function(level) {
 		    return woodpecker.Tag.filter({
 			name: '效率-' + level,
 			notes: JSON.stringify({
@@ -174,7 +178,7 @@ window.Woodpecker = Ember.Application.create({
 				case 'set-tasks':
 				    Woodpecker.loader.view.set('isVisible', true);
 				    asana.Project.find().then(function(projects) {
-					return RSVP.all(projects.map(function(project) {
+					return when.all(projects.map(function(project) {
 					    return project.sync(new Date(), true);
 					}));
 				    }, rejectHandler).then(function() {
@@ -343,7 +347,7 @@ window.Woodpecker = Ember.Application.create({
 			    text: "Sync",
 			    hit: function() {
 				Woodpecker.loader.view.set('isVisible', true);
-				RSVP.all([
+				when.all([
 				    asana.sync([
 					Asana.User,
 					Asana.Workspace,
@@ -351,7 +355,7 @@ window.Woodpecker = Ember.Application.create({
 					Asana.Tag,
 				    ]),
 				    asana.woodpecker.Tag.find().then(function(tags) {
-					return RSVP.all(tags.map(function(tag) {
+					return when.all(tags.map(function(tag) {
 					    // force sync for notes
 					    return tag.sync(new Date(), true);
 					}))
@@ -367,7 +371,7 @@ window.Woodpecker = Ember.Application.create({
 			    hit: function() {
 				Woodpecker.loader.view.set('isVisible', true);
 				asana.woodpecker.me.Task.find().then(function(tasks) {
-				    return RSVP.all(tasks.filter(function(task) {
+				    return when.all(tasks.filter(function(task) {
 					console.log(task.name, ':', (
 					    Date.parse(Woodpecker.timeline.date) -
 						Date.parse(task.name.split('#')[0]) >
@@ -388,8 +392,8 @@ window.Woodpecker = Ember.Application.create({
 			    text: "Update Index",
 			    hit: function() {
 				Woodpecker.loader.view.set('isVisible', true);
-				RSVP.all([
-				    RSVP.all(
+				when.all([
+				    when.all(
 					asana.woodpecker.me.Task.find()
 					    .then(function(records) {
 						return records.map(function(record) {
@@ -398,7 +402,7 @@ window.Woodpecker = Ember.Application.create({
 							throw sprintf("notes of record<%s> is empty.", record.id);
 						    }
 						    notes = JSON.parse(notes);
-						    return RSVP.all(
+						    return when.all(
 							notes.tasks.map(function(task_id) {
 							    return new Index('task.id', 'record.ids')
 								.sadd(task_id, record.id);
@@ -407,7 +411,7 @@ window.Woodpecker = Ember.Application.create({
 						});
 					    })
 				    ),
-				    RSVP.all(
+				    when.all(
 					asana.woodpecker.me.Task.find()
 					    .then(function(tasks) {
 						return tasks.map(function(task) {
@@ -496,7 +500,7 @@ window.Woodpecker = Ember.Application.create({
 	Woodpecker.menu = Woodpecker.Menu.create();
 	Woodpecker.loader.view.set('isVisible', true);
 	asana.me = new Asana.User('me');
-	result = RSVP.all([
+	result = when.all([
 	    init_efficient_tags(),
 	    asana.Workspace.find()
 		.then(function(workspaces) {
@@ -510,7 +514,7 @@ window.Woodpecker = Ember.Application.create({
 	]).then(function (){
 	    return asana.woodpecker.Project.find()
 		.then(function(projects) {
-		    return new RSVP.Promise(function(resolve, reject) {
+		    return when.promise(function(resolve, reject) {
 			asana.woodpecker.me = projects.filter(function(project) {
 			    return project.name == asana.me.name;
 			})[0];
@@ -526,7 +530,7 @@ window.Woodpecker = Ember.Application.create({
 	}, rejectHandler).then(function() {
 	    return logging.apply_all();
 	}, rejectHandler).then(function() {
-	    return RSVP.all([
+	    return when.all([
 		Woodpecker.selector.load_tasks(),
 		Woodpecker.selector.load_tags(),
 	    ]);
@@ -582,10 +586,10 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
     content: [],
     save: function() {
 	Woodpecker.loader.view.set('isVisible', true);
-	return RSVP.all(this.content.map(function(record) {
+	return when.all(this.content.map(function(record) {
 	    return record.save_comments();
 	})).then(function(records) {
-	    return RSVP.all(Object.keys(records).map(function(idx) {
+	    return when.all(Object.keys(records).map(function(idx) {
 		return asana.woodpecker.me.Task.get({
 		    name: sprintf('%s#%s', this.date, idx),
 		    assignee: 'me',
@@ -639,7 +643,7 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 			    }));
 			}
 		    });
-		    return RSVP.all(promises);
+		    return when.all(promises);
 		}.bind(this), rejectHandler);
 	    }.bind(this)));
 	}.bind(this), rejectHandler);
@@ -648,7 +652,7 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 	this.set('content', []);
 	return asana.woodpecker.me.Task.find()
 	    .then(function(tasks) {
-		return RSVP.all(
+		return when.all(
 		    tasks.filter(function(task) {
 			return RegExp(sprintf('^%s#\\d+$', this.date)).test(task.name);
 		    }.bind(this)).map(function(task) {
@@ -662,7 +666,7 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 		    var idx_b = parseInt(b.name.split('#')[1]);
 		    return idx_a - idx_b;
 		});
-		return RSVP.all(sorted.map(function(task) {
+		return when.all(sorted.map(function(task) {
 		    if (task.notes.length == 0) {
 			console.log('cannot parse', task);
 		    }
@@ -831,7 +835,7 @@ Woodpecker.Timeline.Record = Ember.ObjectController.extend({
     tags: [],
     efficient: false,
     save_comments: function() {
-	return RSVP.all(this.comments.map(function(comment) {
+	return when.all(this.comments.map(function(comment) {
 	    return comment.save();
 	}));
     },
@@ -844,12 +848,12 @@ Woodpecker.Timeline.Record = Ember.ObjectController.extend({
 	if (data.end) {
 	    this.set('end', new Date(Date.parse(data.end)));
 	}
-	return RSVP.all(
+	return when.all(
 	    data.tasks.map(function(id) {
 		return new Asana.Task(id).load();
 	    })).then(function(tasks) {
 		this.tasks = tasks;
-		return RSVP.all(
+		return when.all(
 		    data.comments.map(function(id) {
 			if (id) {
 			    var story = new Asana.Story(id);
@@ -1286,17 +1290,17 @@ Woodpecker.Selector = Ember.ArrayController.extend({
 	}));
     },
     load_tasks: function() {
-	return RSVP.all(asana.workspaces.map(function(workspace) {
+	return when.all(asana.workspaces.map(function(workspace) {
 	    return workspace.Project.find();
 	})).then(function(projects_list) {
-	    return RSVP.all(
+	    return when.all(
 		projects_list.reduce(function(s, a) {
 		    return s.concat(a);
 		}).map(function(project) {
 		    return project.Task.find();
 		}))
 	}, rejectHandler).then(function(tasks_list) {
-	    return RSVP.all(tasks_list.reduce(function(s, a) {
+	    return when.all(tasks_list.reduce(function(s, a) {
 		var result = s.copy();
 		a.forEach(function(task) {
 		    if (!result.some(function(e) {
@@ -1431,6 +1435,25 @@ Woodpecker.Selector.Option = Ember.ObjectController.extend({
     toggle: function() {
 	this.set("marked", !this.marked);
     },
+    time: function() {
+	var name = this.content.name;
+	var match = new RegExp(/^.*\[(\d\d:\d\d)\/(\d\d:\d\d)\]$/).exec(name);
+	if (match) {
+	    return {
+		schedule: match[1].split(':').reduce(function(s, t) {
+		    return s * 60 + parseInt(t);
+		}, 0),
+		use: match[2].split(':').reduce(function(s, t) {
+		    return s * 60 + parseInt(t);
+		}, 0),
+	    };
+	} else {
+	    return {
+		schedule: 0,
+		use: 0,
+	    };
+	}
+    }.property('content.name'),
 });
 Woodpecker.Selector.OptionView = Ember.View.extend({
     scroll: false,
@@ -1439,6 +1462,16 @@ Woodpecker.Selector.OptionView = Ember.View.extend({
     templateName: "selector-option",
     controllerBinding: 'content',
     classNameBindings: ["marked"],
+    style: function() {
+	var time = this.content.get('time');
+	if (time.use <= time.schedule) {
+	    var stop = Math.round((time.use / time.schedule) * 100);
+	    return sprintf("background: linear-gradient(to right, #80A6A5 %s%%, #8094A6 %s%%)", stop, stop);
+	} else {
+	    var stop = Math.round(((time.use % time.schedule) / time.schedule) * 100);
+	    return sprintf("background: linear-gradient(to right, #E872B7 %s%%, #80A6A5 %s%%)", stop, stop);
+	}
+    }.property('content.time'),
     touchStart: function(evt) {
 	this.scroll = false;
 	this.swipe = false;
