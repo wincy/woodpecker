@@ -98,7 +98,7 @@ Persistent.prototype = {
 	}.bind(this), rejectHandler);
     },
     get: function(key) {
-	console.log('Persistent("' + this.ns + '").get("' + key + '")');
+	// console.log('Persistent("' + this.ns + '").get("' + key + '")');
 	key = key + '.dat';
 	return this.init().then(function() {
 	    return when.promise(function(resolve, reject) {
