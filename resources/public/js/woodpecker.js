@@ -646,9 +646,59 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 			    }));
 			}
 		    });
-		    return when.all(promises);
+		    return when.all(promises).then(function() {
+			return task;
+		    });
 		}.bind(this), rejectHandler);
-	    }.bind(this)));
+	    }.bind(this))).then(function(records) {
+		return when.all(records.reduce(function(tasks, record) {
+		    JSON.parse(record.notes).tasks.forEach(function(id) {
+			if (tasks.indexOf(id) == -1) {
+			    tasks.push(id);
+			}
+		    })
+		    return tasks;
+		}, []).map(function(id) {
+		    return new Lock('tasks/' + id).wait().then(function(lock) {
+			return new Asana.Task(id).sync(new Date()).then(function(task) {
+			    return task.useTime().then(function(use) {
+				var match = new RegExp(
+					/^(.*)\[\d+:\d+\/(\d+:\d+)\]$/)
+				    .exec(task.name);
+				var time = {
+				    use: use,
+				    schedule: 0,
+				};
+				var new_name = "";
+				if (match) {
+				    time.schedule = match[2].split(':').reduce(function(s, t) {
+					return s * 60 + parseInt(t);
+				    }, 0);
+				    new_name = sprintf(
+					"%s[%s/%s]",
+					match[1],
+					sprintf("%02d:%02d",
+						Math.floor(time.use / 60),
+						time.use % 60),
+					sprintf("%02d:%02d",
+						Math.floor(time.schedule / 60),
+						time.schedule % 60)
+				    );
+				} else {
+				    new_name = sprintf("%s[%s/00:00]",
+						       task.name,
+						       sprintf("%02d:%02d",
+							       Math.floor(use / 60),
+							       use % 60));
+				}
+				return task.update({name: new_name});
+			    }, rejectHandler);
+			}, rejectHandler).ensure(function() {
+			    return lock.release();
+			});
+		    }, rejectHandler);
+		}));
+	    });
 	}.bind(this), rejectHandler);
     },
     load: function() {
@@ -1440,13 +1490,13 @@ Woodpecker.Selector.Option = Ember.ObjectController.extend({
     },
     time: function() {
 	var name = this.content.name;
-	var match = new RegExp(/^.*\[(\d\d:\d\d)\/(\d\d:\d\d)\]$/).exec(name);
+	var match = new RegExp(/^.*\[(\d+:\d+)\/(\d+:\d+)\]$/).exec(name);
 	if (match) {
 	    return {
-		schedule: match[1].split(':').reduce(function(s, t) {
+		use: match[1].split(':').reduce(function(s, t) {
 		    return s * 60 + parseInt(t);
 		}, 0),
-		use: match[2].split(':').reduce(function(s, t) {
+		schedule: match[2].split(':').reduce(function(s, t) {
 		    return s * 60 + parseInt(t);
 		}, 0),
 	    };
