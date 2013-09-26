@@ -659,6 +659,7 @@ Asana.Task = function(id) {
     this.Tag = bindAll(this.Tag, this);
     this.Subtask = bindAll(this.Subtask, this);
     this.Offspring = bindAll(this.Offspring, this);
+    this.Ancestor = bindAll(this.Ancestor, this);
 }
 
 Asana.Task.prototype = {
@@ -902,6 +903,23 @@ Asana.Task.prototype = {
 			return new Asana.Task(item.id).load();
 		    }));
 		}, rejectHandler);
+	},
+    },
+    Ancestor: {
+	find: function() {
+	    if (!this.parent) {
+		return when.promise(function(resolve) {
+		    resolve([]);
+		});
+	    } else {
+		return new Asana.Task(this.parent.id).load()
+		    .then(function(task) {
+			return task.Ancestor.find().then(function(tasks) {
+			    tasks.push(task);
+			    return tasks;
+			});
+		    }, rejectHandler);
+	    }
 	},
     },
     Offspring: {
