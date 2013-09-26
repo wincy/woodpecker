@@ -1471,6 +1471,9 @@ Woodpecker.Selector.OptionView = Ember.View.extend({
     classNameBindings: ["marked"],
     style: function() {
 	var time = this.content.get('time');
+	if (time.schedule == 0) {
+	    time.schedule = 60;
+	}
 	if (time.use <= time.schedule) {
 	    var stop = Math.round((time.use / time.schedule) * 100);
 	    return sprintf("background: linear-gradient(to right, #80A6A5 %s%%, #8094A6 %s%%)", stop, stop);
