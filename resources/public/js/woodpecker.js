@@ -659,45 +659,63 @@ Woodpecker.Timeline = Ember.ArrayController.extend({
 		    })
 		    return tasks;
 		}, []).map(function(id) {
-		    return new Lock('tasks/' + id).wait().then(function(lock) {
-			return new Asana.Task(id).sync(new Date()).then(function(task) {
-			    return task.useTime().then(function(use) {
-				var match = new RegExp(
-					/^(.*)\[\d+:\d+\/(\d+:\d+)\]$/)
-				    .exec(task.name);
-				var time = {
-				    use: use,
-				    schedule: 0,
-				};
-				var new_name = "";
-				if (match) {
-				    time.schedule = match[2].split(':').reduce(function(s, t) {
-					return s * 60 + parseInt(t);
-				    }, 0);
-				    new_name = sprintf(
-					"%s[%s/%s]",
-					match[1],
-					sprintf("%02d:%02d",
-						Math.floor(time.use / 60),
-						time.use % 60),
-					sprintf("%02d:%02d",
-						Math.floor(time.schedule / 60),
-						time.schedule % 60)
-				    );
-				} else {
-				    new_name = sprintf("%s[%s/00:00]",
-						       task.name,
-						       sprintf("%02d:%02d",
-							       Math.floor(use / 60),
-							       use % 60));
-				}
-				return task.update({name: new_name});
-			    }, rejectHandler);
-			}, rejectHandler).ensure(function() {
-			    return lock.release();
+		    return new Asana.Task(id).load().then(function(task) {
+			return task.Ancestor.find().then(function(tasks) {
+			    tasks.push(task);
+			    return tasks;
 			});
-		    }, rejectHandler);
-		}));
+		    });
+		})).then(function(task_lists) {
+		    return task_lists.reduce(function(all, list) {
+			list.forEach(function(item) {
+			    if (all.indexOf(item) == -1) {
+				all.push(item);
+			    }
+			});
+			return all;
+		    }, []);
+		}).then(function(tasks) {
+		    return when.all(tasks.map(function(task) {
+			return new Lock('tasks/' + task.id).wait().then(function(lock) {
+			    return task.sync(new Date()).then(function(task) {
+				return task.useTime().then(function(use) {
+				    var match = new RegExp(
+					    /^(.*)\[\d+:\d+\/(\d+:\d+)\]$/)
+					.exec(task.name);
+				    var time = {
+					use: use,
+					schedule: 0,
+				    };
+				    var new_name = "";
+				    if (match) {
+					time.schedule = match[2].split(':').reduce(function(s, t) {
+					    return s * 60 + parseInt(t);
+					}, 0);
+					new_name = sprintf(
+					    "%s[%s/%s]",
+					    match[1],
+					    sprintf("%02d:%02d",
+						    Math.floor(time.use / 60),
+						    time.use % 60),
+					    sprintf("%02d:%02d",
+						    Math.floor(time.schedule / 60),
+						    time.schedule % 60)
+					);
+				    } else {
+					new_name = sprintf("%s[%s/00:00]",
+							   task.name,
+							   sprintf("%02d:%02d",
+								   Math.floor(use / 60),
+								   use % 60));
+				    }
+				    return task.update({name: new_name});
+				}, rejectHandler);
+			    }, rejectHandler).ensure(function() {
+				return lock.release();
+			    });
+			}, rejectHandler);
+		    }))
+		});
 	    });
 	}.bind(this), rejectHandler);
     },
