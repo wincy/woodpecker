@@ -1,7 +1,3 @@
-$.ajaxSetup({
-    global: false,
-});
-
 var asana = new Asana('/asana');
 var logging = null;
 var result = null;
