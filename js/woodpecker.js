@@ -1,4 +1,4 @@
-var asana = new Asana('/asana');
+var asana = new Asana('http://warm-wave-2086.herokuapp.com/asana');
 var logging = null;
 var result = null;
 
