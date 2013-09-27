@@ -269,8 +269,10 @@ Asana.Workspace = function(id) {
 Asana.Workspace.prototype = {
     key: 'workspaces',
     sync: function(last_update, deep) {
-	return new Persistent(this.key).outdated(this.id, last_update)
-	    .then(function(outdated) {
+	return new Lock(this.key + '/' + this.id).wait().then(function(lock) {
+	    console.log('got lock: ', lock);
+	    return new Persistent(this.key).outdated(this.id, last_update)
+		.then(function(outdated) {
 		if (!outdated) {
 		    return this;
 		}
@@ -283,7 +285,7 @@ Asana.Workspace.prototype = {
 			return $.extend(this, data);
 		    }.bind(this), rejectHandler);
 	    }.bind(this), rejectHandler)
-	    .then(function(item) {
+		.then(function(item) {
 		if (!deep) {
 		    return this;
 		}
@@ -321,7 +323,11 @@ Asana.Workspace.prototype = {
 		]).then(function() {
 		    return this;
 		}.bind(this), rejectHandler);
-	    }.bind(this), rejectHandler);
+	    }.bind(this), rejectHandler)
+		.ensure(function() {
+		lock.release();
+	    });
+	}.bind(this), rejectHandler);
     },
     load: function() {
 	var p = new Persistent(this.key);
@@ -489,6 +495,7 @@ Asana.Project = function(id) {
 Asana.Project.prototype = {
     key: 'projects',
     sync: function(last_update, deep) {
+	return new Lock(this.key + '/' + this.id).wait().then(function(lock) {
 	return new Persistent(this.key).outdated(this.id, last_update)
 	    .then(function(outdated) {
 		if (!outdated) {
@@ -534,7 +541,10 @@ Asana.Project.prototype = {
 		]).then(function() {
 		    return this;
 		}.bind(this), rejectHandler);
-	    }.bind(this), rejectHandler);
+	    }.bind(this), rejectHandler).ensure(function() {
+		lock.release();
+	    });
+	}.bind(this), rejectHandler);
     },
     load: function() {
 	var p = new Persistent(this.key);
@@ -665,6 +675,7 @@ Asana.Task = function(id) {
 Asana.Task.prototype = {
     key: 'tasks',
     sync: function(last_update, deep) {
+	return new Lock(this.key + '/' + this.id).wait().then(function(lock) {
 	return new Persistent(this.key).outdated(this.id, last_update)
 	    .then(function(outdated) {
 		if (!outdated) {
@@ -740,7 +751,10 @@ Asana.Task.prototype = {
 	    	]).then(function() {
 	    	    return this;
 	    	}.bind(this), rejectHandler);
-	    }.bind(this), rejectHandler);
+	    }.bind(this), rejectHandler).ensure(function() {
+		lock.release();
+	    });
+	}.bind(this), rejectHandler);
     },
     load: function() {
 	var p = new Persistent(this.key);
@@ -947,6 +961,7 @@ Asana.Story = function(id) {
 Asana.Story.prototype = {
     key: 'stories',
     sync: function(last_update, deep) {
+	return new Lock(this.key + '/' + this.id).wait().then(function(lock) {
 	return new Persistent(this.key).outdated(this.id, last_update)
 	    .then(function(outdated) {
 		if (!outdated) {
@@ -961,7 +976,10 @@ Asana.Story.prototype = {
 			console.log('Sync:', this.key, this.id);
 			return $.extend(this, data);
 		    }.bind(this), rejectHandler);
-	    }.bind(this), rejectHandler);
+	    }.bind(this), rejectHandler).ensure(function() {
+		lock.release();
+	    });
+	}.bind(this), rejectHandler);
     },
     load: function() {
 	var p = new Persistent(this.key);
@@ -990,6 +1008,7 @@ Asana.User = function(id) {
 Asana.User.prototype = {
     key: 'users',
     sync: function(last_update, deep) {
+	return new Lock(this.key + '/' + this.id).wait().then(function(lock) {
 	return new Persistent(this.key).outdated(this.id, last_update)
 	    .then(function(outdated) {
 		if (!outdated) {
@@ -1004,7 +1023,10 @@ Asana.User.prototype = {
 			console.log('Sync:', this.key, this.id);
 			return $.extend(this, data);
 		    }.bind(this), rejectHandler);
-	    }.bind(this), rejectHandler);
+	    }.bind(this), rejectHandler).ensure(function() {
+		lock.release();
+	    });
+	}.bind(this), rejectHandler);
     },
     load: function() {
 	var p = new Persistent(this.key);
@@ -1034,6 +1056,7 @@ Asana.Tag = function(id) {
 Asana.Tag.prototype = {
     key: 'tags',
     sync: function(last_update, deep) {
+	return new Lock(this.key + '/' + this.id).wait().then(function(lock) {
 	return new Persistent(this.key).outdated(this.id, last_update)
 	    .then(function(outdated) {
 		if (!outdated) {
@@ -1070,7 +1093,10 @@ Asana.Tag.prototype = {
 	    	]).then(function() {
 	    	    return this;
 	    	}.bind(this), rejectHandler);
-	    }.bind(this));
+	    }.bind(this)).ensure(function() {
+		lock.release();
+	    });
+	}.bind(this), rejectHandler);
     },
     load: function() {
 	var p = new Persistent(this.key);
@@ -1121,4 +1147,17 @@ Asana.Tag.prototype = {
 		}, rejectHandler);
 	},
     },
+}
+
+function test_asana() {
+    var asana = new Asana('/asana');
+    asana.Workspace.get({name: 'Personal'})
+	.then(function(workspace) {
+	    workspace.sync(new Date());
+	})
+	.otherwise(function() {
+	})
+    asana.Workspace.find().then(function(workspaces) {
+	var w = workspaces[0]
+    })
 }
