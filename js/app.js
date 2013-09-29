@@ -25,33 +25,23 @@ require.config({
 	'd3': {
 	    exports: 'd3',
 	},
-	'qunit': {
-	    exports: 'QUnit',
-	    init: function() {
-		QUnit.config.autoload = false;
-		QUnit.config.autostart = false;
-            },
-	},
     }
 });
 
-require(['when', 'when/sequence', 'when/delay', 'when/guard',
-	 'when/pipeline', 'when/parallel'],
-	function(when, sequence, delay, guard, pipeline, parallel) {
+require(['when', 'when/sequence', 'when/delay', 'when/guard'],
+	function(when, sequence, delay, guard) {
 	    window.when = when;
 	    window.when.sequence = sequence;
 	    window.when.delay = delay;
 	    window.when.guard = guard;
-	    window.when.pipeline = pipeline;
-	    window.when.parallel = parallel;
-	});
+	})
 
 require(['jquery', 'stacktrace', 'handlebars',
-	 'ember', 'sprintf', 'locache', 'd3', 'qunit',
-	 'app/logging', 'app/persistent', 'app/lock', 'app/index', 'app/asana',
+	 'ember', 'sprintf', 'locache', 'd3',
+	 'app/asana', 'app/logging', 'app/persistent', 'app/lock', 'app/index',
 	 'app/statistics', 'app/woodpecker'],
-	function ($, stacktrace, Handlebars, Ember, sprintf, locache, d3, QUnit,
-		  Logging, Persistent, Lock, Index, Asana, Statistics, Woodpecker) {
+	function ($, stacktrace, Handlebars, Ember, sprintf, locache, d3,
+		  Asana, Logging, Persistent, Lock, Index, Statistics, Woodpecker) {
 	    window.$ = $;
 	    window.stacktrace = stacktrace;
 	    window.Handlebars = Handlebars;
@@ -59,7 +49,6 @@ require(['jquery', 'stacktrace', 'handlebars',
 	    window.sprintf = sprintf;
 	    window.locache = locache;
 	    window.d3 = d3;
-	    window.QUnit = QUnit;
 	    window.Asana = Asana;
 	    window.asana = new Asana('http://warm-wave-2086.herokuapp.com/asana');
 	    window.Logging = Logging;
@@ -85,16 +74,3 @@ require(['jquery', 'stacktrace', 'handlebars',
 		}, 86400000);
 	    });
 	});
-
-require(
-  ["qunit", "app/lock", "app/asana"],
-  function(QUnit, Lock) {
-      var asana = new Asana('http://warm-wave-2086.herokuapp.com/asana');
-      Asana.test(asana);
-      Lock.test();
-      QUnit.load();
-      QUnit.start();
-  }
-);
-
-console.log('loaded');

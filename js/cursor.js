@@ -1,3 +1,5 @@
+define("app/cursor", ['sprintf'], function() {
+
 function Cursor(container, format) {
     this.container = container;
     this.format = format;
@@ -79,3 +81,4 @@ Cursor.prototype = {
 	return this;
     },
 };
+});

@@ -58,10 +58,6 @@ textarea {
     z-index: 200;
 }
 
-.efficient {
-    background-color: #EBF2B6;
-}
-
 .loader {
     position: fixed;
     top: 0px;

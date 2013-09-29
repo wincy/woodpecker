@@ -1,3 +1,6 @@
 [submodule "lib/asana"]
 	path = lib/asana
 	url = git@github.com:gombiuda/asana.git
+[submodule "js/lib/when"]
+	path = js/lib/when
+	url = https://github.com/cujojs/when

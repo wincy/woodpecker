@@ -9,36 +9,7 @@
     <link href="/woodpecker/css/timepicker.css" rel="stylesheet" media="screen">
     <link href="/woodpecker/css/woodpecker.css" rel="stylesheet" media="screen">
     <link href="/woodpecker/css/statistics.css" rel="stylesheet" media="screen">
-    <script src="/woodpecker/js/sprintf.js"></script>
-    <script src="/woodpecker/js/stacktrace.js"></script>
-    <script src="/woodpecker/js/jquery-2.0.0.js"></script>
-    <script src="/woodpecker/js/bootstrap.js"></script>
-    <script src="/woodpecker/js/handlebars-1.0.0-rc.4.js"></script>
-    <script src="/woodpecker/js/ember-1.0.0-rc.5.js"></script>
-    <script src="/woodpecker/js/ember-data-0.13.js"></script>
-    <script src="/woodpecker/js/ember-touch.js"></script>
-    <script src="/woodpecker/js/rsvp.js"></script>
-    <script>
-    window.define = function(factory) {
-        try{ delete window.define; } catch(e){ window.define = void 0; } // IE
-        window.when = factory();
-    };
-    window.define.amd = {};
-    </script>
-
-    <script src="/woodpecker/js/when.js"></script>
-    <script src="/woodpecker/js/d3.v3.min.js"></script>
-    <script src="/woodpecker/js/cursor.js"></script>
-    <script src="/woodpecker/js/timepicker.js"></script>
-    <script src="/woodpecker/js/timeline.js"></script>
-    <script src="/woodpecker/js/locache.min.js"></script>
-    <script src="/woodpecker/js/asana.js"></script>
-    <script src="/woodpecker/js/logging.js"></script>
-    <script src="/woodpecker/js/persistent.js"></script>
-    <script src="/woodpecker/js/woodpecker.js"></script>
-    <script src="/woodpecker/js/statistics.js"></script>
-    <script src="/woodpecker/js/index.js"></script>
-    <script src="/woodpecker/js/lock.js"></script>
+    <script data-main="/woodpecker/js/app.js" src="/woodpecker/js/require.js"></script>
     <script type="text/x-handlebars" data-template-name="tag-selector">
       <div>
 	{{#each Woodpecker.tag_selector}}

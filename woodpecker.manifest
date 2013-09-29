@@ -1,44 +1,42 @@
 CACHE MANIFEST
-# Fri Sep 27 10:11:26 CST 2013
-/woodpecker/css/bootstrap.min.css
-/woodpecker/css/cursor.css
-/woodpecker/css/timepicker.css
-/woodpecker/css/woodpecker.css
-/woodpecker/css/statistics.css
-/woodpecker/js/sprintf.js
-/woodpecker/js/stacktrace.js
-/woodpecker/js/jquery-2.0.0.js
-/woodpecker/js/bootstrap.js
-/woodpecker/js/handlebars.js
-/woodpecker/js/handlebars-1.0.0-rc.4.js
-/woodpecker/js/ember-1.0.0-rc.5.js
-/woodpecker/js/ember-1.0.0-rc.4.js
-/woodpecker/js/ember-1.0.0-rc.3.js
-/woodpecker/js/ember-1.0.0-rc.2.js
-/woodpecker/js/ember-data-0.13.js
-/woodpecker/js/ember-touch.js
-/woodpecker/js/rsvp.js
-/woodpecker/js/when.js
-/woodpecker/js/d3.v3.min.js
-/woodpecker/js/cursor.js
-/woodpecker/js/timepicker.js
-/woodpecker/js/timeline.js
-/woodpecker/js/locache.min.js
-/woodpecker/img/glyphicons-halflings-white.png
-/woodpecker/img/glyphicons-halflings.png
-/woodpecker/css/images/ajax-loader.gif
-/woodpecker/index.html
-/woodpecker/test.html
-/woodpecker/js/asana.js
-/woodpecker/js/woodpecker.js
-/woodpecker/js/logging.js
-/woodpecker/js/persistent.js
-/woodpecker/js/statistics.js
-/woodpecker/js/index.js
-/woodpecker/js/lock.js
-/woodpecker/js/test.js
+# Sat Sep 28 13:55:16 CST 2013
+# /woodpecker/css/bootstrap.min.css
+# /woodpecker/css/cursor.css
+# /woodpecker/css/timepicker.css
+# /woodpecker/css/woodpecker.css
+# /woodpecker/css/statistics.css
+# /woodpecker/js/require.js
+# /woodpecker/js/app.js
+# /woodpecker/js/lib/jquery-2.0.0.js
+# /woodpecker/js/lib/when/when.js
+# /woodpecker/js/lib/when/sequence.js
+# /woodpecker/js/lib/when/delay.js
+# /woodpecker/js/lib/sequence.js
+# /woodpecker/js/lib/sprintf.js
+# /woodpecker/js/lib/locache.js
+# /woodpecker/js/lib/stacktrace.js
+# /woodpecker/js/lib/handlebars.js
+# /woodpecker/js/lib/ember.js
+# /woodpecker/js/lib/ember-touch.js
+# /woodpecker/js/lib/d3.js
+# /woodpecker/js/app/asana.js
+# /woodpecker/js/app/logging.js
+# /woodpecker/js/app/persistent.js
+# /woodpecker/js/app/index.js
+# /woodpecker/js/app/lock.js
+# /woodpecker/js/app/statistics.js
+# /woodpecker/js/app/woodpecker.js
+
+# /woodpecker/js/ember-data-0.13.js
+# /woodpecker/img/glyphicons-halflings-white.png
+# /woodpecker/img/glyphicons-halflings.png
+# /woodpecker/css/images/ajax-loader.gif
+# /woodpecker/index.html
+# /woodpecker/test.html
+# /woodpecker/js/test.js
 
 NETWORK:
+*
 http://warm-wave-2086.herokuapp.com/asana
 /woodpecker/ping.html
 /woodpecker/index.html

@@ -1,34 +1,14 @@
 <!DOCTYPE html>
-<html manifest="/woodpecker.manifest">
+<html>
   <head>
-    <title>Woodpecker</title>
+    <title>Woodpecker Test</title>
     <meta charset="utf-8">
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport" />
-    <link href="/css/bootstrap.min.css" rel="stylesheet" media="screen">
-    <link href="/css/cursor.css" rel="stylesheet" media="screen">
-    <link href="/css/timepicker.css" rel="stylesheet" media="screen">
-    <link href="/css/woodpecker.css" rel="stylesheet" media="screen">
-    <script src="/js/sprintf.js"></script>
-    <script src="/js/jquery-2.0.0.js"></script>
-    <script src="/js/bootstrap.js"></script>
-    <script src="/js/handlebars-1.0.0-rc.4.js"></script>
-    <script src="/js/ember-1.0.0-rc.4.js"></script>
-    <script src="/js/ember-data-0.13.js"></script>
-    <script src="/js/rsvp.js"></script>
-    <script src="/js/cursor.js"></script>
-    <script src="/js/timepicker.js"></script>
-    <script src="/js/timeline.js"></script>
-    <script src="/js/locache.min.js"></script>
-    <script src="/js/asana.js"></script>
-    <script src="/js/logging.js"></script>
-    <script src="/js/test.js"></script>
-    <script type="text/x-handlebars" data-template-name="selector-option">
-      Hello: {{view.content.name}}
-    </script>    
+    <link href="/woodpecker/css/qunit.css" rel="stylesheet" media="screen">
+    <script data-main="/woodpecker/js/test.js" src="/woodpecker/js/require.js"></script>
   </head>
   <body>
-    <script type="text/x-handlebars">
-      {{view Woodpecker.selector.view}}
-    </script>
+    <div id="qunit"></div>
+    <div id="qunit-fixture"></div>
   </body>
 </html>
