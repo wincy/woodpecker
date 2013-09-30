@@ -80,11 +80,11 @@ define("app/index", ["stacktrace", "sprintf", "when",
 				    if (index[key] == undefined) {
 					index[key] = [];
 				    }
+				    console.log(sprintf(
+					"new Index('%s', '%s').sadd('%s', '%s')",
+					this.from, this.to, key, value));
 				    if (index[key].indexOf(value) == -1) {
 					index[key].push(value);
-					console.log(sprintf("sadd(%s, %s) -> %s:",
-							    key, value,
-							    JSON.stringify(index)));
 					return new Persistent(this.from)
 					    .set(this.to, JSON.stringify(index));
 				    }
@@ -92,9 +92,9 @@ define("app/index", ["stacktrace", "sprintf", "when",
 			} else {
 			    var index = {};
 			    index[key] = [value];
-			    console.log(sprintf("sadd %s -> %s:",
-						this.from, this.to,
-						key, value));
+			    console.log(sprintf(
+				"new Index('%s', '%s').sadd('%s', '%s')",
+				this.from, this.to, key, value));
 			    return new Persistent(this.from)
 				.set(this.to, JSON.stringify(index));
 			}

@@ -1,6 +1,19 @@
 define("app/asana", ["jquery", "when", "qunit", "sprintf", "stacktrace", "app/persistent"], function() {
     var CONCURRENCY = 10;
 
+    function array_concat(s, l) {
+	return s.concat(l);
+    }
+
+    function array_concat_unique(s, l) {
+	l.forEach(function(i) {
+	    if (s.indexOf(i) == -1) {
+		s.push(i);
+	    }
+	})
+	return s;
+    }
+
     function bindAll(target, that) {
 	var result = {};
 	for (var key in target) {
@@ -287,21 +300,39 @@ define("app/asana", ["jquery", "when", "qunit", "sprintf", "stacktrace", "app/pe
 		    return new Persistent().set('users', JSON.stringify(data));
 		});
 	    },
-	    get: function(conditions) {
-		var klass = this.User;
-		return klass.find(true).then(function(items) {
-		    var matched = items.filter(function(item) {
-			return Object.keys(conditions).every(function(field) {
-			    return conditions[field] == item[field];
+	    filter: function(conditions, load) {
+		var klass = Asana.User;
+		return when.reduce(when.map(
+		    Object.keys(conditions),
+		    function(key) {
+			return new Index(klass.prototype.key + '.' + key,
+					 klass.prototype.key + '.' + 'ids')
+			    .smembers(conditions[key]);
+		    }), array_concat_unique, [])
+		    .then(function(ids) {
+			var result = ids.map(function(id) {
+			    return new klass(id);
 			});
+			if (load == true) {
+			    return when.map(result, function(item) {
+				return item.load();
+			    });
+			} else {
+			    return result;
+			}
 		    });
-		    if (matched.length == 0) {
-			alert(sprintf("User is not found. %s",
-				      JSON.stringify(conditions)))
+	    },
+	    get: function(conditions) {
+		return this.User.filter(conditions).then(function(items) {
+		    if (items.length == 1) {
+			return items[0];
+		    } else if (items.length == 0) {
+			throw sprintf("User not found: %s",
+				      JSON.stringif(conditions));
 		    } else {
-			return matched[0];
+			throw sprintf("Multiple users found: %s", JSON.stringify(items));
 		    }
-		});
+		}.bind(this));
 	    },
 	    find: function(load) {
 		return new Persistent().get('users')
@@ -328,21 +359,39 @@ define("app/asana", ["jquery", "when", "qunit", "sprintf", "stacktrace", "app/pe
 		    return new Persistent().set('tags', JSON.stringify(data));
 		});
 	    },
-	    get: function(conditions) {
-		var klass = this.Tag;
-		return klass.find(true).then(function(items) {
-		    var matched = items.filter(function(item) {
-			return Object.keys(conditions).every(function(field) {
-			    return conditions[field] == item[field];
+	    filter: function(conditions, load) {
+		var klass = Asana.Tag;
+		return when.reduce(when.map(
+		    Object.keys(conditions),
+		    function(key) {
+			return new Index(klass.prototype.key + '.' + key,
+					 klass.prototype.key + '.' + 'ids')
+			    .smembers(conditions[key]);
+		    }), array_concat_unique, [])
+		    .then(function(ids) {
+			var result = ids.map(function(id) {
+			    return new klass(id);
 			});
+			if (load == true) {
+			    return when.map(result, function(item) {
+				return item.load();
+			    });
+			} else {
+			    return result;
+			}
 		    });
-		    if (matched.length == 0) {
-			alert(sprintf("Tag is not found. %s",
-				      JSON.stringify(conditions)))
+	    },
+	    get: function(conditions) {
+		return this.Tag.filter(conditions).then(function(items) {
+		    if (items.length == 1) {
+			return items[0];
+		    } else if (items.length == 0) {
+			throw sprintf("Tag not found: %s",
+				      JSON.stringif(conditions));
 		    } else {
-			return matched[0];
+			throw sprintf("Multiple tags found: %s", JSON.stringify(items));
 		    }
-		});
+		}.bind(this));
 	    },
 	    find: function(load) {
 		return new Persistent().get('tags')
@@ -369,21 +418,40 @@ define("app/asana", ["jquery", "when", "qunit", "sprintf", "stacktrace", "app/pe
 		    return new Persistent().set('workspaces', JSON.stringify(data));
 		});
 	    },
-	    get: function(conditions) {
-		var klass = this.Workspace;
-		return klass.find(true).then(function(items) {
-		    var matched = items.filter(function(item) {
-			return Object.keys(conditions).every(function(field) {
-			    return conditions[field] == item[field];
+	    filter: function(conditions, load) {
+		var klass = Asana.Workspace;
+		return when.reduce(when.map(
+		    Object.keys(conditions),
+		    function(key) {
+			return new Index(klass.prototype.key + '.' + key,
+					 klass.prototype.key + '.' + 'ids')
+			    .smembers(conditions[key]);
+		    }), array_concat_unique, [])
+		    .then(function(ids) {
+			var result = ids.map(function(id) {
+			    return new klass(id);
 			});
+			if (load == true) {
+			    return when.map(result, function(item) {
+				return item.load();
+			    });
+			} else {
+			    return result;
+			}
 		    });
-		    if (matched.length == 0) {
-			alert(sprintf("Workspace is not found. %s",
-				      JSON.stringify(conditions)))
+	    },
+	    get: function(conditions) {
+		console.log(this);
+		return this.Workspace.filter(conditions).then(function(items) {
+		    if (items.length == 1) {
+			return items[0];
+		    } else if (items.length == 0) {
+			throw sprintf("Workspace not found: %s",
+				      JSON.stringif(conditions));
 		    } else {
-			return matched[0];
+			throw sprintf("Multiple workspaces found: %s", JSON.stringify(items));
 		    }
-		});
+		}.bind(this));
 	    },
 	    find: function(load) {
 		return new Persistent().get('workspaces')
@@ -411,21 +479,39 @@ define("app/asana", ["jquery", "when", "qunit", "sprintf", "stacktrace", "app/pe
 			return new Persistent().set('projects', JSON.stringify(data));
 		    });
 	    },
-	    get: function(conditions) {
-		var klass = this.Project;
-		return klass.find(true).then(function(items) {
-		    var matched = items.filter(function(item) {
-			return Object.keys(conditions).every(function(field) {
-			    return conditions[field] == item[field];
+	    filter: function(conditions, load) {
+		var klass = Asana.Project;
+		return when.reduce(when.map(
+		    Object.keys(conditions),
+		    function(key) {
+			return new Index(klass.prototype.key + '.' + key,
+					 klass.prototype.key + '.' + 'ids')
+			    .smembers(conditions[key]);
+		    }), array_concat_unique, [])
+		    .then(function(ids) {
+			var result = ids.map(function(id) {
+			    return new klass(id);
 			});
+			if (load == true) {
+			    return when.map(result, function(item) {
+				return item.load();
+			    });
+			} else {
+			    return result;
+			}
 		    });
-		    if (matched.length == 0) {
-			alert(sprintf("Project is not found. %s",
-				      JSON.stringify(conditions)))
+	    },
+	    get: function(conditions) {
+		return this.Project.filter(conditions).then(function(items) {
+		    if (items.length == 1) {
+			return items[0];
+		    } else if (items.length == 0) {
+			throw sprintf("Project not found: %s",
+				      JSON.stringif(conditions));
 		    } else {
-			return matched[0];
+			throw sprintf("Multiple projects found: %s", JSON.stringify(items));
 		    }
-		});
+		}.bind(this));
 	    },
 	    find: function(load) {
 		return new Persistent().get('projects')
@@ -457,6 +543,7 @@ define("app/asana", ["jquery", "when", "qunit", "sprintf", "stacktrace", "app/pe
     }
 
     Asana.Workspace.prototype = {
+	INDEX_FIELDS: ['name'],
 	key: 'workspaces',
 	sync: function() {
 	    return new Lock(this.key + '/' + this.id)
@@ -464,8 +551,17 @@ define("app/asana", ["jquery", "when", "qunit", "sprintf", "stacktrace", "app/pe
 		.then(function(lock) {
 		    return asana.request('/' + this.key + '/' + this.id)
 			.then(function(data) {
-			    return new Persistent(this.key)
-				.set(this.id, JSON.stringify(data));
+			    return when.all([
+				new Persistent(this.key)
+				    .set(this.id, JSON.stringify(data)),
+				when.all(when.map(Object.keys(data), function(key) {
+				    if (this.INDEX_FIELDS.indexOf(key) != -1) {
+					return new Index(this.key + '.' + key,
+							 this.key + '.ids')
+					    .sadd(data[key], data.id);
+				    }
+				}.bind(this)))
+			    ]);
 			}.bind(this), rejectHandler)
 			.then(function() {
 			    return this.load();
@@ -483,9 +579,9 @@ define("app/asana", ["jquery", "when", "qunit", "sprintf", "stacktrace", "app/pe
 	},
 	User: {
 	    sync: function() {
-		return asana.request('/workspaces/' + this.id + '/users')
+		return asana.request('/' + this.key + '/' + this.id + '/users')
 		    .then(function(data) {
-			return new Persistent('workspaces/' + this.id)
+			return new Persistent(this.key + '/' + this.id)
 			    .set('users', JSON.stringify(data));
 		    }.bind(this));
 	    },
@@ -695,6 +791,7 @@ define("app/asana", ["jquery", "when", "qunit", "sprintf", "stacktrace", "app/pe
     }
 
     Asana.Project.prototype = {
+	INDEX_FIELDS: ['name'],
 	key: 'projects',
 	sync: function() {
 	    return new Lock(this.key + '/' + this.id).wait()
@@ -707,8 +804,17 @@ define("app/asana", ["jquery", "when", "qunit", "sprintf", "stacktrace", "app/pe
 			    }
 			    return asana.request('/' + this.key + '/' + this.id)
 				.then(function(data) {
-				    return new Persistent(this.key)
-					.set(this.id, JSON.stringify(data));
+				    return when.all([
+					new Persistent(this.key)
+					    .set(this.id, JSON.stringify(data)),
+					when.all(when.map(Object.keys(data), function(key) {
+					    if (this.INDEX_FIELDS.indexOf(key) != -1) {
+						return new Index(this.key + '.' + key,
+								 this.key + '.ids')
+						    .sadd(data[key], data.id);
+					    }
+					}.bind(this)))
+				    ]);
 				}.bind(this), rejectHandler)
 				.then(function() {
 				    return this.load();
@@ -894,6 +1000,7 @@ define("app/asana", ["jquery", "when", "qunit", "sprintf", "stacktrace", "app/pe
     }
 
     Asana.Task.prototype = {
+	INDEX_FIELDS: ['name', 'assignee_status', 'completed'],
 	key: 'tasks',
 	sync: function(force) {
 	    return new Lock(this.key + '/' + this.id).wait()
@@ -904,8 +1011,17 @@ define("app/asana", ["jquery", "when", "qunit", "sprintf", "stacktrace", "app/pe
 			    if (outdated || force == true) {
 				return asana.request('/' + this.key + '/' + this.id)
 				    .then(function(data) {
-					return new Persistent(this.key)
-					    .set(this.id, JSON.stringify(data));
+					return when.all([
+					    new Persistent(this.key)
+						.set(this.id, JSON.stringify(data)),
+					    when.all(when.map(Object.keys(data), function(key) {
+						if (this.INDEX_FIELDS.indexOf(key) != -1) {
+						    return new Index(this.key + '.' + key,
+								     this.key + '.ids')
+							.sadd(data[key], data.id);
+						}
+					    }.bind(this)))
+					]);
 				    }.bind(this), rejectHandler)
 				    .then(function() {
 					return this.load();
@@ -1214,6 +1330,7 @@ define("app/asana", ["jquery", "when", "qunit", "sprintf", "stacktrace", "app/pe
     }
 
     Asana.Story.prototype = {
+	INDEX_FIELDS: [],
 	key: 'stories',
 	sync: function() {
 	    if (this.type == 'system') {
@@ -1228,8 +1345,17 @@ define("app/asana", ["jquery", "when", "qunit", "sprintf", "stacktrace", "app/pe
 			    }
 			    return asana.request('/' + this.key + '/' + this.id)
 				.then(function(data) {
-				    return new Persistent(this.key)
-					.set(this.id, JSON.stringify(data));
+				    return when.all([
+					new Persistent(this.key)
+					    .set(this.id, JSON.stringify(data)),
+					when.all(when.map(Object.keys(data), function(key) {
+					    if (this.INDEX_FIELDS.indexOf(key) != -1) {
+						return new Index(this.key + '.' + key,
+								 this.key + '.ids')
+						    .sadd(data[key], data.id);
+					    }
+					}.bind(this)))
+				    ]);
 				}.bind(this), rejectHandler)
 				.then(function() {
 				    return this.load();
@@ -1275,6 +1401,7 @@ define("app/asana", ["jquery", "when", "qunit", "sprintf", "stacktrace", "app/pe
     }
 
     Asana.User.prototype = {
+	INDEX_FIELDS: ['email', 'name'],
 	key: 'users',
 	sync: function() {
 	    return new Lock(this.key + '/' + this.id)
@@ -1282,8 +1409,17 @@ define("app/asana", ["jquery", "when", "qunit", "sprintf", "stacktrace", "app/pe
 		.then(function(lock) {
 		    return asana.request('/' + this.key + '/' + this.id)
 			.then(function(data) {
-			    return new Persistent(this.key)
-				.set(this.id, JSON.stringify(data));
+			    return when.all([
+				new Persistent(this.key)
+				    .set(this.id, JSON.stringify(data)),
+				when.all(when.map(Object.keys(data), function(key) {
+				    if (this.INDEX_FIELDS.indexOf(key) != -1) {
+					return new Index(this.key + '.' + key,
+							 this.key + '.ids')
+					    .sadd(data[key], data.id);
+				    }
+				}.bind(this)))
+			    ]);
 			}.bind(this), rejectHandler)
 			.then(function() {
 			    return this.load();
@@ -1308,6 +1444,7 @@ define("app/asana", ["jquery", "when", "qunit", "sprintf", "stacktrace", "app/pe
     }
 
     Asana.Tag.prototype = {
+	INDEX_FIELDS: ['name'],
 	key: 'tags',
 	sync: function() {
 	    return new Lock(this.key + '/' + this.id)
@@ -1315,8 +1452,17 @@ define("app/asana", ["jquery", "when", "qunit", "sprintf", "stacktrace", "app/pe
 		.then(function(lock) {
 		    return asana.request('/' + this.key + '/' + this.id)
 			.then(function(data) {
-			    return new Persistent(this.key)
-				.set(this.id, JSON.stringify(data));
+			    return when.all([
+				new Persistent(this.key)
+				    .set(this.id, JSON.stringify(data)),
+				when.all(when.map(Object.keys(data), function(key) {
+				    if (this.INDEX_FIELDS.indexOf(key) != -1) {
+					return new Index(this.key + '.' + key,
+							 this.key + '.ids')
+					    .sadd(data[key], data.id);
+				    }
+				}.bind(this)))
+			    ]);
 			}.bind(this), rejectHandler)
 			.then(function() {
 			    return this.load();
@@ -1418,16 +1564,12 @@ define("app/asana", ["jquery", "when", "qunit", "sprintf", "stacktrace", "app/pe
     Asana.test = function() {
 	QUnit.asyncTest("Asana sync test:", function() {
 	    when.pipeline([
-		function() {
-		    return when.pipeline([
-			asana.Workspace.sync,
-			asana.Workspace.find,
-			function(workspaces) {
-			    return when.all(when.map(workspaces, function(workspace) {
-				return workspace.sync();
-			    }));
-			},
-		    ]);
+		asana.Workspace.sync,
+		asana.Workspace.find,
+		function(workspaces) {
+		    return when.all(when.map(workspaces, function(workspace) {
+			return workspace.sync();
+		    }));
 		},
 		function() {
 		    return asana.Workspace.get({name: 'Test'});
@@ -1443,9 +1585,6 @@ define("app/asana", ["jquery", "when", "qunit", "sprintf", "stacktrace", "app/pe
 		    })
 		},
 		function(workspace) {
-		    reduceFunc = function(s, l) {
-			return s.concat(l);
-		    };
 		    return when.reduce([
 			when.reduce(when.map(workspace.Project.find(), function(project) {
 			    return when.pipeline([
@@ -1453,15 +1592,15 @@ define("app/asana", ["jquery", "when", "qunit", "sprintf", "stacktrace", "app/pe
 				project.Task.sync,
 				project.Task.find,
 			    ]);
-			}), reduceFunc, []),
+			}), array_concat, []),
 			when.reduce(when.map(workspace.Tag.find(), function(tag) {
 			    return when.pipeline([
 				tag.sync.bind(tag), // `this` will be lost in when.sequence
 				tag.Task.sync,
 				tag.Task.find,
 			    ]);
-			}), reduceFunc, []),
-		    ], reduceFunc, []).then(function(tasks) {
+			}), array_concat, []),
+		    ], array_concat, []).then(function(tasks) {
 			return tasks.reduce(function(s, task) {
 			    if (s.indexOf(task.id) == -1) {
 				s.push(task.id);
