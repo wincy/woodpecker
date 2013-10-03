@@ -1,4 +1,4 @@
-define("asana", ["jquery", "when", "qunit", "sprintf", "asana/model"], function($, when, QUnit, sprintf, Model) {
+define("asana", ["jquery", "when", "qunit", "sprintf", "asana/model", "asana/remote"], function($, when, QUnit, sprintf, Model, Remote) {
     var CONCURRENCY = 10;
 
     function array_concat(s, l) {
@@ -17,9 +17,7 @@ define("asana", ["jquery", "when", "qunit", "sprintf", "asana/model"], function(
 	return result;
     }
 
-    Asana = function(ns) {
-	this.ns = ns;
-    }
+    Asana = {};
 
     Asana.User = Model.extend(
     	['user', 'users'], {
@@ -32,29 +30,38 @@ define("asana", ["jquery", "when", "qunit", "sprintf", "asana/model"], function(
     	});
     Asana.Task = Model.extend(
     	['task', 'tasks'], {
-    	    name: new Model.Field("string"),
-    	    Subtask: new Model.Field(Subtask),
+    	    name: new Model.Field("string", true),
+    	    Subtask: new Model.Field(Asana.Subtask),
+	    addTag: function(tag) {
+		return new Remote(this._plural + '/' + this.id)
+		    .create('addTag', {tag: tag.id});
+	    },
+	    removeTag: function(tag) {
+		return new Remote(this._plural + '/' + this.id)
+		    .create('removeTag', {tag: tag.id});
+	    },
     	});
     Asana.Tag = Model.extend(
     	['tag', 'tags'], {
     	    name: new Model.Field("string", true),
-    	    Task: new Model.Field(Task),
+    	    Task: new Model.Field(Asana.Task),
     	});
+    Asana.Task.prototype.fields.Tag = new Model.Field(Asana.Tag);
     Asana.Project = Model.extend(
     	['project', 'projects'], {
     	    name: new Model.Field("string", true),
-    	    Task: new Model.Field(Task),
+    	    Task: new Model.Field(Asana.Task),
     	});
     Asana.Workspace = Model.extend(
     	['workspace', 'workspaces'], {
     	    name: new Model.Field("string", true),
-    	    User: new Model.Field(User),
-    	    Project: new Model.Field(Project),
-    	    Task: new Model.Field(Task),
-    	    Tag: new Model.Field(Tag),
+    	    User: new Model.Field(Asana.User),
+    	    Project: new Model.Field(Asana.Project),
+    	    Task: new Model.Field(Asana.Task),
+    	    Tag: new Model.Field(Asana.Tag),
     	});
 
-    Asana.prototype = {
+    $.extend(Asana, {
 	sync: function() {
 	    return when.sequence([
 		// sync workspaces
@@ -237,28 +244,64 @@ define("asana", ["jquery", "when", "qunit", "sprintf", "asana/model"], function(
 		// }.bind(this),
 	    ]);
 	},
-    }
+    });
 
     Asana.test = function() {
     	QUnit.asyncTest("Asana testing", function() {
     	    when.pipeline([
-    		Workspace.sync,
-    		Workspace.find,
+    		Asana.Workspace.sync,
+    		Asana.Workspace.find,
     		function(workspaces) {
     		    return when.all(when.map(workspaces, function(workspace) {
     			return workspace.sync();
     		    }));
     		},
     		function() {
-    		    return Workspace.get({name: 'Test'});
+    		    return Asana.Workspace.get({name: 'Test'});
     		},
     		function(workspace) {
     		    ok(workspace, "Workspace 'Test' exists");
-    		    return when.parallel([
+    		    return when.pipeline([
     			workspace.User.sync,
+			workspace.User.find,
+			function(items) {
+			    return when.all(when.map(items, function(item) {
+				return when.pipeline([
+				    item.sync.bind(item),
+				    item.index.bind(item),
+				]);
+			    }))
+			},
     			workspace.Project.sync,
+			workspace.Project.find,
+			function(items) {
+			    return when.all(when.map(items, function(item) {
+				return when.pipeline([
+				    item.sync.bind(item),
+				    item.index.bind(item),
+				]);
+			    }))
+			},
     			workspace.Task.sync,
+			workspace.Task.find,
+			function(items) {
+			    return when.all(when.map(items, function(item) {
+				return when.pipeline([
+				    item.sync.bind(item),
+				    item.index.bind(item),
+				]);
+			    }))
+			},
     			workspace.Tag.sync,
+			workspace.Tag.find,
+			function(items) {
+			    return when.all(when.map(items, function(item) {
+				return when.pipeline([
+				    item.sync.bind(item),
+				    item.index.bind(item),
+				]);
+			    }))
+			},
     		    ]).then(function() {
     			return workspace;
     		    });
@@ -333,6 +376,7 @@ define("asana", ["jquery", "when", "qunit", "sprintf", "asana/model"], function(
     			function() {
     			    return true;
     			},
+			workspace.Tag.sync,
     			workspace.Tag.find,
     			function(tags) {
     			    equal(tags.length, 3, 'Only 3 tags exist');
@@ -367,6 +411,57 @@ define("asana", ["jquery", "when", "qunit", "sprintf", "asana/model"], function(
     			    	]);
     			    }));
     			},
+			function() {
+			    return workspace.Tag.create({name: 'tag 4'})
+				.then(function(tag) {
+				    return workspace.Task.get({name: 'task 0'})
+					.then(function(task) {
+					    return task.addTag(tag).then(function() {
+						return task;
+					    });
+					});
+				});
+			},
+			function(task) {
+			    return when.pipeline([
+				task.Tag.sync,
+				task.Tag.find,
+				function(tags) {
+				    return when.all(when.map(tags, function(tag) {
+					return when.pipeline([
+					    tag.sync.bind(tag),
+					    tag.load.bind(tag),
+					]);
+				    }));
+				},
+				function() {
+				    return task.Tag.get({name: 'tag 4'});
+				},
+				function(tag) {
+				    ok(tag, 'newly added tag');
+				    return tag;
+				},
+				function(tag) {
+				    return task.removeTag(tag);
+				},
+				task.Tag.sync,
+				task.Tag.find,
+				function(tags) {
+				    return when.all(when.map(tags, function(tag) {
+					return when.pipeline([
+					    tag.sync.bind(tag),
+					    tag.load.bind(tag),
+					]);
+				    }));
+				},
+				function() {
+				    return task.Tag.get({name: 'tag 4'});
+				},
+				function(tag) {
+				    ok(tag == null, 'remove added tag');
+				},
+			    ]);
+			},
     			start,
     		    ], true);
     		},

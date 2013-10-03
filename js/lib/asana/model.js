@@ -24,15 +24,18 @@ define("asana/model", ["jquery", "when", "when/pipeline", "qunit", "persistent",
     Model.extend = function(names, fields) {
 	var model = function(id) {
 	    Model.call(this, id);
-	    for (var name in fields) {
-		if (fields[name].type instanceof Function) {
+	    for (var name in this.fields) {
+		if (!this.fields[name] instanceof Model.Field) {
+		    continue;
+		}
+		if (this.fields[name].type instanceof Function) {
 		    this[name] = {};
 		    for (var key in Model.fn) {
 			this[name][key] = Model.fn[key].bind(
-			    null, fields[name].type, this._plural + '/' + this.id);
+			    null, this.fields[name].type, this._plural + '/' + this.id);
 		    }
-		} else if (fields[name].type == "string") {
-		    if (fields[name].index) {
+		} else if (this.fields[name].type == "string") {
+		    if (this.fields[name].index) {
 			this.INDEX_FIELDS.push(name);
 		    }
 		}
@@ -42,6 +45,13 @@ define("asana/model", ["jquery", "when", "when/pipeline", "qunit", "persistent",
 	model.prototype.constructor = model;
 	model.prototype._singular = names[0];
 	model.prototype._plural = names[1];
+	model.prototype.fields = fields;
+	for (var name in fields) {
+	    if (fields[name] instanceof Model.Field) {
+		continue;
+	    }
+	    model.prototype[name] = fields[name];
+	}
 	for (var key in Model.fn) {
 	    model[key] = Model.fn[key].bind(null, model, null);
 	}
@@ -141,11 +151,14 @@ define("asana/model", ["jquery", "when", "when/pipeline", "qunit", "persistent",
 		    return new Persistent(klass.prototype._plural)
 			.set(data.id, JSON.stringify(data))
 			.then(function() {
-			    return data;
+			    return new klass(data.id);
 			});
 		},
-		function(data) {
-		    return new klass(data.id).load();
+		function(item) {
+		    return when.pipeline([
+			item.index.bind(item),
+			item.load.bind(item),
+		    ]);
 		},
 	    ]);
 	},
@@ -206,9 +219,10 @@ define("asana/model", ["jquery", "when", "when/pipeline", "qunit", "persistent",
 			    if (ids.length == 1) {
 				return new klass(ids[0]).load();
 			    } else {
-				throw sprintf("%s %s filtered",
-					      ids.length,
-					      klass.prototype._singular);
+				console.log(sprintf("%s %s filtered",
+						    ids.length,
+						    klass.prototype._singular));
+				return null;
 			    }
 			});
 		});
