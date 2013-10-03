@@ -66,6 +66,18 @@ define("asana/model", ["jquery", "when", "when/pipeline", "qunit", "persistent",
 		    return $.extend(this, item);
 		}.bind(this));
 	},
+	update: function(data) {
+	    return new Remote(this._plural).update(this.id, data)
+		.then(function(data) {
+		    return new Persistent(this._plural).set(this.id, JSON.stringify(data));
+		}.bind(this))
+		.then(function() {
+		    return this.load();
+		}.bind(this));
+	},
+	remove: function() {
+	    return new Remote(this._plural).remove(this.id);
+	},
 	find: function(load) {
 	    return new Persistent(this._plural)
 		.get(this.id).then(JSON.parse).then(function(items) {
@@ -112,6 +124,28 @@ define("asana/model", ["jquery", "when", "when/pipeline", "qunit", "persistent",
 			return new Persistent(ns)
 			    .set(klass.prototype._plural, JSON.stringify(data));
 		    }
+		},
+	    ]);
+	},
+	create: function(klass, ns, data) {
+	    return when.pipeline([
+		function() {
+		    if (!ns) {
+			return new Remote().create(klass.prototype._plural, data);
+		    } else {
+			return new Remote(ns)
+			    .create(klass.prototype._plural, data);
+		    }
+		},
+		function(data) {
+		    return new Persistent(klass.prototype._plural)
+			.set(data.id, JSON.stringify(data))
+			.then(function() {
+			    return data;
+			});
+		},
+		function(data) {
+		    return new klass(data.id).load();
 		},
 	    ]);
 	},
@@ -172,7 +206,8 @@ define("asana/model", ["jquery", "when", "when/pipeline", "qunit", "persistent",
 			    if (ids.length == 1) {
 				return new klass(ids[0]).load();
 			    } else {
-				throw sprintf("multiple %s filtered",
+				throw sprintf("%s %s filtered",
+					      ids.length,
 					      klass.prototype._singular);
 			    }
 			});
@@ -187,10 +222,15 @@ define("asana/model", ["jquery", "when", "when/pipeline", "qunit", "persistent",
 		    name: new Model.Field("string", true),
 		    email: new Model.Field("string", true),
 		});
+	    Task = Model.extend(
+		['task', 'tasks'], {
+		    name: new Model.Field("string", true),
+		});
 	    Workspace = Model.extend(
 		['workspace', 'workspaces'], {
 		    name: new Model.Field("string", true),
 		    User: new Model.Field(User),
+		    Task: new Model.Field(Task),
 		});
 	    return when.pipeline([
 	    	// check User
@@ -289,8 +329,58 @@ define("asana/model", ["jquery", "when", "when/pipeline", "qunit", "persistent",
 			]);
 		    }));
 		},
+		// check task
 		function() {
+		    return Workspace.get({name: 'Test'})
 		},
+		function(workspace) {
+		    return workspace.Task.create({
+			name: 'task test',
+			notes: 'task test notes',
+			assignee: 'me',
+		    }).then(function(task) {
+			return when.pipeline([
+			    task.index.bind(task),
+			    workspace.Task.sync,
+			]).then(function() {
+			    equal(task.name, 'task test', 'check created task name');
+			    equal(task.notes, 'task test notes', 'check created task notes');
+			    return workspace;
+			});
+		    });
+		},
+		function(workspace) {
+		    return workspace.Task.get({name: 'task test'}).then(function(task) {
+			ok(task, 'newly created task from index');
+			return task;
+		    });
+		},
+		function(task) {
+		    var notes_updated = 'task test notes updated';
+		    return task.update({notes: notes_updated})
+			.then(function(task) {
+			    equal(task.notes, notes_updated, 'update task notes');
+			    return task;
+			});
+		},
+		function(task) {
+		    return task.remove();
+		},
+		function() {
+		    return Workspace.get({name: 'Test'})
+		},
+		function(workspace) {
+		    return when.pipeline([
+			workspace.Task.sync,
+			function() {
+			    return workspace.Task.filter({name: 'task test'});
+			},
+			function(tasks) {
+			    ok(tasks.length == 0, 'task test removed');
+			},
+		    ]);
+		},
+		function() {},
 	    	start,
 	    ]);
 	});

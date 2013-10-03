@@ -11,22 +11,22 @@ define('asana/remote', ['jquery', 'locache', 'when', 'when/delay', 'when/pipelin
     }
 
     function request(url, params, method) {
-	// subtask patch
-	var match = url.match('tasks/([^/]+)/tasks');
-	if (match) {
-	    url = 'tasks/' + match[1] + '/subtasks';
-	}
-	// workspace task patch
-	if (url.match('workspaces/[^/]+/tasks')) {
-	    params = {
-		assignee: 'me',
-	    };
-	}
 	if (params == undefined) {
 	    params = {};
 	}
 	if (method == undefined) {
 	    method = 'GET';
+	}
+	// subtask patch
+	var match = url.match('tasks/([^/]+)/tasks');
+	if (method == 'GET' && match) {
+	    url = 'tasks/' + match[1] + '/subtasks';
+	}
+	// workspace task patch
+	if (method == 'GET' && url.match('workspaces/[^/]+/tasks')) {
+	    params = {
+		assignee: 'me',
+	    };
 	}
 	return when.promise(function(resolve, reject) {
 	    if (navigator.onLine) {
@@ -74,6 +74,30 @@ define('asana/remote', ['jquery', 'locache', 'when', 'when/delay', 'when/pipelin
 	    }
 	    url += resource;
 	    return request(url);
+	},
+	create: function(resource, data) {
+	    var url = '';
+	    if (this.ns) {
+		url += this.ns + '/'
+	    }
+	    url += resource;
+	    return request(url, data, 'POST');
+	},
+	update: function(resource, data) {
+	    var url = '';
+	    if (this.ns) {
+		url += this.ns + '/'
+	    }
+	    url += resource;
+	    return request(url, data, 'PUT');
+	},
+	remove: function(resource) {
+	    var url = '';
+	    if (this.ns) {
+		url += this.ns + '/'
+	    }
+	    url += resource;
+	    return request(url, undefined, 'DELETE');
 	},
     };
 
