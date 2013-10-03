@@ -6,8 +6,8 @@ require.config({
     },
     packages: [
 	{name: 'when', location: 'when', main: 'when'},
+	{name: 'asana', location: 'asana', main: 'asana'},
     ],
-    preloads: ['when/monitor/console'],
     shim: {
 	'locache': {
 	    exports: 'locache',
@@ -36,62 +36,71 @@ require.config({
 });
 
 require(['when', 'when/sequence', 'when/delay', 'when/guard',
-	 'when/pipeline', 'when/parallel'],
-	function(when, sequence, delay, guard, pipeline, parallel) {
+	 'when/pipeline', 'when/parallel', 'when/monitor/console'],
+	function(when, sequence, delay, guard, pipeline, parallel, console) {
 	    window.when = when;
 	    window.when.sequence = sequence;
 	    window.when.delay = delay;
 	    window.when.guard = guard;
 	    window.when.pipeline = pipeline;
 	    window.when.parallel = parallel;
+	    window.when.console = console;
 	});
 
-require(['jquery', 'stacktrace', 'handlebars',
-	 'ember', 'sprintf', 'locache', 'd3', 'qunit',
-	 'app/logging', 'app/persistent', 'app/lock', 'app/index', 'app/asana',
-	 'app/statistics', 'app/woodpecker'],
-	function ($, stacktrace, Handlebars, Ember, sprintf, locache, d3, QUnit,
-		  Logging, Persistent, Lock, Index, Asana, Statistics, Woodpecker) {
-	    window.$ = $;
-	    window.stacktrace = stacktrace;
-	    window.Handlebars = Handlebars;
-	    window.Ember = Ember;
-	    window.sprintf = sprintf;
-	    window.locache = locache;
-	    window.d3 = d3;
-	    window.QUnit = QUnit;
-	    window.Asana = Asana;
-	    window.asana = new Asana('http://warm-wave-2086.herokuapp.com/asana');
-	    window.Logging = Logging;
-	    window.Persistent = Persistent;
-	    window.Lock = Lock;
-	    window.Index = Index;
-	    window.Statistics = Statistics;
-	    window.Woodpecker = Woodpecker;
-	    $.ready(function() {
-		window.applicationCache.addEventListener('updateready', function() {
-		    console.log('update to newest');
-		    window.applicationCache.swapCache();
-		    location.reload();
-		});
+// require(['jquery', 'stacktrace', 'handlebars',
+// 	 'ember', 'sprintf', 'locache', 'd3', 'qunit',
+// 	 'logging', 'persistent', 'lock', 'index', 'asana',
+// 	 'app/statistics', 'app/woodpecker'],
+// 	function ($, stacktrace, Handlebars, Ember, sprintf, locache, d3, QUnit,
+// 		  Logging, Persistent, Lock, Index, Asana, Statistics, Woodpecker) {
+// 	    window.$ = $;
+// 	    window.stacktrace = stacktrace;
+// 	    window.Handlebars = Handlebars;
+// 	    window.Ember = Ember;
+// 	    window.sprintf = sprintf;
+// 	    window.locache = locache;
+// 	    window.d3 = d3;
+// 	    window.QUnit = QUnit;
+// 	    window.Asana = Asana;
+// 	    window.asana = new Asana('http://warm-wave-2086.herokuapp.com/asana');
+// 	    window.Logging = Logging;
+// 	    window.Persistent = Persistent;
+// 	    window.Lock = Lock;
+// 	    window.Index = Index;
+// 	    window.Statistics = Statistics;
+// 	    window.Woodpecker = Woodpecker;
+// 	    $.ready(function() {
+// 		window.applicationCache.addEventListener('updateready', function() {
+// 		    console.log('update to newest');
+// 		    window.applicationCache.swapCache();
+// 		    location.reload();
+// 		});
 
-		window.applicationCache.addEventListener('error', function() {
-		    console.log('error when update cache');
-		});
+// 		window.applicationCache.addEventListener('error', function() {
+// 		    console.log('error when update cache');
+// 		});
 
-		setInterval(function() {
-		    console.log('flush expire cache');
-		    locache.cleanup();
-		}, 86400000);
-	    });
-	});
+// 		setInterval(function() {
+// 		    console.log('flush expire cache');
+// 		    locache.cleanup();
+// 		}, 86400000);
+// 	    });
+// 	})
+;
 
 require(
-  ["qunit", "app/lock", "app/asana"],
-  function(QUnit, Lock) {
+  ["qunit", "lock", "asana", "asana/model", "asana/remote", "persistent"],
+  function(QUnit, Lock, Asana, Model, Remote, Persistent) {
       var asana = new Asana('http://warm-wave-2086.herokuapp.com/asana');
-      Asana.test(asana);
-      Lock.test();
+      window.Asana = Asana;
+      window.asana = asana;
+      // Asana.test(asana);
+      // Lock.test();
+      // window.Asana.User = User;
+      // window.Asana.Workspace = Workspace;
+      Remote.test();
+      Model.test();
+      Asana.test();
       QUnit.load();
       QUnit.start();
   }

@@ -1,4 +1,4 @@
-define("app/logging", ["when", "locache", "app/asana"], function() {
+define("logging", ["when", "locache", "asana"], function() {
     function rejectHandler(error) {
 	console.log(error);
     }

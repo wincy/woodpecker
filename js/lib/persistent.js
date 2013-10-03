@@ -1,4 +1,4 @@
-define("app/persistent", ["when", "stacktrace"], function() {
+define("persistent", ["when", "stacktrace"], function() {
     var QUOTA = 100 * 1024 * 1024;
 
     function rejectHandler(error) {

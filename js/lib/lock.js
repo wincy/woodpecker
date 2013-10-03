@@ -1,4 +1,4 @@
-define("app/lock", ["when", "sprintf", "qunit"], function() {
+define("lock", ["when", "sprintf", "qunit"], function() {
     locks = {};
 
     function Lock(key) {

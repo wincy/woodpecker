@@ -1,22 +1,7 @@
-define("app/index", ["stacktrace", "sprintf", "when",
-		     "app/lock", "app/persistent"], function() {
+define("index", ["sprintf", "when", "lock", "persistent"], function(sprintf, when, Lock, Persistent) {
     function Index(from, to) {
 	this.from = from;
 	this.to = to;
-    }
-
-    function rejectHandler(error) {
-	if (this.info) {
-	    console.log(this.info);
-	}
-	console.log(error);
-	if (error && error.stack) {
-	    console.log(error.stack);
-	} else {
-	    var trace = stacktrace();
-            console.log(trace.join('\n'));
-	}
-	throw error;
     }
 
     Index.prototype = {
@@ -38,7 +23,7 @@ define("app/index", ["stacktrace", "sprintf", "when",
 				    // 		    key, value));
 				    return new Persistent(this.from)
 					.set(this.to, JSON.stringify(index));
-				}.bind(this), rejectHandler);
+				}.bind(this));
 			} else {
 			    var index = {};
 			    index[key] = value;
@@ -48,22 +33,22 @@ define("app/index", ["stacktrace", "sprintf", "when",
 			    return new Persistent(this.from)
 				.set(this.to, JSON.stringify(index));
 			}
-		    }.bind(this), rejectHandler)
+		    }.bind(this))
 		    .then(function() {
 			lock.release();
 		    });
-	    }.bind(this), rejectHandler);
+	    }.bind(this));
 	},
 	get: function(key) {
 	    return new Persistent(this.from).exists(this.to).then(function(exists) {
 		if (exists) {
 		    return new Persistent(this.from).get(this.to).then(function(data) {
 			return JSON.parse(data)[key];
-		    }, rejectHandler);
+		    });
 		} else {
 		    return {}[key];
 		}
-	    }.bind(this), rejectHandler);
+	    }.bind(this));
 	},
 	sadd: function(key, value) {
 	    return new Lock(this.from + '/' + this.to).wait().then(function(lock) {
@@ -88,7 +73,7 @@ define("app/index", ["stacktrace", "sprintf", "when",
 					return new Persistent(this.from)
 					    .set(this.to, JSON.stringify(index));
 				    }
-				}.bind(this), rejectHandler);
+				}.bind(this));
 			} else {
 			    var index = {};
 			    index[key] = [value];
@@ -98,11 +83,11 @@ define("app/index", ["stacktrace", "sprintf", "when",
 			    return new Persistent(this.from)
 				.set(this.to, JSON.stringify(index));
 			}
-		    }.bind(this), rejectHandler)
+		    }.bind(this))
 		    .then(function() {
 			lock.release();
 		    });
-	    }.bind(this), rejectHandler);
+	    }.bind(this));
 	},
 	srem: function(key, value) {
 	    return new Lock(this.from + '/' + this.to).wait().then(function(lock) {
@@ -127,13 +112,13 @@ define("app/index", ["stacktrace", "sprintf", "when",
 					return new Persistent(this.from)
 					    .set(this.to, JSON.stringify(index));
 				    }
-				}.bind(this), rejectHandler);
+				}.bind(this));
 			}
-		    }.bind(this), rejectHandler)
+		    }.bind(this))
 		    .then(function() {
 			lock.release();
 		    });
-	    }.bind(this), rejectHandler);
+	    }.bind(this));
 	},
 	smembers: function(key) {
 	    return new Persistent(this.from).exists(this.to).then(function(exists) {
@@ -145,11 +130,11 @@ define("app/index", ["stacktrace", "sprintf", "when",
 			} else {
 			    return index[key];
 			}
-		    }, rejectHandler);
+		    });
 		} else {
 		    return [];
 		}
-	    }.bind(this), rejectHandler);
+	    }.bind(this));
 	},
     };
 
@@ -161,7 +146,7 @@ define("app/index", ["stacktrace", "sprintf", "when",
 		    throw sprintf("Index(%s, %s) error: %s != %s, but %s",
 				  index.from, index.to, key, value, v);
 		}
-	    }, rejectHandler)
+	    })
 	};
 	return when.all([
 	    index.set('name-1', 'id-1'),
@@ -191,9 +176,9 @@ define("app/index", ["stacktrace", "sprintf", "when",
 		    index.srem('name-10', 'id-10'),
 		]).then(function() {
 		    return assert('smembers', 'name-10', []);
-		}, rejectHandler);
+		});
 	    });
-	}, rejectHandler);
+	});
     }
     return Index;
 });
