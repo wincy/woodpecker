@@ -91,15 +91,13 @@ require(['when', 'when/sequence', 'when/delay', 'when/guard',
 require(
   ["qunit", "lock", "asana", "asana/model", "asana/remote", "persistent"],
   function(QUnit, Lock, Asana, Model, Remote, Persistent) {
-      var asana = new Asana('http://warm-wave-2086.herokuapp.com/asana');
       window.Asana = Asana;
-      window.asana = asana;
       // Asana.test(asana);
       // Lock.test();
       // window.Asana.User = User;
       // window.Asana.Workspace = Workspace;
-      Remote.test();
-      Model.test();
+      // Remote.test();
+      // Model.test();
       Asana.test();
       QUnit.load();
       QUnit.start();

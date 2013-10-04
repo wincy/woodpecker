@@ -1,20 +1,6 @@
 define("persistent", ["when", "stacktrace"], function() {
     var QUOTA = 100 * 1024 * 1024;
 
-    function rejectHandler(error) {
-	if (this.info) {
-	    console.log(this.info);
-	}
-	console.log(error);
-	if (error && error.stack) {
-	    console.log(error.stack);
-	} else {
-	    var trace = stacktrace();
-	    console.log(trace.join('\n'));
-	}
-	throw error;
-    }
-
     function mkdir(base, dirs) {
 	return when.promise(function(resolve, reject) {
 	    if (dirs.length == 0) {
@@ -60,7 +46,7 @@ define("persistent", ["when", "stacktrace"], function() {
 			}.bind(this), reject)).then(resolve, reject);
 		    }.bind(this), reject);
 		}.bind(this));
-	    }.bind(this), rejectHandler);
+	    }.bind(this));
 	},
 	init: function() {
 	    return when.promise(function(resolve, reject) {
@@ -110,7 +96,7 @@ define("persistent", ["when", "stacktrace"], function() {
 			}
 		    });
 		}.bind(this));
-	    }.bind(this), rejectHandler);
+	    }.bind(this));
 	},
 	get: function(key) {
 	    console.log('Persistent("' + this.ns + '").get("' + key + '")');
@@ -126,15 +112,16 @@ define("persistent", ["when", "stacktrace"], function() {
 				resolve(this.result);
 			    };
 			    reader.onerror = function(e) {
-				console.log('Get file error:' + key);
+				console.log('Get file error: ' + this.ns + '/' + key);
+				console.log(e);
 				console.log(e.getMessage());
 				reject(e);
-			    };
+			    }.bind(this);
 			    reader.readAsText(file);
-			}, reject);
-		    }, reject);
+			}.bind(this), reject);
+		    }.bind(this), reject);
 		}.bind(this));
-	    }.bind(this), rejectHandler.bind({info: [key]}));
+	    }.bind(this));
 	},
 	set: function(key, value) {
 	    console.log('Persistent("' + this.ns + '").set("' + key + '")');
@@ -156,7 +143,7 @@ define("persistent", ["when", "stacktrace"], function() {
 			}, reject);
 		    }, reject);
 		}.bind(this));
-	    }.bind(this), rejectHandler.bind({info: [key, value]}));
+	    }.bind(this));
 	},
 	keys: function(with_affix) {
 	    return this.init().then(function() {
@@ -184,8 +171,8 @@ define("persistent", ["when", "stacktrace"], function() {
 			    return key;
 			}
 		    });
-		}, rejectHandler);
-	    }.bind(this), rejectHandler);
+		});
+	    }.bind(this));
 	},
 	remove: function(key, with_affix) {
 	    // console.log('Persistent("' + this.ns + '").remove("' + key + '")');
@@ -199,7 +186,7 @@ define("persistent", ["when", "stacktrace"], function() {
 		    }, reject);
 		}.bind(this));
 		return promise;
-	    }.bind(this), rejectHandler);
+	    }.bind(this));
 	},
 	modifiedAt: function(key) {
 	    key = key + '.dat';
@@ -212,12 +199,15 @@ define("persistent", ["when", "stacktrace"], function() {
 		    }.bind(this), function() {
 			resolve(new Date(0));
 		    });
-		}.bind(this), rejectHandler);
-	    }.bind(this), rejectHandler);
+		}.bind(this));
+	    }.bind(this));
 	},
 	outdated: function(key, date) {
 	    key = key + '.dat';
 	    return this.init().then(function() {
+		if (!date) {
+		    return true;
+		}
 		return when.promise(function(resolve, reject) {
 		    // if (!date.getTime()) {
 		    //     reject('Date error:', key, date);
@@ -233,8 +223,8 @@ define("persistent", ["when", "stacktrace"], function() {
 		    }.bind(this), function() {
 			resolve(true);
 		    });
-		}.bind(this), rejectHandler.bind({info: [key, date]}));
-	    }.bind(this), rejectHandler.bind({info: [key, date]}));
+		}.bind(this));
+	    }.bind(this));
 	},
 	info: function() {
 	    navigator.webkitPersistentStorage.queryUsageAndQuota(

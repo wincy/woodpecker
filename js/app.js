@@ -1,3 +1,13 @@
+window.applicationCache.addEventListener('updateready', function() {
+    console.log('update to newest');
+    window.applicationCache.swapCache();
+    location.reload();
+});
+
+window.applicationCache.addEventListener('error', function() {
+    console.log('error when update cache');
+});
+
 require.config({
     baseUrl: '/woodpecker/js/lib',
     paths: {
@@ -6,8 +16,8 @@ require.config({
     },
     packages: [
 	{name: 'when', location: 'when', main: 'when'},
+	{name: 'asana', location: 'asana', main: 'asana'},
     ],
-    preloads: ['when/monitor/console'],
     shim: {
 	'locache': {
 	    exports: 'locache',
@@ -28,17 +38,20 @@ require.config({
     }
 });
 
-require(['when', 'when/sequence', 'when/delay', 'when/guard'],
-	function(when, sequence, delay, guard) {
+require(['when', 'when/sequence', 'when/delay', 'when/pipeline',
+	 'when/guard', 'when/monitor/console'],
+	function(when, sequence, delay, pipeline, guard) {
 	    window.when = when;
 	    window.when.sequence = sequence;
 	    window.when.delay = delay;
+	    window.when.pipeline = pipeline;
 	    window.when.guard = guard;
+	    window.when.console = console;
 	})
 
 require(['jquery', 'stacktrace', 'handlebars',
 	 'ember', 'sprintf', 'locache', 'd3',
-	 'app/asana', 'app/logging', 'app/persistent', 'app/lock', 'app/index',
+	 'asana', 'logging', 'persistent', 'lock', 'index',
 	 'app/statistics', 'app/woodpecker'],
 	function ($, stacktrace, Handlebars, Ember, sprintf, locache, d3,
 		  Asana, Logging, Persistent, Lock, Index, Statistics, Woodpecker) {
@@ -50,7 +63,6 @@ require(['jquery', 'stacktrace', 'handlebars',
 	    window.locache = locache;
 	    window.d3 = d3;
 	    window.Asana = Asana;
-	    window.asana = new Asana('http://warm-wave-2086.herokuapp.com/asana');
 	    window.Logging = Logging;
 	    window.Persistent = Persistent;
 	    window.Lock = Lock;
@@ -58,16 +70,6 @@ require(['jquery', 'stacktrace', 'handlebars',
 	    window.Statistics = Statistics;
 	    window.Woodpecker = Woodpecker;
 	    $.ready(function() {
-		window.applicationCache.addEventListener('updateready', function() {
-		    console.log('update to newest');
-		    window.applicationCache.swapCache();
-		    location.reload();
-		});
-
-		window.applicationCache.addEventListener('error', function() {
-		    console.log('error when update cache');
-		});
-
 		setInterval(function() {
 		    console.log('flush expire cache');
 		    locache.cleanup();

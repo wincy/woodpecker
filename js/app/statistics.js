@@ -1,4 +1,4 @@
-define("app/statistics", ["sprintf", "when", "d3", "app/asana"], function() {
+define("app/statistics", ["sprintf", "when", "d3", "asana"], function() {
     function to_monday(date) {
 	var d = new Date(Date.parse(date));
 	d = new Date(d.getTime() - 86400 * 1000 * d.getDay());

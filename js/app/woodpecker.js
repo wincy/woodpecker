@@ -1,72 +1,118 @@
 define(
     "app/woodpecker",
-    ["when", "ember", "stacktrace", "sprintf", "qunit",
-     "app/asana", "app/logging", "app/index", "app/lock"],
-    function() {
-	var asana = new Asana('http://warm-wave-2086.herokuapp.com/asana');
+    ["when", "ember", "sprintf", "qunit",
+     "asana", "logging", "index", "lock"],
+    function(when, Ember, sprintf, QUnit, Asana, Logging, Index, Lock) {
 	var logging = null;
-	var result = null;
 
-	function rejectHandler(error) {
-	    if (this.info) {
-		console.log(this.info);
-	    }
-	    console.log(error);
-	    if (error && error.stack) {
-		console.log(error.stack);
-	    } else {
-		var trace = stacktrace();
-		console.log(trace.join('\n'));
-	    }
-	    throw error;
+	function array_concat(s, l) {
+	    return s.concat(l);
 	}
 
-	function init_efficient_tags() {
-	    return asana.Workspace.get({
-		name: 'Woodpecker',
-	    }).then(function (woodpecker) {
-		if (!woodpecker) {
-		    return when.promise(function(resolve, reject) {
-			alert("Workspace 'Woodpecker' is not found, please create one.");
-			reject("Workspace 'Woodpecker' is not found, please create one.");
-		    });
-		} else {
-		    return woodpecker.Project.get({
-			name: '.woodpecker',
-		    }).then(function(dot_wp) {
-			return when.all([1, 2, 3].map(function(level) {
-			    return woodpecker.Tag.filter({
-				name: '效率-' + level,
-				notes: JSON.stringify({
-				    used_times: 100000,
-				})
-			    }).then(function(tag) {
-				if (!tag) {
-				    return woodpecker.Tag.create({
-					name: '效率-' + level,
-					notes: JSON.stringify({
-					    used_times: 100000,
-					})
-				    }).then(function(tag) {
-					return dot_wp.Task.get({
-					    name: 'tags',
-					    assignee: 'me',
-					}).then(function(tags_container) {
-					    return tags_container.addTag(tag);
-					})
-				    });
-				} else {
-				    return tag;
-				}
-			    }, rejectHandler);
-			}));
-		    });
+	function array_joint_reduce(s, l) {
+	    var result = [];
+	    l.forEach(function(i) {
+		if (s.indexOf(i) != -1) {
+		    result.push(i);
 		}
-	    }, rejectHandler);
+	    })
+	    return result;
 	}
 
 	Woodpecker = Ember.Application.create({
-	    ready: function () {
+	    initialize: function() {
+		return when.pipeline([
+		    function() {
+			if (!locache.get('last-sync')) {
+			    return Asana.sync().then(function() {
+				locache.set('last-sync', new Date());
+			    });
+			}
+		    },
+		    function() {
+			return new Asana.User('me').load().then(function(me) {
+			    Asana.me = me;
+			});
+		    },
+		    function() {
+			return Asana.Workspace.get({name: 'Woodpecker'})
+			    .then(function(item) {
+				if (!item) {
+				    alert('Workspace "Woodpecker" does not exists');
+				    throw 'Workspace "Woodpecker" does not exists';
+				} else {
+				    return item;
+				}
+			    });
+		    },
+		    function(workspace) {
+			Asana.woodpecker = workspace;
+			return workspace.Project.get({name: Asana.me.name})
+			    .then(function(project) {
+				Asana.woodpecker.me = project;
+				return workspace;
+			    })
+		    },
+		    function(workspace) {
+			return when.pipeline([
+			    function() {
+				return when.all(when.map(
+				    workspace.Tag.find(true),
+				    function(tag) {
+					return tag.name;
+				    })).then(function(exists) {
+					var needs = ['效率-1', '效率-2', '效率-3'];
+					exists.forEach(function(name) {
+					    needs.removeObject(name);
+					});
+					return needs;
+				    });
+			    },
+			    function(tags) {
+				return workspace.Project.get({name: '.woodpecker'})
+				    .then(function(project) {
+					if (!project) {
+					    return workspace.Project.create({
+						name: '.woodpecker'
+					    });
+					} else {
+					    return project;
+					}
+				    })
+				    .then(function(project) {
+					return project.Task.get({name: 'tags'});
+				    })
+				    .then(function(task) {
+					if (!task) {
+					    return project.Task.create({
+						name: 'tags',
+						assignee: 'me',
+					    });
+					} else {
+					    return task;
+					}
+				    })
+				    .then(function(task) {
+					return when.map(tags, function(name) {
+					    return workspace.Tag.create({name: name})
+						.then(function(tag) {
+						    return task.addTag(tag);
+						});
+					});
+				    })
+			    },
+			]);
+		    },
+		    function() {
+			return Asana.Workspace.find(true).then(function(workspaces) {
+			    Asana.workspaces = workspaces.filter(function(workspace) {
+				return workspace.id != Asana.woodpecker.id;
+			    });
+			})
+		    },
+		]);
+	    },
+	    ready: function() {
 		Woodpecker.loader = Ember.ObjectController.create();
 		Woodpecker.loader.view = Ember.View.create({
 		    tagName: 'i',
@@ -163,31 +209,65 @@ define(
 					switch(Woodpecker.selector.type) {
 					case 'set-tasks':
 					    Woodpecker.loader.view.set('isVisible', true);
-					    asana.Project.find().then(function(projects) {
-						return when.all(projects.map(function(project) {
-						    return project.sync(new Date(), true);
-						}));
-					    }, rejectHandler).then(function() {
-						Woodpecker.selector.load_tasks()
-						    .then(function() {
-							Woodpecker.selector.set(
-							    'content', Woodpecker.selector.tasks);
-							Woodpecker.loader.view.set(
-							    'isVisible', false);
-						    });
-					    });
+					    when.pipeline([
+						Asana.Project.sync,
+						Asana.Project.find,
+						function(projects) {
+						    return when.all(when.map(projects, function(project) {
+							return when.pipeline([
+							    project.Task.sync,
+							    project.Task.find,
+							    function(tasks) {
+								return when.all(when.map(
+								    tasks,
+								    function(task) {
+									return task.sync();
+								    }));
+							    },
+							])
+						    }));
+						},
+						function() {
+						    Woodpecker.selector.load_tasks()
+							.then(function() {
+							    Woodpecker.selector.set(
+								'content', Woodpecker.selector.tasks);
+							    Woodpecker.loader.view.set(
+								'isVisible', false);
+							});
+						},
+					    ]);
 					    break;
 					case 'set-tags':
 					    Woodpecker.loader.view.set('isVisible', true);
-					    asana.sync([Asana.Workspace]).then(function() {
-						Woodpecker.selector.load_tags()
-						    .then(function() {
-							Woodpecker.selector.set(
-							    'content', Woodpecker.selector.tags);
-							Woodpecker.loader.view.set(
-							    'isVisible', false);
-						    });
-					    });
+					    when.pipeline([
+						Asana.Workspace.sync,
+						Asana.Workspace.find,
+						function(workspaces) {
+						    return when.all(when.map(workspaces, function(workspace) {
+							return when.pipeline([
+							    workspace.Tag.sync,
+							    workspace.Tag.find,
+							    function(tags) {
+								return when.all(when.map(
+								    tags,
+								    function(tag) {
+									return tag.sync();
+								    }));
+							    },
+							])
+						    }));
+						},
+						function() {
+						    Woodpecker.selector.load_tags()
+							.then(function() {
+							    Woodpecker.selector.set(
+								'content', Woodpecker.selector.tags);
+							    Woodpecker.loader.view.set(
+								'isVisible', false);
+							});
+						},
+					    ]);
 					    break;
 					default:
 					    console.log('selector load unknown type');
@@ -260,13 +340,18 @@ define(
 				    text: "Save",
 				    hit: function() {
 					Woodpecker.loader.view.set('isVisible', true);
-					Woodpecker.timeline.save().then(function() {
-					    return logging.clear();
-					}, rejectHandler).then(function() {
-					    return asana.woodpecker.me.sync(new Date(), true);
-					}, rejectHandler).then(function() {
-					    Woodpecker.loader.view.set('isVisible', false);
-					}, rejectHandler);
+					Woodpecker.timeline.save()
+					    .then(function() {
+						return when.all([
+						    Asana.woodpecker.me.Task.sync(),
+						    Asana.woodpecker.Task.sync(),
+						]);
+					    })
+					    .then(function() {
+						return logging.clear();
+					    }).then(function() {
+						Woodpecker.loader.view.set('isVisible', false);
+					    });
 					Woodpecker.puncher.view.set('isVisible', false);
 				    },
 				}),
@@ -276,7 +361,7 @@ define(
 					Woodpecker.loader.view.set('isVisible', true);
 					Woodpecker.timeline.load().then(function() {
 					    return logging.apply_all();
-					}, rejectHandler).then(function() {
+					}).then(function() {
 					    Woodpecker.loader.view.set('isVisible', false);
 					});
 					Woodpecker.puncher.view.set('isVisible', false);
@@ -333,20 +418,7 @@ define(
 				    text: "Sync",
 				    hit: function() {
 					Woodpecker.loader.view.set('isVisible', true);
-					when.all([
-					    asana.sync([
-						Asana.User,
-						Asana.Workspace,
-						Asana.Project,
-						Asana.Tag,
-					    ]),
-					    asana.woodpecker.Tag.find().then(function(tags) {
-						return when.all(tags.map(function(tag) {
-						    // force sync for notes
-						    return tag.sync(new Date(), true);
-						}))
-					    }),
-					]).then(function() {
+					Asana.sync().then(function() {
 					    Woodpecker.loader.view.set('isVisible', false);
 					});
 					Woodpecker.puncher.view.set('isVisible', false);
@@ -356,21 +428,22 @@ define(
 				    text: "Clean",
 				    hit: function() {
 					Woodpecker.loader.view.set('isVisible', true);
-					asana.woodpecker.me.Task.find().then(function(tasks) {
-					    return when.all(tasks.filter(function(task) {
-						console.log(task.name, ':', (
-						    Date.parse(Woodpecker.timeline.date) -
-							Date.parse(task.name.split('#')[0]) >
-							86400 * 1000 * 10));
-						return (Date.parse(Woodpecker.timeline.date) -
-							Date.parse(task.name.split('#')[0]) >
-							86400 * 1000 * 10);
-					    }).map(function(task) {
-						return task.update({completed: true});
-					    }));
-					}, rejectHandler).then(function() {
-					    Woodpecker.loader.view.set('isVisible', false);
-					}, rejectHandler);
+					Asana.woodpecker.me.Task.find(true)
+					    .then(function(tasks) {
+						return when.all(tasks.filter(function(task) {
+						    console.log(task.name, ':', (
+							Date.parse(Woodpecker.timeline.date) -
+							    Date.parse(task.name.split('#')[0]) >
+							    86400 * 1000 * 10));
+						    return (Date.parse(Woodpecker.timeline.date) -
+							    Date.parse(task.name.split('#')[0]) >
+							    86400 * 1000 * 10);
+						}).map(function(task) {
+						    return task.update({completed: true});
+						}));
+					    }).then(function() {
+						Woodpecker.loader.view.set('isVisible', false);
+					    });
 					Woodpecker.puncher.view.set('isVisible', false);
 				    },
 				}),
@@ -378,37 +451,26 @@ define(
 				    text: "Update Index",
 				    hit: function() {
 					Woodpecker.loader.view.set('isVisible', true);
-					when.all([
-					    when.all(
-						asana.woodpecker.me.Task.find(true)
-						    .then(function(records) {
-							return records.map(function(record) {
-							    var notes = record.notes;
-							    if (notes.length == 0) {
-								throw sprintf("notes of record<%s> is empty.", record.id);
-							    }
-							    notes = JSON.parse(notes);
-							    return when.all(
-								notes.tasks.map(function(task_id) {
-								    return new Index('task.id', 'record.ids')
-									.sadd(task_id, record.id);
-								})
-							    )
-							});
-						    })
-					    ),
-					    when.all(
-						asana.woodpecker.me.Task.find(true)
-						    .then(function(tasks) {
-							return tasks.map(function(task) {
-							    return new Index('task.name', 'task.id')
-								.set(task.name, task.id);
-							});
-						    }, rejectHandler)
-					    ),
-					]).then(function() {
+					when.all(
+					    Asana.woodpecker.me.Task.find(true)
+						.then(function(records) {
+						    return records.map(function(record) {
+							var notes = record.notes;
+							if (notes.length == 0) {
+							    throw sprintf("notes of record<%s> is empty.", record.id);
+							}
+							notes = JSON.parse(notes);
+							return when.all(
+							    notes.tasks.map(function(task_id) {
+								return new Index('task.id', 'record.ids')
+								    .sadd(task_id, record.id);
+							    })
+							)
+						    });
+						})
+					).then(function() {
 					    Woodpecker.loader.view.set('isVisible', false);
-					}, rejectHandler);
+					});
 					Woodpecker.puncher.view.set('isVisible', false);
 				    },
 				}),
@@ -485,45 +547,18 @@ define(
 		})
 		Woodpecker.menu = Woodpecker.Menu.create();
 		Woodpecker.loader.view.set('isVisible', true);
-		asana.me = new Asana.User('me');
-
-		// result = when.all([
-		//     init_efficient_tags(),
-		//     asana.Workspace.find()
-		// 	.then(function(workspaces) {
-		// 	    asana.workspaces = workspaces;
-		// 	    asana.woodpecker = workspaces.filter(function(workspace) {
-		// 		return workspace.name == 'Woodpecker';
-		// 	    })[0];
-		// 	    asana.workspaces.removeObject(asana.woodpecker);
-		// 	}, rejectHandler),
-		//     asana.me.load(),
-		// ]).then(function (){
-		//     return asana.woodpecker.Project.find()
-		// 	.then(function(projects) {
-		// 	    return when.promise(function(resolve, reject) {
-		// 		asana.woodpecker.me = projects.filter(function(project) {
-		// 		    return project.name == asana.me.name;
-		// 		})[0];
-		// 		if (asana.woodpecker.me) {
-		// 		    resolve(asana.woodpecker.me);
-		// 		} else {
-		// 		    reject('asana.woodpecker.me not found');
-		// 		}
-		// 	    })
-		// 	}, rejectHandler);
-		// }, rejectHandler).then(function() {
-		//     return Woodpecker.timeline.load();
-		// }, rejectHandler).then(function() {
-		//     return logging.apply_all();
-		// }, rejectHandler).then(function() {
-		//     return when.all([
-		// 	Woodpecker.selector.load_tasks(),
-		// 	Woodpecker.selector.load_tags(),
-		//     ]);
-		// }, rejectHandler).then(function() {
-		//     Woodpecker.loader.view.set('isVisible', false);
-		// }, rejectHandler);
+		Woodpecker.status = Woodpecker.initialize().then(function() {
+		    return Woodpecker.timeline.load();
+		}).then(function() {
+		    return logging.apply_all();
+		}).then(function() {
+		    return when.all([
+			Woodpecker.selector.load_tasks(),
+			Woodpecker.selector.load_tags(),
+		    ]);
+		}).then(function() {
+		    Woodpecker.loader.view.set('isVisible', false);
+		});
 	    },
 	});
 	Woodpecker.ApplicationController = Ember.Controller.extend({
@@ -562,7 +597,7 @@ define(
 			.then(function(story) {
 			    this.set('story', story);
 			    return this;
-			}.bind(this), rejectHandler);
+			}.bind(this));
 		} else {
 		    return this;
 		}
@@ -577,11 +612,21 @@ define(
 		    return record.save_comments();
 		})).then(function(records) {
 		    return when.all(Object.keys(records).map(function(idx) {
-			return asana.woodpecker.me.Task.get({
+			return Asana.woodpecker.me.Task.get({
 			    name: sprintf('%s#%s', this.date, idx),
-			    assignee: 'me',
 			    assignee_status: 'today',
 			}).then(function(task) {
+			    if (!task) {
+				return Asana.woodpecker.Task.create({
+				    name: sprintf('%s#%s', this.date, idx),
+				    assignee: 'me',
+				    assignee_status: 'today',
+				    'projects[0]': Asana.woodpecker.me.id,
+				});
+			    } else {
+				return task;
+			    }
+			}.bind(this)).then(function(task) {
 			    var idx = parseInt(task.name.split('#')[1]);
 			    var promises = [];
 			    if (task.notes.length > 0) {
@@ -640,7 +685,7 @@ define(
 			    return when.all(promises).then(function() {
 				return task;
 			    });
-			}.bind(this), rejectHandler);
+			}.bind(this));
 		    }.bind(this))).then(function(records) {
 			return when.all(records.reduce(function(tasks, record) {
 			    JSON.parse(record.notes).tasks.forEach(function(id) {
@@ -651,7 +696,7 @@ define(
 			    return tasks;
 			}, []).map(function(id) {
 			    return new Asana.Task(id).load().then(function(task) {
-				return task.Ancestor.find().then(function(tasks) {
+				return task.getAncestor().then(function(tasks) {
 				    tasks.push(task);
 				    return tasks;
 				});
@@ -668,7 +713,9 @@ define(
 			}).then(function(tasks) {
 			    return when.all(tasks.map(function(task) {
 				return new Lock('tasks/' + task.id).wait().then(function(lock) {
-				    return task.sync(true).then(function(task) {
+				    return task.sync(true).then(function() {
+					return task.load();
+				    }).then(function(task) {
 					return task.useTime().then(function(use) {
 					    var match = new RegExp(
 						    /^(.*)\[\d+:\d+\/(\d+:\d+)\]$/)
@@ -700,27 +747,24 @@ define(
 									   use % 60));
 					    }
 					    return task.update({name: new_name});
-					}, rejectHandler);
-				    }, rejectHandler).ensure(function() {
+					});
+				    }).ensure(function() {
 					return lock.release();
 				    });
-				}, rejectHandler);
+				});
 			    }))
 			});
 		    });
-		}.bind(this), rejectHandler);
+		}.bind(this));
 	    },
 	    load: function() {
 		this.set('content', []);
-		return asana.woodpecker.me.Task.find(true)
+		return Asana.woodpecker.me.Task.find(true)
 		    .then(function(tasks) {
-			return when.all(
-			    tasks.filter(function(task) {
-				return RegExp(sprintf('^%s#\\d+$', this.date)).test(task.name);
-			    }.bind(this)).map(function(task) {
-				return task.load();
-			    }));
-		    }.bind(this), rejectHandler)
+			return tasks.filter(function(task) {
+				return new RegExp(sprintf('^%s#\\d+$', this.date)).test(task.name);
+			    }.bind(this));
+		    }.bind(this))
 		    .then(function(tasks) {
 			console.log(tasks);
 			var sorted = tasks.sort(function(a, b) {
@@ -739,7 +783,7 @@ define(
 			    this.set('content', records);
 			    return records;
 			}.bind(this));
-		    }.bind(this), rejectHandler);
+		    }.bind(this));
 	    },
 	    set_date: function(date) {
 		if (date == undefined) {
@@ -943,8 +987,8 @@ define(
 				}.bind(this));
 				this.set('comments', comments);
 				return this;
-			    }.bind(this), rejectHandler);
-		    }.bind(this), rejectHandler);
+			    }.bind(this));
+		    }.bind(this));
 	    },
 	    start_short: function() {
 		if (this.start) {
@@ -1227,7 +1271,7 @@ define(
 		case "save":
 		    Woodpecker.timeline.save().then(function() {
 			logging.clear();
-		    }, rejectHandler).then(function() {
+		    }).then(function() {
 			Woodpecker.loader.view.set('isVisible', false);
 		    });
 		    Woodpecker.puncher.view.set('isVisible', false);
@@ -1235,7 +1279,7 @@ define(
 		case "load":
 		    Woodpecker.timeline.load().then(function() {
 			return logging.apply_all();
-		    }, rejectHandler).then(function() {
+		    }).then(function() {
 	    		Woodpecker.loader.view.set('isVisible', false);
 		    });
 		    Woodpecker.puncher.view.set('isVisible', false);
@@ -1317,50 +1361,30 @@ define(
 		}));
 	    },
 	    load_tasks: function() {
-		return when.all(asana.workspaces.map(function(workspace) {
-		    return workspace.Project.find();
-		})).then(function(projects_list) {
-		    return when.all(
-			projects_list.reduce(function(s, a) {
-			    return s.concat(a);
-			}).map(function(project) {
-			    return project.Task.find(true);
-			}))
-		}, rejectHandler).then(function(tasks_list) {
-		    return when.all(tasks_list.reduce(function(s, a) {
-			var result = s.copy();
-			a.forEach(function(task) {
-			    if (!result.some(function(e) {
-				return e.id == task.id;
-			    })) {
-				result.push(task);
-			    }
+		return when.reduce(when.map(Asana.workspaces, function(workspace) {
+			return when.map(workspace.Task.filter({
+			    assignee_status: 'today',
+			    completed: false,
+			}), function(task) {
+			    return task.id;
 			});
-			return result;
-		    }).filter(function(task) {
-			return !task.completed;
-		    }).map(function(task) {
-			return new Asana.Task(task.id).load();
-		    })).then(function(tasks) {
-			return tasks.filter(function(task) {
-			    return (task.assignee_status == 'today' &&
-				    !task.completed &&
-				    task.followers.map(function(follower) {
-					return follower.id;
-				    }).indexOf(asana.me.id) != -1);
-			})
-		    }, rejectHandler).then(function(tasks) {
+		    }), array_concat, [])
+		    .then(function(ids) {
+			return when.all(when.map(ids, function(id) {
+			    return new Asana.Task(id).load();
+			}));
+		    })
+		    .then(function(tasks) {
 			this.set('tasks', tasks.map(function(task) {
 			    return Woodpecker.Selector.Option.create({content: task});
 			}));
 			return this;
-		    }.bind(this), rejectHandler);
-		}.bind(this), rejectHandler)
+		    }.bind(this));
 	    },
 	    load_tags: function() {
-		return asana.woodpecker.Tag.find(true)
+		return Asana.woodpecker.Tag.find(true)
 		    .then(function(tags) {
-			asana.woodpecker.tags = tags;
+			Asana.woodpecker.tags = tags;
 			this.set('tags', tags.sort(function(a, b) {
 			    var ut1 = 0;
 			    var ut2 = 0;
@@ -1376,7 +1400,7 @@ define(
 			}).map(function(tag) {
 			    return Woodpecker.Selector.Option.create({content: tag});
 			}));
-		    }.bind(this), rejectHandler);
+		    }.bind(this));
 	    },
 	    select_statistics_tags: function() {
 		Woodpecker.selector.type = 'statistics-tags';

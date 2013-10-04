@@ -1,5 +1,9 @@
-define("asana", ["jquery", "when", "qunit", "sprintf", "asana/model", "asana/remote"], function($, when, QUnit, sprintf, Model, Remote) {
-    var CONCURRENCY = 10;
+define("asana", ["jquery", "ember", "when", "when/parallel", "when/sequence", "when/pipeline", "qunit", "sprintf", "asana/model", "asana/remote"], function($, Ember, when, parallel, sequence, pipeline, QUnit, sprintf, Model, Remote) {
+    when.parallel = parallel;
+    when.sequence = sequence;
+    when.pipeline = pipeline;
+
+    var CONCURRENCY = 6;
 
     function array_concat(s, l) {
 	return s.concat(l);
@@ -17,170 +21,335 @@ define("asana", ["jquery", "when", "qunit", "sprintf", "asana/model", "asana/rem
 	return result;
     }
 
-    Asana = {};
+    Asana = Ember.Object.create();
 
-    Asana.User = Model.extend(
-    	['user', 'users'], {
-    	    name: new Model.Field("string", true),
-    	    email: new Model.Field("string", true),
-    	});
-    Asana.Subtask = Model.extend(
-    	['task', 'tasks'], {
-    	    name: new Model.Field("string"),
-    	});
-    Asana.Task = Model.extend(
-    	['task', 'tasks'], {
-    	    name: new Model.Field("string", true),
-    	    Subtask: new Model.Field(Asana.Subtask),
-	    addTag: function(tag) {
-		return new Remote(this._plural + '/' + this.id)
-		    .create('addTag', {tag: tag.id});
-	    },
-	    removeTag: function(tag) {
-		return new Remote(this._plural + '/' + this.id)
-		    .create('removeTag', {tag: tag.id});
-	    },
-    	});
-    Asana.Tag = Model.extend(
-    	['tag', 'tags'], {
-    	    name: new Model.Field("string", true),
-    	    Task: new Model.Field(Asana.Task),
-    	});
+    Asana.reopen({
+	status: "ready",
+    });
+
+    Asana.reopen({
+	User: Model.extend(
+    	    ['user', 'users'], {
+    		name: new Model.Field("string", true),
+    		email: new Model.Field("string", true),
+    	    }),
+    });
+    Asana.reopen({
+	Subtask: Model.extend(
+    	    ['task', 'tasks'], {
+    		name: new Model.Field("string"),
+    	    })
+    });
+    Asana.reopen({
+	Task: Model.extend(
+    	    ['task', 'tasks'], {
+    		name: new Model.Field("string", true),
+		completed: new Model.Field("string", true),
+		assignee_status: new Model.Field("string", true),
+    		Subtask: new Model.Field(Asana.Subtask),
+		addTag: function(tag) {
+		    return new Remote(this._plural + '/' + this.id)
+			.create('addTag', {tag: tag.id});
+		},
+		removeTag: function(tag) {
+		    return new Remote(this._plural + '/' + this.id)
+			.create('removeTag', {tag: tag.id});
+		},
+		getAncestor: function() {
+		    if (!this.parent) {
+			return when.promise(function(resolve) {
+			    resolve([]);
+			});
+		    } else {
+			return new Asana.Task(this.parent.id).load()
+			    .then(function(task) {
+				return task.getAncestor().then(function(tasks) {
+				    tasks.push(task);
+				    return tasks;
+				});
+			    });
+		    }
+		},
+		getOffspring: function() {
+		    return when.all(when.map(this.Subtask.find(), function(item) {
+			return item.getOffspring();
+		    })).then(function(items) {
+			if (items.length > 0) {
+			    return [this, items];
+			} else {
+			    return this;
+			}
+		    }.bind(this));
+		},
+		useTime: function(recursive) {
+		    if (recursive) {
+			return when.all([
+			    this.useTime(false),
+			    this.Subtask.find().then(function(tasks) {
+				return when.all(tasks.map(function(task) {
+				    return task.useTime(true);
+				})).then(function(time_list) {
+				    return time_list.reduce(function(sum, time) {
+					return sum + time;
+				    }, 0);
+				});
+			    })
+			]).then(function(time_list) {
+			    return time_list.reduce(function(sum, time) {
+				return sum + time;
+			    }, 0);
+			});
+		    } else {
+			return new Index('task.id', 'record.ids').smembers(this.id)
+			    .then(function(record_ids) {
+				return when.all(record_ids.map(function(id) {
+				    return new Asana.Task(id).load();
+				}));
+			    })
+			    .then(function(records) {
+				return records.reduce(function(sum, record) {
+				    var r = JSON.parse(record.notes);
+				    return sum + (Date.parse(r.end) - Date.parse(r.start)) / 1000 / 60;
+				}, 0);
+			    });
+		    }
+		},
+    	    })
+    });
+    Asana.reopen({
+	Tag: Model.extend(
+    	    ['tag', 'tags'], {
+    		name: new Model.Field("string", true),
+    		Task: new Model.Field(Asana.Task),
+    	    })
+    });
     Asana.Task.prototype.fields.Tag = new Model.Field(Asana.Tag);
-    Asana.Project = Model.extend(
-    	['project', 'projects'], {
-    	    name: new Model.Field("string", true),
-    	    Task: new Model.Field(Asana.Task),
-    	});
-    Asana.Workspace = Model.extend(
-    	['workspace', 'workspaces'], {
-    	    name: new Model.Field("string", true),
-    	    User: new Model.Field(Asana.User),
-    	    Project: new Model.Field(Asana.Project),
-    	    Task: new Model.Field(Asana.Task),
-    	    Tag: new Model.Field(Asana.Tag),
-    	});
+    Asana.reopen({
+	Project: Model.extend(
+    	    ['project', 'projects'], {
+    		name: new Model.Field("string", true),
+    		Task: new Model.Field(Asana.Task),
+    	    })
+    });
+    Asana.reopen({
+	Workspace: Model.extend(
+    	    ['workspace', 'workspaces'], {
+    		name: new Model.Field("string", true),
+    		User: new Model.Field(Asana.User),
+    		Project: new Model.Field(Asana.Project),
+    		Task: new Model.Field(Asana.Task),
+    		Tag: new Model.Field(Asana.Tag),
+    	    })
+    });
 
-    $.extend(Asana, {
+    Asana.reopen({
 	sync: function() {
 	    return when.sequence([
+		function() {
+		    var me = new Asana.User('me');
+		    return me.sync();
+		},
 		// sync workspaces
 		function() {
-		    return this.Workspace.sync();
-		}.bind(this),
+		    Asana.set('status', "sync workspaces");
+		    return Asana.Workspace.sync();
+		},
 		function() {
-		    return when.all(when.map(this.Workspace.find(), function(workspace) {
+		    return when.all(when.map(Asana.Workspace.find(), function(workspace) {
+			Asana.set('status', "sync workspace " + workspace.id);
 			return workspace.sync();
 		    }));
-		}.bind(this),
+		},
+		function() {
+		    return when.all(when.map(Asana.Workspace.find(), function(workspace) {
+			Asana.set('status', "index workspace " + workspace.id);
+			return workspace.index();
+		    }));
+		},
 		// sync users
 		function() {
+		    Asana.set('status', "sync users");
 		    return when.all([
-			this.User.sync(),
-			when.all(when.map(this.Workspace.find(), function(workspace) {
+			Asana.User.sync(),
+			when.all(when.map(Asana.Workspace.find(), function(workspace) {
+			    Asana.set('status', "sync users of workspace " + workspace.id);
 			    return workspace.User.sync();
 			})),
 		    ]);
-		}.bind(this),
+		},
 		function() {
-		    return when.all(when.map(this.User.find(), function(user) {
+		    return when.all(when.map(Asana.User.find(), function(user) {
+			Asana.set('status', "sync user " + user.id);
 			return user.sync();
 		    }));
-		}.bind(this),
+		},
+		function() {
+		    return when.all(when.map(Asana.User.find(), function(user) {
+			Asana.set('status', "index user " + user.id);
+			return user.index();
+		    }));
+		},
 		// sync projects
 		function() {
+		    Asana.set('status', "sync projects");
 		    return when.all([
-			this.Project.sync(),
-			when.all(when.map(this.Workspace.find(), function(workspace) {
+			Asana.Project.sync(),
+			when.all(when.map(Asana.Workspace.find(), function(workspace) {
+			    Asana.set('status', "sync projects of workspace " + workspace.id);
 			    return workspace.Project.sync();
 			})),
 		    ]);
-		}.bind(this),
+		},
 		function() {
-		    return when.all(when.map(this.Project.find(), function(project) {
+		    return when.all(when.map(Asana.Project.find(), function(project) {
+			Asana.set('status', "sync project " + project.id);
 			return project.sync();
 		    }));
-		}.bind(this),
+		},
+		function() {
+		    return when.all(when.map(Asana.Project.find(), function(project) {
+			Asana.set('status', "index project " + project.id);
+			return project.index();
+		    }));
+		},
 		// sync tags
 		function() {
-		    return when.all([
-			this.Tag.sync(),
-			when.all(when.map(this.Workspace.find(), function(workspace) {
-			    return workspace.Tag.sync();
-			})),
+		    Asana.set('status', "sync tags");
+		    return when.pipeline([
+			Asana.Tag.sync,
+			function() {
+			    return when.all(when.map(
+				Asana.Workspace.find(), function(workspace) {
+				    Asana.set('status', "sync tags of workspace " + workspace.id);
+				    return workspace.Tag.sync();
+				}));
+			},
 		    ]);
-		}.bind(this),
+		},
 		function() {
-		    return when.all(when.map(this.Tag.find(), function(tag) {
+		    return when.all(when.map(Asana.Tag.find(), function(tag) {
+			Asana.set('status', "sync tag " + tag.id);
 			return tag.sync();
 		    }));
-		}.bind(this),
+		},
+		function() {
+		    return when.all(when.map(Asana.Tag.find(), function(tag) {
+			Asana.set('status', "index tag " + tag.id);
+			return tag.index();
+		    }));
+		},
 		// sync tasks
 		function() {
+		    Asana.set('status', "sync tasks");
 		    return when.all([
 			when.all(when.map(
-			    this.Workspace.find(),
+			    Asana.Workspace.find(),
 			    when.guard(
 				when.guard.n(CONCURRENCY),
 				function(workspace) {
+				    Asana.set('status', "sync tasks of workspace " + workspace.id);
 				    return workspace.Task.sync();
 				}))),
 			when.all(when.map(
-			    this.Project.find(), 
+			    Asana.Project.find(), 
 			    when.guard(
 				when.guard.n(CONCURRENCY),
 				function(project) {
+				    Asana.set('status', "sync tasks of project " + project.id);
 				    return project.Task.sync();
 				}))),
 			when.all(when.map(
-			    this.Tag.find(),
+			    Asana.Tag.find(),
 			    when.guard(
 				when.guard.n(CONCURRENCY),
 				function(tag) {
+				    Asana.set('status', "sync tasks of tag " + tag.id);
 				    return tag.Task.sync();
 				}))),
 		    ]);
-		}.bind(this),
+		},
 		function() {
 		    return when.all([
-			when.all(when.map(this.Workspace.find(), function(workspace) {
+			when.all(when.map(Asana.Workspace.find(), function(workspace) {
 			    return when.all(
 				when.map(
 				    workspace.Task.find(),
 				    when.guard(
 					when.guard.n(CONCURRENCY),
 					function(task) {
-					    return task.sync().then(function() {
-						return task.Subtask.sync();
+					    Asana.set('status', "sync task " + task.id);
+					    return task.sync().then(function(result) {
+						if (result) {
+						    return when.parallel([
+							function() {
+							    Asana.set('status', "sync subtasks of task " + task.id);
+							    return task.Subtask.sync();
+							},
+							function() {
+							    Asana.set('status', "index task " + task.id);
+							    return task.index();
+							},
+						    ]);
+						} else {
+						    return null;
+						}
 					    });
 					})))
 			})),
-			when.all(when.map(this.Project.find(), function(project) {
+			when.all(when.map(Asana.Project.find(), function(project) {
 			    return when.all(
 				when.map(
 				    project.Task.find(),
 				    when.guard(
 					when.guard.n(CONCURRENCY),
 					function(task) {
-					    return task.sync().then(function() {
-						return task.Subtask.sync();
+					    Asana.set('status', "sync task " + task.id);
+					    return task.sync().then(function(result) {
+						if (result) {
+						    return when.parallel([
+							function() {
+							Asana.set('status', "sync subtasks of task " + task.id);
+							    return task.Subtask.sync();
+							},
+							function() {
+							    Asana.set('status', "index task " + task.id);
+							    return task.index();
+							},
+						    ]);
+						} else {
+						    return null;
+						}
 					    });
 					})))
 			})),
-			when.all(when.map(this.Tag.find(), function(tag) {
+			when.all(when.map(Asana.Tag.find(), function(tag) {
 			    return when.all(
 				when.map(
 				    tag.Task.find(),
 				    when.guard(
 					when.guard.n(CONCURRENCY),
 					function(task) {
-					    return task.sync().then(function() {
-						return task.Subtask.sync();
+					    Asana.set('status', "sync task " + task.id);
+					    return task.sync().then(function(result) {
+						if (result) {
+						    return when.parallel([
+							function() {
+							    Asana.set('status', "sync subtasks of task " + task.id);
+							    return task.Subtask.sync();
+							},
+							function() {
+							    Asana.set('status', "index task " + task.id);
+							    return task.index();
+							},
+						    ])
+						} else {
+						    return null;
+						}
 					    });
 					})))
 			})),
 		    ]);
-		}.bind(this),
+		},
 		// sync stories
 		// function() {
 		//     return when.all([

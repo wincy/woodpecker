@@ -1,5 +1,8 @@
-define("asana/model", ["jquery", "when", "when/pipeline", "qunit", "persistent", "lock", "index", "underscore.string", "asana/remote"], function($, when, pipeline, QUnit, Persistent, Lock, Index, _, Remote) {
+define("asana/model", ["jquery", "when", "when/pipeline", "when/guard", "qunit", "persistent", "lock", "index", "underscore.string", "asana/remote", "sprintf"], function($, when, pipeline, guard, QUnit, Persistent, Lock, Index, _, Remote, sprintf) {
+    CONCURRENCY = 50;
+
     when.pipeline = pipeline;
+    when.guard = guard;
 
     function array_joint_reduce(s, l) {
 	var result = [];
@@ -59,13 +62,29 @@ define("asana/model", ["jquery", "when", "when/pipeline", "qunit", "persistent",
     };
 
     Model.prototype = {
-	sync: function() {
+	sync: function(force) {
 	    return when.pipeline([
 		function() {
-		    return new Remote(this._plural).get(this.id);
+		    if (force) {
+			return true;
+		    } else {
+			return new Persistent(this._plural)
+			    .outdated(this.id, new Date(Date.parse(this.modified_at)));
+		    }
 		}.bind(this),
-		function(data) {
-		    return new Persistent(this._plural).set(this.id, JSON.stringify(data));
+		function(outdated) {
+		    if (outdated) {
+			return new Remote(this._plural).get(this.id)
+			    .then(function(data) {
+				return new Persistent(this._plural)
+				    .set(this.id, JSON.stringify(data));
+			    }.bind(this))
+			    .then(function() {
+				return this.index();
+			    }.bind(this));
+		    } else {
+			return null;
+		    }
 		}.bind(this),
 	    ]);
 	},
@@ -82,6 +101,9 @@ define("asana/model", ["jquery", "when", "when/pipeline", "qunit", "persistent",
 		    return new Persistent(this._plural).set(this.id, JSON.stringify(data));
 		}.bind(this))
 		.then(function() {
+		    return this.index();
+		}.bind(this))
+		.then(function() {
 		    return this.load();
 		}.bind(this));
 	},
@@ -91,24 +113,34 @@ define("asana/model", ["jquery", "when", "when/pipeline", "qunit", "persistent",
 	find: function(load) {
 	    return new Persistent(this._plural)
 		.get(this.id).then(JSON.parse).then(function(items) {
-		    return when.map(items, function(item) {
+		    return when.all(when.map(items, when.guard(when.guard.n(CONCURRENCY), function(item) {
 			if (load == true) {
-			    return new this.constructor(item.id).load();
+			    return this.load();
 			} else {
-			    return $.extend(new this.constructor(item.id), item);
+			    return $.extend(this, item);
 			}
-		    }.bind(this));
+		    }.bind(this))));
 		}.bind(this));
 	},
 	index: function() {
 	    return new Persistent(this._plural)
-		.get(this.id).then(JSON.parse)
+		.get(this.id).then(function(data) {
+		    var result = null;
+		    try {
+			result = JSON.parse(data);
+		    } catch (e) {
+			console.error(sprintf('index %s %s error', this._plural, this.id));
+		    }
+		    return result;
+		}.bind(this))
 		.then(function(item) {
 		    return when.all(when.map(Object.keys(item), function(key) {
 			if (this.INDEX_FIELDS.indexOf(key) != -1) {
 			    return new Index(this._singular + '.' + key,
 					     this._singular + '.ids')
 				.sadd(item[key], item.id);
+			} else {
+			    return true;
 			}
 		    }.bind(this)));
 		}.bind(this));
@@ -166,13 +198,13 @@ define("asana/model", ["jquery", "when", "when/pipeline", "qunit", "persistent",
 	    return new Persistent(ns)
 		.get(klass.prototype._plural).then(JSON.parse)
 		.then(function(items) {
-		    return when.map(items, function(item) {
+		    return when.all(when.map(items, when.guard(when.guard.n(CONCURRENCY), function(item) {
 			if (load == true) {
 			    return new klass(item.id).load();
 			} else {
 			    return $.extend(new klass(item.id), item);
 			}
-		    });
+		    })));
 		});
 	},
 	filter: function(klass, ns, conditions, load) {
@@ -193,9 +225,9 @@ define("asana/model", ["jquery", "when", "when/pipeline", "qunit", "persistent",
 				return new klass(id);
 			    });
 			    if (load == true) {
-				return when.map(result, function(item) {
+				return when.all(when.map(result, function(item) {
 				    return item.load();
-				});
+				}));
 			    } else {
 				return result;
 			    }

@@ -22,10 +22,26 @@ define('asana/remote', ['jquery', 'locache', 'when', 'when/delay', 'when/pipelin
 	if (method == 'GET' && match) {
 	    url = 'tasks/' + match[1] + '/subtasks';
 	}
-	// workspace task patch
+	// task list sync patch
 	if (method == 'GET' && url.match('workspaces/[^/]+/tasks')) {
 	    params = {
 		assignee: 'me',
+		opt_fields: 'modified_at',
+	    };
+	}
+	if (method == 'GET' && url.match('projects/[^/]+/tasks')) {
+	    params = {
+		opt_fields: 'modified_at',
+	    };
+	}
+	if (method == 'GET' && url.match('tags/[^/]+/tasks')) {
+	    params = {
+		opt_fields: 'modified_at',
+	    };
+	}
+	if (method == 'GET' && url.match('tasks/[^/]+/subtasks')) {
+	    params = {
+		opt_fields: 'modified_at',
 	    };
 	}
 	return when.promise(function(resolve, reject) {
@@ -67,13 +83,13 @@ define('asana/remote', ['jquery', 'locache', 'when', 'when/delay', 'when/pipelin
     }
 
     Remote.prototype = {
-	get: function(resource) {
+	get: function(resource, data) {
 	    var url = '';
 	    if (this.ns) {
 		url += this.ns + '/'
 	    }
 	    url += resource;
-	    return request(url);
+	    return request(url, data, 'GET');
 	},
 	create: function(resource, data) {
 	    var url = '';
