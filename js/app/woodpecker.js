@@ -451,24 +451,7 @@ define(
 				    text: "Update Index",
 				    hit: function() {
 					Woodpecker.loader.view.set('isVisible', true);
-					when.all(
-					    Asana.woodpecker.me.Task.find(true)
-						.then(function(records) {
-						    return records.map(function(record) {
-							var notes = record.notes;
-							if (notes.length == 0) {
-							    throw sprintf("notes of record<%s> is empty.", record.id);
-							}
-							notes = JSON.parse(notes);
-							return when.all(
-							    notes.tasks.map(function(task_id) {
-								return new Index('task.id', 'record.ids')
-								    .sadd(task_id, record.id);
-							    })
-							)
-						    });
-						})
-					).then(function() {
+					Asana.index().then(function() {
 					    Woodpecker.loader.view.set('isVisible', false);
 					});
 					Woodpecker.puncher.view.set('isVisible', false);

@@ -143,6 +143,19 @@ define("asana", ["jquery", "ember", "when", "when/parallel", "when/sequence", "w
     });
 
     Asana.reopen({
+	index: function() {
+	    return when.all(when.map(Asana.Project.find(), function(project) {
+		return when.all(
+		    when.map(
+			project.Task.find(),
+			when.guard(
+			    when.guard.n(CONCURRENCY),
+			    function(task) {
+				Asana.set('status', "index task " + task.id);
+				return task.index();
+			    })))
+	    }));
+	},
 	sync: function() {
 	    return when.sequence([
 		function() {
