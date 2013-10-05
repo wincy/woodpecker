@@ -282,85 +282,91 @@ define("asana", ["jquery", "ember", "when", "when/parallel", "when/sequence", "w
 		    ]);
 		},
 		function() {
-		    return when.all([
-			when.all(when.map(Asana.Workspace.find(), function(workspace) {
-			    return when.all(
-				when.map(
-				    workspace.Task.find(),
-				    when.guard(
-					when.guard.n(CONCURRENCY),
-					function(task) {
-					    Asana.set('status', "sync task " + task.id);
-					    return task.sync().then(function(result) {
-						if (result) {
-						    return when.parallel([
-							function() {
-							    Asana.set('status', "sync subtasks of task " + task.id);
-							    return task.Subtask.sync();
-							},
-							function() {
-							    Asana.set('status', "index task " + task.id);
-							    return task.index();
-							},
-						    ]);
-						} else {
-						    return null;
-						}
-					    });
-					})))
-			})),
-			when.all(when.map(Asana.Project.find(), function(project) {
-			    return when.all(
-				when.map(
-				    project.Task.find(),
-				    when.guard(
-					when.guard.n(CONCURRENCY),
-					function(task) {
-					    Asana.set('status', "sync task " + task.id);
-					    return task.sync().then(function(result) {
-						if (result) {
-						    return when.parallel([
-							function() {
-							Asana.set('status', "sync subtasks of task " + task.id);
-							    return task.Subtask.sync();
-							},
-							function() {
-							    Asana.set('status', "index task " + task.id);
-							    return task.index();
-							},
-						    ]);
-						} else {
-						    return null;
-						}
-					    });
-					})))
-			})),
-			when.all(when.map(Asana.Tag.find(), function(tag) {
-			    return when.all(
-				when.map(
-				    tag.Task.find(),
-				    when.guard(
-					when.guard.n(CONCURRENCY),
-					function(task) {
-					    Asana.set('status', "sync task " + task.id);
-					    return task.sync().then(function(result) {
-						if (result) {
-						    return when.parallel([
-							function() {
-							    Asana.set('status', "sync subtasks of task " + task.id);
-							    return task.Subtask.sync();
-							},
-							function() {
-							    Asana.set('status', "index task " + task.id);
-							    return task.index();
-							},
-						    ])
-						} else {
-						    return null;
-						}
-					    });
-					})))
-			})),
+		    return when.pipeline([
+			function() {
+			    return when.all(when.map(Asana.Workspace.find(), function(workspace) {
+				return when.all(
+				    when.map(
+					workspace.Task.find(),
+					when.guard(
+					    when.guard.n(CONCURRENCY),
+					    function(task) {
+						Asana.set('status', "sync task " + task.id);
+						return task.sync().then(function(result) {
+						    if (result) {
+							return when.parallel([
+							    function() {
+								Asana.set('status', "sync subtasks of task " + task.id);
+								return task.Subtask.sync();
+							    },
+							    function() {
+								Asana.set('status', "index task " + task.id);
+								return task.index();
+							    },
+							]);
+						    } else {
+							return null;
+						    }
+						});
+					    })))
+			    }))
+			},
+			function() {
+			    return when.all(when.map(Asana.Project.find(), function(project) {
+				return when.all(
+				    when.map(
+					project.Task.find(),
+					when.guard(
+					    when.guard.n(CONCURRENCY),
+					    function(task) {
+						Asana.set('status', "sync task " + task.id);
+						return task.sync().then(function(result) {
+						    if (result) {
+							return when.parallel([
+							    function() {
+								Asana.set('status', "sync subtasks of task " + task.id);
+								return task.Subtask.sync();
+							    },
+							    function() {
+								Asana.set('status', "index task " + task.id);
+								return task.index();
+							    },
+							]);
+						    } else {
+							return null;
+						    }
+						});
+					    })))
+			    }));
+			},
+			function() {
+			    when.all(when.map(Asana.Tag.find(), function(tag) {
+				return when.all(
+				    when.map(
+					tag.Task.find(),
+					when.guard(
+					    when.guard.n(CONCURRENCY),
+					    function(task) {
+						Asana.set('status', "sync task " + task.id);
+						return task.sync().then(function(result) {
+						    if (result) {
+							return when.parallel([
+							    function() {
+								Asana.set('status', "sync subtasks of task " + task.id);
+								return task.Subtask.sync();
+							    },
+							    function() {
+								Asana.set('status', "index task " + task.id);
+								return task.index();
+							    },
+							])
+						    } else {
+							return null;
+						    }
+						});
+					    })))
+			    }));
+			},
 		    ]);
 		},
 		// sync stories
