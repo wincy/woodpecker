@@ -210,13 +210,11 @@ define(
 					case 'set-tasks':
 					    Woodpecker.loader.view.set('isVisible', true);
 					    when.pipeline([
-						Asana.Project.sync,
-						Asana.Project.find,
-						function(projects) {
-						    return when.all(when.map(projects, function(project) {
+						function() {
+						    return when.all(when.map(Asana.workspaces, function(workspace) {
 							return when.pipeline([
-							    project.Task.sync,
-							    project.Task.find,
+							    workspace.Task.sync,
+							    workspace.Task.find,
 							    function(tasks) {
 								return when.all(when.map(
 								    tasks,
@@ -224,7 +222,7 @@ define(
 									return task.sync();
 								    }));
 							    },
-							])
+							]);
 						    }));
 						},
 						function() {
