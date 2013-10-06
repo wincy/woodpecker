@@ -1,4 +1,8 @@
-define("persistent", ["when", "stacktrace"], function() {
+define("persistent", ["when", "when/guard", "jszip", "underscore.string"], function(when, guard, JSZip, _) {
+    when.guard = guard
+
+    var CONCURRENCY = 10;
+
     var QUOTA = 100 * 1024 * 1024;
 
     function mkdir(base, dirs) {
@@ -151,7 +155,7 @@ define("persistent", ["when", "stacktrace"], function() {
 		    var reader = this.root.createReader();
 		    readEntries = function(total) {
 			reader.readEntries(function(results) {
-			    if (!results.length) {
+			    if (results.length == 0) {
 				resolve(total);
 			    } else {
 				readEntries(total.concat(
@@ -233,6 +237,62 @@ define("persistent", ["when", "stacktrace"], function() {
 		    console.log('Quota:', quota);
 		    console.log('Remain:', (quota - usage) / quota);
 		});
+	},
+	unzip: function() {
+	},
+	zip: function(zipFile) {
+	    if (!zipFile) {
+		zipFile = new JSZip();
+	    }
+	    console.log('zip dir: ', this.ns);
+	    return this.init().then(function() {
+		return when.promise(function(resolve, reject) {
+		    // console.log(this.root);
+		    var reader = this.root.createReader();
+		    var readEntries = function(total) {
+			reader.readEntries(function(results) {
+			    if (results.length == 0) {
+				resolve(total);
+			    } else {
+				readEntries(total.concat(Array.prototype.slice.call(results, 0)));
+			    }
+			}.bind(this));
+		    }.bind(this);
+		    readEntries([]);
+		}.bind(this)).then(function(entries) {
+		    return when.all(when.map(entries, when.guard(when.guard.n(CONCURRENCY), function(entry) {
+			// console.log('handle entry: ', entry);
+			if (entry.isDirectory) {
+			    var ns = _.lstrip(_.join(this.ns, entry.name), '/');
+			    return new Persistent(ns).zip(zipFile.folder(entry.name));
+			} else {
+			    return when.promise(function(resolve, reject) {
+				entry.file(function(file) {
+				    var reader = new FileReader();
+				    reader.onprogress = function() {
+				    };
+				    reader.onloadend = function(e) {
+					resolve(this.result);
+				    };
+				    reader.onerror = function(e) {
+					console.log('Get file error: ' + this.ns + '/' + key);
+					console.log(e);
+					console.log(e.getMessage());
+					reject(e);
+				    }.bind(this);
+				    reader.readAsText(file);
+				}.bind(this));
+			    }.bind(this)).then(function(data) {
+				console.log('zip file: ', _.lstrip(_.join('/', this.ns, entry.name), '/'));
+				zipFile.file(entry.name, data);
+				return true;
+			    }.bind(this));
+			}
+		    }.bind(this))));
+		}.bind(this))
+	    }.bind(this)).then(function() {
+		return zipFile;
+	    });
 	},
     };
     return Persistent;

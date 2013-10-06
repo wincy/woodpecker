@@ -35,6 +35,13 @@ require.config({
 	'd3': {
 	    exports: 'd3',
 	},
+	'jszip': {
+	    exports: 'JSZip',
+	},
+	'jszip-load': {
+	    deps: ['jszip'],
+	    exports: 'JSZip',
+	},
     }
 });
 
@@ -52,9 +59,9 @@ require(['when', 'when/sequence', 'when/delay', 'when/pipeline',
 require(['jquery', 'stacktrace', 'handlebars',
 	 'ember', 'sprintf', 'locache', 'd3',
 	 'asana', 'logging', 'persistent', 'lock', 'index',
-	 'app/statistics', 'app/woodpecker'],
+	 'app/statistics', 'app/woodpecker', 'jszip', 'jszip-load'],
 	function ($, stacktrace, Handlebars, Ember, sprintf, locache, d3,
-		  Asana, Logging, Persistent, Lock, Index, Statistics, Woodpecker) {
+		  Asana, Logging, Persistent, Lock, Index, Statistics, Woodpecker, JSZip) {
 	    window.$ = $;
 	    window.stacktrace = stacktrace;
 	    window.Handlebars = Handlebars;
@@ -69,6 +76,7 @@ require(['jquery', 'stacktrace', 'handlebars',
 	    window.Index = Index;
 	    window.Statistics = Statistics;
 	    window.Woodpecker = Woodpecker;
+	    window.JSZip = JSZip;
 	    $.ready(function() {
 		setInterval(function() {
 		    console.log('flush expire cache');
