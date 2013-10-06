@@ -1,5 +1,5 @@
 CACHE MANIFEST
-# Sun Oct  6 08:59:29 CST 2013
+# Sun Oct  6 17:27:40 CST 2013
 /woodpecker/css/bootstrap.min.css
 /woodpecker/css/cursor.css
 /woodpecker/css/timepicker.css
@@ -15,14 +15,28 @@ CACHE MANIFEST
 /woodpecker/js/lib/when/guard.js
 /woodpecker/js/lib/when/parallel.js
 /woodpecker/js/lib/when/pipeline.js
+/woodpecker/js/lib/when/monitor/aggregator.js
+/woodpecker/js/lib/when/monitor/array.js
+/woodpecker/js/lib/when/monitor/both.js
+/woodpecker/js/lib/when/monitor/console.js
+/woodpecker/js/lib/when/monitor/simpleFormatter.js
+/woodpecker/js/lib/when/monitor/simpleReporter.js
+/woodpecker/js/lib/when/monitor/stackFilter.js
+/woodpecker/js/lib/when/monitor/throttledReporter.js
+/woodpecker/js/lib/when/monitor/logger/consoleGroup.js
+
 /woodpecker/js/lib/sequence.js
 /woodpecker/js/lib/sprintf.js
 /woodpecker/js/lib/locache.js
 /woodpecker/js/lib/stacktrace.js
 /woodpecker/js/lib/handlebars.js
 /woodpecker/js/lib/ember.js
-/woodpecker/js/lib/ember-touch.js
 /woodpecker/js/lib/d3.js
+/woodpecker/js/lib/qunit.js
+/woodpecker/js/lib/underscore.string.js
+/woodpecker/js/lib/jszip.js
+/woodpecker/js/lib/jszip-load.js
+
 /woodpecker/js/lib/asana/asana.js
 /woodpecker/js/lib/asana/model.js
 /woodpecker/js/lib/asana/remote.js
@@ -30,8 +44,8 @@ CACHE MANIFEST
 /woodpecker/js/lib/persistent.js
 /woodpecker/js/lib/index.js
 /woodpecker/js/lib/lock.js
-/woodpecker/js/lib/statistics.js
-/woodpecker/js/lib/woodpecker.js
+/woodpecker/js/app/statistics.js
+/woodpecker/js/app/woodpecker.js
 /woodpecker/img/glyphicons-halflings-white.png
 /woodpecker/img/glyphicons-halflings.png
 /woodpecker/css/images/ajax-loader.gif
