@@ -129,32 +129,39 @@ define("asana/model", ["jquery", "when", "when/pipeline", "when/guard", "qunit",
 		}.bind(this));
 	},
 	index: function(reverse) {
-	    return new Persistent(this._plural)
-		.get(this.id).then(function(data) {
-		    var result = null;
-		    try {
-			result = JSON.parse(data);
-		    } catch (e) {
-			console.error(sprintf('index %s %s error', this._plural, this.id));
+	    return new Persistent(this._plural).exists(this.id)
+		.then(function(exists) {
+		    if (!exists) {
+			return;
 		    }
-		    return result;
-		}.bind(this))
-		.then(function(item) {
-		    return when.all(when.map(Object.keys(item), function(key) {
-			if (this.INDEX_FIELDS.indexOf(key) != -1) {
-			    if (reverse == true) {
-				return new Index(this._singular + '.' + key,
-						 this._singular + '.ids')
-				    .srem(item[key], item.id);
-			    } else {
-				return new Index(this._singular + '.' + key,
-						 this._singular + '.ids')
-				    .sadd(item[key], item.id);
+		    return new Persistent(this._plural)
+			.get(this.id).then(function(data) {
+			    var result = null;
+			    try {
+				result = JSON.parse(data);
+			    } catch (e) {
+				console.error(sprintf('index %s %s error',
+						      this._plural, this.id));
 			    }
-			} else {
-			    return true;
-			}
-		    }.bind(this)));
+			    return result;
+			}.bind(this))
+			.then(function(item) {
+			    return when.all(when.map(Object.keys(item), function(key) {
+				if (this.INDEX_FIELDS.indexOf(key) != -1) {
+				    if (reverse == true) {
+					return new Index(this._singular + '.' + key,
+							 this._singular + '.ids')
+					    .srem(item[key], item.id);
+				    } else {
+					return new Index(this._singular + '.' + key,
+							 this._singular + '.ids')
+					    .sadd(item[key], item.id);
+				    }
+				} else {
+				    return true;
+				}
+			    }.bind(this)));
+			}.bind(this));
 		}.bind(this));
 	},
     };
