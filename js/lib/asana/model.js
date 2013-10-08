@@ -74,14 +74,20 @@ define("asana/model", ["jquery", "when", "when/pipeline", "when/guard", "qunit",
 		}.bind(this),
 		function(outdated) {
 		    if (outdated) {
-			return new Remote(this._plural).get(this.id)
-			    .then(function(data) {
+			return when.pipeline([
+			    function() {
+				return true;
+			    },
+			    this.index.bind(this),
+			    function() {
+				return new Remote(this._plural).get(this.id);
+			    }.bind(this),
+			    function(data) {
 				return new Persistent(this._plural)
 				    .set(this.id, JSON.stringify(data));
-			    }.bind(this))
-			    .then(function() {
-				return this.index();
-			    }.bind(this));
+			    }.bind(this),
+			    this.index.bind(this),
+			]);
 		    } else {
 			return null;
 		    }
@@ -122,7 +128,7 @@ define("asana/model", ["jquery", "when", "when/pipeline", "when/guard", "qunit",
 		    }.bind(this))));
 		}.bind(this));
 	},
-	index: function() {
+	index: function(reverse) {
 	    return new Persistent(this._plural)
 		.get(this.id).then(function(data) {
 		    var result = null;
@@ -136,9 +142,15 @@ define("asana/model", ["jquery", "when", "when/pipeline", "when/guard", "qunit",
 		.then(function(item) {
 		    return when.all(when.map(Object.keys(item), function(key) {
 			if (this.INDEX_FIELDS.indexOf(key) != -1) {
-			    return new Index(this._singular + '.' + key,
-					     this._singular + '.ids')
-				.sadd(item[key], item.id);
+			    if (reverse == true) {
+				return new Index(this._singular + '.' + key,
+						 this._singular + '.ids')
+				    .srem(item[key], item.id);
+			    } else {
+				return new Index(this._singular + '.' + key,
+						 this._singular + '.ids')
+				    .sadd(item[key], item.id);
+			    }
 			} else {
 			    return true;
 			}

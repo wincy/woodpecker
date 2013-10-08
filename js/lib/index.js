@@ -106,9 +106,9 @@ define("index", ["sprintf", "when", "lock", "persistent"], function(sprintf, whe
 				    }
 				    if (index[key].indexOf(value) != -1) {
 					index[key].removeObject(value);
-					console.log(sprintf("srem(%s, %s) -> %s:",
-				    			    key, value,
-				    			    JSON.stringify(index)));
+					console.log(sprintf(
+					    "new Index('%s', '%s').srem('%s', '%s')",
+					    this.from, this.to, key, value));
 					return new Persistent(this.from)
 					    .set(this.to, JSON.stringify(index));
 				    }
