@@ -338,18 +338,28 @@ define(
 				    text: "Save",
 				    hit: function() {
 					Woodpecker.loader.view.set('isVisible', true);
-					Woodpecker.timeline.save()
-					    .then(function() {
-						return when.all([
-						    Asana.woodpecker.me.Task.sync(),
-						    Asana.woodpecker.Task.sync(),
-						]);
-					    })
-					    .then(function() {
-						return logging.clear();
-					    }).then(function() {
-						Woodpecker.loader.view.set('isVisible', false);
-					    });
+					when.pipeline([
+					    Asana.woodpecker.me.Task.sync,
+					    Asana.woodpecker.me.Task.find,
+					    function(tasks) {
+						return when.all(when.map(tasks, function(task) {
+						    return task.sync();
+						}));
+					    },
+					]).then(function() {
+					    return Woodpecker.timeline.save()
+						.then(function() {
+						    return when.all([
+							Asana.woodpecker.me.Task.sync(),
+							Asana.woodpecker.Task.sync(),
+						    ]);
+						})
+						.then(function() {
+						    return logging.clear();
+						}).then(function() {
+						    Woodpecker.loader.view.set('isVisible', false);
+						});
+					});
 					Woodpecker.puncher.view.set('isVisible', false);
 				    },
 				}),
