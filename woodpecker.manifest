@@ -1,5 +1,5 @@
 CACHE MANIFEST
-# Wed Oct  9 07:38:29 CST 2013
+# Wed Oct  9 21:14:41 CST 2013
 /woodpecker/css/bootstrap.min.css
 /woodpecker/css/cursor.css
 /woodpecker/css/timepicker.css
@@ -32,6 +32,7 @@ CACHE MANIFEST
 /woodpecker/js/lib/ember.js
 /woodpecker/js/lib/d3.js
 /woodpecker/js/lib/qunit.js
+/woodpecker/js/lib/underscore.js
 /woodpecker/js/lib/underscore.string.js
 /woodpecker/js/lib/jszip.js
 /woodpecker/js/lib/jszip-load.js

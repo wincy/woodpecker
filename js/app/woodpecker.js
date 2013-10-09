@@ -1,8 +1,8 @@
 define(
     "app/woodpecker",
-    ["when", "ember", "sprintf", "qunit",
+    ["when", "ember", "sprintf", "qunit", "underscore",
      "asana", "logging", "index", "lock"],
-    function(when, Ember, sprintf, QUnit, Asana, Logging, Index, Lock) {
+    function(when, Ember, sprintf, QUnit, _, Asana, Logging, Index, Lock) {
 	var logging = null;
 
 	function array_concat(s, l) {
@@ -620,6 +620,7 @@ define(
 			}.bind(this)).then(function(task) {
 			    var idx = parseInt(task.name.split('#')[1]);
 			    var promises = [];
+			    // clear origin index
 			    if (task.notes.length > 0) {
 				JSON.parse(task.notes).tasks.forEach(function(task_id) {
 				    promises.push(
@@ -627,6 +628,7 @@ define(
 					    .srem(task_id, this.id));
 				}.bind(task));
 			    }
+			    // create new index
 			    this.content[idx].tasks.forEach(function(task) {
 				promises.push(
 				    new Index('task.id', 'record.ids')
@@ -642,35 +644,11 @@ define(
 			    this.content[idx].tags.forEach(function(tag) {
 				if (old_ids.indexOf(tag.id) == -1) {
 				    promises.push(task.addTag(tag));
-				    var meta = null;
-				    try {
-					meta = JSON.parse(tag.notes);
-				    } catch (e) {
-					meta = {
-					    used_times: 0,
-					};
-				    }
-				    meta.used_times += 1;
-				    promises.push(tag.update({
-					notes: JSON.stringify(meta),
-				    }));
 				}
 			    });
 			    task.tags.forEach(function(tag) {
 				if (new_ids.indexOf(tag.id) == -1) {
 				    promises.push(task.removeTag(tag));
-				    var meta = null;
-				    try {
-					meta = JSON.parse(tag.notes);
-				    } catch (e) {
-					meta = {
-					    used_times: 0,
-					};
-				    }
-				    meta.used_times -= 1;
-				    promises.push(tag.update({
-					notes: JSON.stringify(meta),
-				    }));
 				}
 			    });
 			    return when.all(promises).then(function() {
@@ -678,70 +656,53 @@ define(
 			    });
 			}.bind(this));
 		    }.bind(this))).then(function(records) {
-			return when.all(records.reduce(function(tasks, record) {
-			    JSON.parse(record.notes).tasks.forEach(function(id) {
-				if (tasks.indexOf(id) == -1) {
-				    tasks.push(id);
-				}
-			    })
-			    return tasks;
-			}, []).map(function(id) {
-			    return new Asana.Task(id).load().then(function(task) {
-				return task.getAncestor().then(function(tasks) {
-				    tasks.push(task);
-				    return tasks;
+			return when.all(when.map(records, function(record) {
+			    return when.map(JSON.parse(record.notes).tasks, function(id) {
+				return new Asana.Task(id).load().then(function(task) {
+				    return when.all(when.map(task.getAncestor(), function(task) {
+					return task.id;
+				    })).then(function(ids) {
+					return ids.concat(task.id);
+				    });
 				});
 			    });
-			})).then(function(task_lists) {
-			    return task_lists.reduce(function(all, list) {
-				list.forEach(function(item) {
-				    if (all.indexOf(item) == -1) {
-					all.push(item);
-				    }
-				});
-				return all;
-			    }, []);
+			})).then(function(ids) {
+			    return when.all(when.map(_.flatten(ids), function(id) {
+				return new Asana.Task(id).load();
+			    }));
 			}).then(function(tasks) {
-			    return when.all(tasks.map(function(task) {
-				return new Lock('tasks/' + task.id).wait().then(function(lock) {
-				    return task.sync(true).then(function() {
-					return task.load();
-				    }).then(function(task) {
-					return task.useTime().then(function(use) {
-					    var match = new RegExp(
-						    /^(.*)\[\d+:\d+\/(\d+:\d+)\]$/)
-						.exec(task.name);
-					    var time = {
-						use: use,
-						schedule: 0,
-					    };
-					    var new_name = "";
-					    if (match) {
-						time.schedule = match[2].split(':').reduce(function(s, t) {
-						    return s * 60 + parseInt(t);
-						}, 0);
-						new_name = sprintf(
-						    "%s[%s/%s]",
-						    match[1],
-						    sprintf("%02d:%02d",
-							    Math.floor(time.use / 60),
-							    time.use % 60),
-						    sprintf("%02d:%02d",
-							    Math.floor(time.schedule / 60),
-							    time.schedule % 60)
-						);
-					    } else {
-						new_name = sprintf("%s[%s/00:00]",
-								   task.name,
-								   sprintf("%02d:%02d",
-									   Math.floor(use / 60),
-									   use % 60));
-					    }
-					    return task.update({name: new_name});
-					});
-				    }).ensure(function() {
-					return lock.release();
-				    });
+			    return when.all(when.map(tasks, function(task) {
+				return task.useTime(true).then(function(use) {
+				    var match = new RegExp(
+					    /^(.*)\[\d+:\d+\/(\d+:\d+)\]$/)
+					.exec(task.name);
+				    var time = {
+					use: use,
+					schedule: 0,
+				    };
+				    var new_name = "";
+				    if (match) {
+					time.schedule = match[2].split(':').reduce(function(s, t) {
+					    return s * 60 + parseInt(t);
+					}, 0);
+					new_name = sprintf(
+					    "%s[%s/%s]",
+					    match[1],
+					    sprintf("%02d:%02d",
+						    Math.floor(time.use / 60),
+						    time.use % 60),
+					    sprintf("%02d:%02d",
+						    Math.floor(time.schedule / 60),
+						    time.schedule % 60)
+					);
+				    } else {
+					new_name = sprintf("%s[%s/00:00]",
+							   task.name,
+							   sprintf("%02d:%02d",
+								   Math.floor(use / 60),
+								   use % 60));
+				    }
+				    return task.update({name: new_name});
 				});
 			    }))
 			});

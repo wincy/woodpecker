@@ -72,7 +72,7 @@ define("asana", ["jquery", "ember", "when", "when/parallel", "when/sequence", "w
 		},
 		getOffspring: function() {
 		    return when.all(when.map(this.Subtask.find(), function(item) {
-			return item.getOffspring();
+			return new Asana.Task(item.id).getOffspring();
 		    })).then(function(items) {
 			if (items.length > 0) {
 			    return [this, items];
@@ -87,7 +87,7 @@ define("asana", ["jquery", "ember", "when", "when/parallel", "when/sequence", "w
 			    this.useTime(false),
 			    this.Subtask.find().then(function(tasks) {
 				return when.all(tasks.map(function(task) {
-				    return task.useTime(true);
+				    return new Asana.Task(task.id).useTime(true);
 				})).then(function(time_list) {
 				    return time_list.reduce(function(sum, time) {
 					return sum + time;

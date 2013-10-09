@@ -19,6 +19,9 @@ require.config({
 	{name: 'asana', location: 'asana', main: 'asana'},
     ],
     shim: {
+	'underscore': {
+	    exports: '_',
+	},
 	'locache': {
 	    exports: 'locache',
 	},
@@ -57,10 +60,10 @@ require(['when', 'when/sequence', 'when/delay', 'when/pipeline',
 	})
 
 require(['jquery', 'stacktrace', 'handlebars',
-	 'ember', 'sprintf', 'locache', 'd3',
+	 'ember', 'sprintf', 'locache', 'd3', 'underscore',
 	 'asana', 'logging', 'persistent', 'lock', 'index',
 	 'app/statistics', 'app/woodpecker', 'jszip', 'jszip-load'],
-	function ($, stacktrace, Handlebars, Ember, sprintf, locache, d3,
+	function ($, stacktrace, Handlebars, Ember, sprintf, locache, d3, _,
 		  Asana, Logging, Persistent, Lock, Index, Statistics, Woodpecker, JSZip) {
 	    window.$ = $;
 	    window.stacktrace = stacktrace;
@@ -69,6 +72,7 @@ require(['jquery', 'stacktrace', 'handlebars',
 	    window.sprintf = sprintf;
 	    window.locache = locache;
 	    window.d3 = d3;
+	    window._ = _;
 	    window.Asana = Asana;
 	    window.Logging = Logging;
 	    window.Persistent = Persistent;
