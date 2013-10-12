@@ -28,31 +28,31 @@ define("asana", ["jquery", "ember", "when", "when/parallel", "when/sequence", "w
     });
 
     Asana.reopen({
-	User: Model.extend(
+	User: Model.extends(
     	    ['user', 'users'], {
     		name: new Model.Field("string", true),
     		email: new Model.Field("string", true),
     	    }),
     });
     Asana.reopen({
-	Subtask: Model.extend(
+	Subtask: Model.extends(
     	    ['task', 'tasks'], {
     		name: new Model.Field("string"),
     	    })
     });
     Asana.reopen({
-	Task: Model.extend(
+	Task: Model.extends(
     	    ['task', 'tasks'], {
     		name: new Model.Field("string", true),
 		completed: new Model.Field("string", true),
 		assignee_status: new Model.Field("string", true),
     		Subtask: new Model.Field(Asana.Subtask),
 		addTag: function(tag) {
-		    return new Remote(this._plural + '/' + this.id)
+		    return new Remote(this.constructor._plural + '/' + this.id)
 			.create('addTag', {tag: tag.id});
 		},
 		removeTag: function(tag) {
-		    return new Remote(this._plural + '/' + this.id)
+		    return new Remote(this.constructor._plural + '/' + this.id)
 			.create('removeTag', {tag: tag.id});
 		},
 		getAncestor: function() {
@@ -61,7 +61,7 @@ define("asana", ["jquery", "ember", "when", "when/parallel", "when/sequence", "w
 			    resolve([]);
 			});
 		    } else {
-			return new Asana.Task(this.parent.id).load()
+			return Asana.Task.create({id: this.parent.id}).load()
 			    .then(function(task) {
 				return task.getAncestor().then(function(tasks) {
 				    tasks.push(task);
@@ -72,7 +72,7 @@ define("asana", ["jquery", "ember", "when", "when/parallel", "when/sequence", "w
 		},
 		getOffspring: function() {
 		    return when.all(when.map(this.Subtask.find(), function(item) {
-			return new Asana.Task(item.id).getOffspring();
+			return Asana.Task.create({id: item.id}).getOffspring();
 		    })).then(function(items) {
 			if (items.length > 0) {
 			    return [this, items];
@@ -81,58 +81,25 @@ define("asana", ["jquery", "ember", "when", "when/parallel", "when/sequence", "w
 			}
 		    }.bind(this));
 		},
-		useTime: function(recursive) {
-		    if (recursive) {
-			return when.all([
-			    this.useTime(false),
-			    this.Subtask.find().then(function(tasks) {
-				return when.all(tasks.map(function(task) {
-				    return new Asana.Task(task.id).useTime(true);
-				})).then(function(time_list) {
-				    return time_list.reduce(function(sum, time) {
-					return sum + time;
-				    }, 0);
-				});
-			    })
-			]).then(function(time_list) {
-			    return time_list.reduce(function(sum, time) {
-				return sum + time;
-			    }, 0);
-			});
-		    } else {
-			return new Index('task.id', 'record.ids').smembers(this.id)
-			    .then(function(record_ids) {
-				return when.all(record_ids.map(function(id) {
-				    return new Asana.Task(id).load();
-				}));
-			    })
-			    .then(function(records) {
-				return records.reduce(function(sum, record) {
-				    var r = JSON.parse(record.notes);
-				    return sum + (Date.parse(r.end) - Date.parse(r.start)) / 1000 / 60;
-				}, 0);
-			    });
-		    }
-		},
     	    })
     });
     Asana.reopen({
-	Tag: Model.extend(
+	Tag: Model.extends(
     	    ['tag', 'tags'], {
     		name: new Model.Field("string", true),
     		Task: new Model.Field(Asana.Task),
     	    })
     });
-    Asana.Task.prototype.fields.Tag = new Model.Field(Asana.Tag);
+    Asana.Task.fields.Tag = new Model.Field(Asana.Tag);
     Asana.reopen({
-	Project: Model.extend(
+	Project: Model.extends(
     	    ['project', 'projects'], {
     		name: new Model.Field("string", true),
     		Task: new Model.Field(Asana.Task),
     	    })
     });
     Asana.reopen({
-	Workspace: Model.extend(
+	Workspace: Model.extends(
     	    ['workspace', 'workspaces'], {
     		name: new Model.Field("string", true),
     		User: new Model.Field(Asana.User),
@@ -159,7 +126,7 @@ define("asana", ["jquery", "ember", "when", "when/parallel", "when/sequence", "w
 	sync: function() {
 	    return when.sequence([
 		function() {
-		    var me = new Asana.User('me');
+		    var me = Asana.User.create({id: 'me'});
 		    return me.sync();
 		},
 		// sync workspaces
@@ -517,7 +484,7 @@ define("asana", ["jquery", "ember", "when", "when/parallel", "when/sequence", "w
     			    }
     			    return s;
     			}, []).map(function(id) {
-    			    return new Asana.Task(id);
+    			    return Asana.Task.create({id: id});
     			});
     		    }).then(function(tasks) {
     			return when.all(when.map(tasks, function(task) {
@@ -600,7 +567,7 @@ define("asana", ["jquery", "ember", "when", "when/parallel", "when/sequence", "w
     			    }));
     			},
 			function() {
-			    return workspace.Tag.create({name: 'tag 4'})
+			    return workspace.Tag.new({name: 'tag 4'})
 				.then(function(tag) {
 				    return workspace.Task.get({name: 'task 0'})
 					.then(function(task) {

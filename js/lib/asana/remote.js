@@ -1,15 +1,17 @@
 define('asana/remote', ['jquery', 'oauth', 'locache', 'when', 'when/delay', 'when/pipeline'], function($, OAuth, locache, when, delay, pipeline) {
     when.delay = delay;
     when.pipeline = pipeline;
-    var oauth = locache.get('oauth');
-    if (!oauth) {
-	OAuth.initialize('aV9aEYWyFPInmTnl7iXdJ-VtoKg');
-	OAuth.popup('asana', function(error, result) {
-	    locache.set('oauth', result);
-	});
-    }
 
     function request(url, params, method) {
+	var oauth = locache.get('oauth');
+	if (!oauth) {
+	    console.log('try oauth');
+	    OAuth.initialize('aV9aEYWyFPInmTnl7iXdJ-VtoKg');
+	    OAuth.popup('asana', function(error, result) {
+		locache.set('oauth', result);
+	    });
+	}
+
 	if (params == undefined) {
 	    params = {};
 	}

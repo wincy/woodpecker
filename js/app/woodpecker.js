@@ -19,6 +19,42 @@ define(
 	    return result;
 	}
 
+	Asana.Task.reopen({
+	    useTime: function(recursive) {
+		if (recursive) {
+		    return when.all([
+			this.useTime(false),
+			this.Subtask.find().then(function(tasks) {
+			    return when.all(tasks.map(function(task) {
+				return Asana.Task.create({id: task.id}).useTime(true);
+			    })).then(function(time_list) {
+				return time_list.reduce(function(sum, time) {
+				    return sum + time;
+				}, 0);
+			    });
+			})
+		    ]).then(function(time_list) {
+			return time_list.reduce(function(sum, time) {
+			    return sum + time;
+			}, 0);
+		    });
+		} else {
+		    return new Index('task.id', 'record.ids').smembers(this.id)
+			.then(function(record_ids) {
+			    return when.all(record_ids.map(function(id) {
+				return Asana.Task.create({id: id}).load();
+			    }));
+			})
+			.then(function(records) {
+			    return records.reduce(function(sum, record) {
+				var r = JSON.parse(record.notes);
+				return sum + (Date.parse(r.end) - Date.parse(r.start)) / 1000 / 60;
+			    }, 0);
+			});
+		}
+	    },
+	})
+
 	Woodpecker = Ember.Application.create({
 	    initialize: function() {
 		return when.pipeline([
@@ -30,7 +66,7 @@ define(
 			}
 		    },
 		    function() {
-			return new Asana.User('me').load().then(function(me) {
+			return Asana.User.create({id: 'me'}).load().then(function(me) {
 			    Asana.me = me;
 			});
 		    },
@@ -72,7 +108,7 @@ define(
 				return workspace.Project.get({name: '.woodpecker'})
 				    .then(function(project) {
 					if (!project) {
-					    return workspace.Project.create({
+					    return workspace.Project.new({
 						name: '.woodpecker'
 					    });
 					} else {
@@ -84,7 +120,7 @@ define(
 				    })
 				    .then(function(task) {
 					if (!task) {
-					    return project.Task.create({
+					    return project.Task.new({
 						name: 'tags',
 						assignee: 'me',
 					    });
@@ -94,7 +130,7 @@ define(
 				    })
 				    .then(function(task) {
 					return when.map(tags, function(name) {
-					    return workspace.Tag.create({name: name})
+					    return workspace.Tag.new({name: name})
 						.then(function(tag) {
 						    return task.addTag(tag);
 						});
@@ -584,7 +620,7 @@ define(
 	    },
 	    save: function() {
 		if (! this.story && this.content && this.content.length > 0) {
-		    return this.task.Story.create({text: this.content})
+		    return this.task.Story.new({text: this.content})
 			.then(function(story) {
 			    this.set('story', story);
 			    return this;
@@ -608,7 +644,7 @@ define(
 			    assignee_status: 'today',
 			}).then(function(task) {
 			    if (!task) {
-				return Asana.woodpecker.Task.create({
+				return Asana.woodpecker.Task.new({
 				    name: sprintf('%s#%s', this.date, idx),
 				    assignee: 'me',
 				    assignee_status: 'today',
@@ -658,7 +694,7 @@ define(
 		    }.bind(this))).then(function(records) {
 			return when.all(when.map(records, function(record) {
 			    return when.map(JSON.parse(record.notes).tasks, function(id) {
-				return new Asana.Task(id).load().then(function(task) {
+				return Asana.Task.create({id: id}).load().then(function(task) {
 				    return when.all(when.map(task.getAncestor(), function(task) {
 					return task.id;
 				    })).then(function(ids) {
@@ -668,7 +704,7 @@ define(
 			    });
 			})).then(function(ids) {
 			    return when.all(when.map(_.flatten(ids), function(id) {
-				return new Asana.Task(id).load();
+				return Asana.Task.create({id: id}).load();
 			    }));
 			}).then(function(tasks) {
 			    return when.all(when.map(tasks, function(task) {
@@ -907,13 +943,13 @@ define(
 		}
 		return when.all(
 		    data.tasks.map(function(id) {
-			return new Asana.Task(id).load();
+			return Asana.Task.create({id: id}).load();
 		    })).then(function(tasks) {
 			this.tasks = tasks;
 			return when.all(
 			    data.comments.map(function(id) {
 				if (id) {
-				    var story = new Asana.Story(id);
+				    var story = Asana.Story.create({id: id});
 				    return story.load();
 				} else {
 				    return null;
@@ -1323,7 +1359,7 @@ define(
 		    }), array_concat, [])
 		    .then(function(ids) {
 			return when.all(when.map(ids, function(id) {
-			    return new Asana.Task(id).load();
+			    return Asana.Task.create({id: id}).load();
 			}));
 		    })
 		    .then(function(tasks) {

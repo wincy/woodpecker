@@ -59,6 +59,9 @@ define("index", ["sprintf", "when", "lock", "persistent"], function(sprintf, whe
 			    return new Persistent(this.from).get(this.to)
 				.then(function(data) {
 				    var index = {};
+				    if (!data) {
+					console.log('E', this.from, this.to);
+				    }
 				    if (data.length > 0) {
 					index =  JSON.parse(data);
 				    }

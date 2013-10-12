@@ -32,6 +32,9 @@ require.config({
 		QUnit.config.autostart = false;
             },
 	},
+	'oauth': {
+	    exports: 'OAuth',
+	},
     }
 });
 
@@ -89,9 +92,10 @@ require(['when', 'when/sequence', 'when/delay', 'when/guard',
 ;
 
 require(
-  ["qunit", "lock", "asana", "asana/model", "asana/remote", "persistent"],
-  function(QUnit, Lock, Asana, Model, Remote, Persistent) {
+  ["qunit", "lock", "asana", "asana/model", "asana/remote", "persistent", "oauth"],
+  function(QUnit, Lock, Asana, Model, Remote, Persistent, OAuth) {
       window.Asana = Asana;
+      window.OAuth = OAuth;
       // Asana.test(asana);
       // Lock.test();
       // window.Asana.User = User;
