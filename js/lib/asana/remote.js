@@ -1,13 +1,12 @@
-define('asana/remote', ['jquery', 'locache', 'when', 'when/delay', 'when/pipeline'], function($, locache, when, delay, pipeline) {
+define('asana/remote', ['jquery', 'oauth', 'locache', 'when', 'when/delay', 'when/pipeline'], function($, OAuth, locache, when, delay, pipeline) {
     when.delay = delay;
     when.pipeline = pipeline;
-    var API = locache.get('API');
-    if (typeof API != 'string' || API.length == 0) {
-	API = prompt('API address:');
-	// TODO: ensure API address is valid
-	if (API.length > 0) {
-	    locache.set('API', API);
-	}
+    var oauth = locache.get('oauth');
+    if (!oauth) {
+	OAuth.initialize('aV9aEYWyFPInmTnl7iXdJ-VtoKg');
+	OAuth.popup('asana', function(error, result) {
+	    locache.set('oauth', result);
+	});
     }
 
     function request(url, params, method) {
@@ -47,11 +46,14 @@ define('asana/remote', ['jquery', 'locache', 'when', 'when/delay', 'when/pipelin
 	return when.promise(function(resolve, reject) {
 	    if (navigator.onLine) {
 		var settings = {
-		    url: API + '/' + url,
+		    url: 'https://app.asana.com/api/1.0/' + url,
 		    data: params,
 		    type: method,
 		    timeout: 30000,
 		    dataType: 'json',
+		    headers: {
+			Authorization: 'Bearer ' + locache.get('oauth').access_token,
+		    },
 		};
 		$.ajax(settings).done(function(data) {
 		    if (!data.data) {
