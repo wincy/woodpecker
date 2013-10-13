@@ -4,10 +4,11 @@ define('asana/remote', ['jquery', 'oauth', 'locache', 'when', 'when/delay', 'whe
 
     function request(url, params, method) {
 	var oauth = locache.get('oauth');
-	if (!oauth) {
+	if (!oauth || oauth.expires_at < Date.now() / 1000) {
 	    console.log('try oauth');
-	    OAuth.initialize('aV9aEYWyFPInmTnl7iXdJ-VtoKg');
+	    OAuth.initialize(locache.get('oauth.io').public_key);
 	    OAuth.popup('asana', function(error, result) {
+		result.expires_at = Date.now() / 1000 + result.expires_in
 		locache.set('oauth', result);
 	    });
 	}

@@ -92,8 +92,11 @@ require(['when', 'when/sequence', 'when/delay', 'when/guard',
 ;
 
 require(
-  ["qunit", "lock", "asana", "asana/model", "asana/remote", "persistent", "oauth"],
-  function(QUnit, Lock, Asana, Model, Remote, Persistent, OAuth) {
+  ["qunit", "locache", "lock", "asana", "asana/model", "asana/remote", "persistent", "oauth"],
+  function(QUnit, locache, Lock, Asana, Model, Remote, Persistent, OAuth) {
+      locache.set('oauth.io', {
+	  public_key: 'e2yS1lDk1dtOGdzyr1IFPZAc9hk',
+      });
       window.Asana = Asana;
       window.OAuth = OAuth;
       // Asana.test(asana);
