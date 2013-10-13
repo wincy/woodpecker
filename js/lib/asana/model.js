@@ -1,4 +1,4 @@
-define("asana/model", ["jquery", "ember", "when", "when/pipeline", "when/guard", "qunit", "persistent", "lock", "index", "underscore.string", "asana/remote", "sprintf"], function($, Ember, when, pipeline, guard, QUnit, Persistent, Lock, Index, _, Remote, sprintf) {
+define("asana/model", ["jquery", "ember", "when", "when/pipeline", "when/guard", "qunit", "persistent", "lock", "index", "underscore.string", "asana/remote", "asana/store", "sprintf"], function($, Ember, when, pipeline, guard, QUnit, Persistent, Lock, Index, _, Remote, Store, sprintf) {
     CONCURRENCY = 50;
 
     when.pipeline = pipeline;
@@ -53,11 +53,18 @@ define("asana/model", ["jquery", "ember", "when", "when/pipeline", "when/guard",
 	    ]);
 	},
 	load: function() {
-	    return new Persistent(this.constructor._plural)
-		.get(this.id).then(JSON.parse)
-		.then(function(item) {
-		    return $.extend(this, item);
-		}.bind(this));
+	    var item = Model.__store__.get(this.constructor, this.id);
+	    if (item._loaded) {
+		return when.promise(function(resolve) {
+		    resolve(item);
+		});
+	    } else {
+		return new Persistent(this.constructor._plural)
+		    .get(this.id).then(JSON.parse)
+		    .then(function(data) {
+			return item.setProperties(data);
+		    }.bind(this));
+	    }
 	},
 	update: function(data) {
 	    return new Remote(this.constructor._plural).update(this.id, data)
@@ -82,7 +89,9 @@ define("asana/model", ["jquery", "ember", "when", "when/pipeline", "when/guard",
 			if (load == true) {
 			    return this.load();
 			} else {
-			    return $.extend(this, item);
+			    return Model.__store__
+				.get(this.constructor, this.id)
+				.setProperties(item);
 			}
 		    }.bind(this))));
 		}.bind(this));
@@ -126,6 +135,7 @@ define("asana/model", ["jquery", "ember", "when", "when/pipeline", "when/guard",
     });
 
     Model.reopenClass({
+	__store__: Store.create(),
 	Field: function(type, index) {
 	    this.type = type;
 	    this.index = index;
@@ -213,7 +223,7 @@ define("asana/model", ["jquery", "ember", "when", "when/pipeline", "when/guard",
 			return new Persistent(klass._plural)
 			    .set(data.id, JSON.stringify(data))
 			    .then(function() {
-				return klass.create({id: data.id});
+				return Model.__store__.get(klass, data.id);
 			    });
 		    },
 		    function(item) {
@@ -230,9 +240,10 @@ define("asana/model", ["jquery", "ember", "when", "when/pipeline", "when/guard",
 		    .then(function(items) {
 			return when.all(when.map(items, when.guard(when.guard.n(CONCURRENCY), function(item) {
 			    if (load == true) {
-				return klass.create({id: item.id}).load();
+				return Model.__store__.get(klass, item.id).load();
 			    } else {
-				return klass.create({id: item.id}).setProperties(item);
+				return Model.__store__.get(klass, item.id)
+				    .setProperties(item);
 			    }
 			})));
 		    });
@@ -252,7 +263,7 @@ define("asana/model", ["jquery", "ember", "when", "when/pipeline", "when/guard",
 			    }))
 			    .then(function(ids) {
 				var result = ids.map(function(id) {
-				    return klass.create({id: id});
+				    return Model.__store__.get(klass, id);
 				});
 				if (load == true) {
 				    return when.all(when.map(result, function(item) {
@@ -279,7 +290,7 @@ define("asana/model", ["jquery", "ember", "when", "when/pipeline", "when/guard",
 			    }))
 			    .then(function(ids) {
 				if (ids.length == 1) {
-				    return klass.create({id: ids[0]}).load();
+				    return Model.__store__.get(klass, ids[0]).load();
 				} else {
 				    console.log(sprintf("%s %s filtered",
 							ids.length,
@@ -331,7 +342,7 @@ define("asana/model", ["jquery", "ember", "when", "when/pipeline", "when/guard",
 	    	    },
 	    	    // check index
 	    	    function() {
-			var me = User.create({id: 'me'})
+			var me = Model.__store__.get(User, 'me')
 	    		return me.sync().then(function() {
 			    return me.load();
 			});
