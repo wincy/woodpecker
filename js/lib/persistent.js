@@ -116,6 +116,16 @@ define("persistent", ["when", "when/guard", "jszip", "underscore.string"], funct
 				resolve(this.result);
 			    };
 			    reader.onerror = function(e) {
+				if (e instanceof ProgressEvent) {
+				    console.debug('got ProgressEvent, retry:',
+						  e, this.ns, key)
+				    var new_reader = new FileReader();
+				    new_reader.onprogress = reader.onprogress;
+				    new_reader.onloadend = reader.onloadend;
+				    new_reader.onerror = reader.onerror;
+				    reader.readAsText(file);
+				    return;
+				}
 				console.log('Get file error: ' + this.ns + '/' + key);
 				console.log(e);
 				console.log(e.getMessage());
@@ -275,6 +285,16 @@ define("persistent", ["when", "when/guard", "jszip", "underscore.string"], funct
 					resolve(this.result);
 				    };
 				    reader.onerror = function(e) {
+					if (e instanceof ProgressEvent) {
+					    console.debug('got ProgressEvent, retry:',
+							  e, this.ns, key)
+					    var new_reader = new FileReader();
+					    new_reader.onprogress = reader.onprogress;
+					    new_reader.onloadend = reader.onloadend;
+					    new_reader.onerror = reader.onerror;
+					    reader.readAsText(file);
+					    return;
+					}
 					console.log('Get file error: ' + this.ns + '/' + key);
 					console.log(e);
 					console.log(e.getMessage());
