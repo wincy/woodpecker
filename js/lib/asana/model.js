@@ -62,6 +62,7 @@ define("asana/model", ["jquery", "ember", "when", "when/pipeline", "when/guard",
 		return new Persistent(this.constructor._plural)
 		    .get(this.id).then(JSON.parse)
 		    .then(function(data) {
+			item.set('_loaded', true);
 			return item.setProperties(data);
 		    }.bind(this));
 	    }
