@@ -45,6 +45,9 @@ require.config({
 	    deps: ['jszip'],
 	    exports: 'JSZip',
 	},
+	'oauth': {
+	    exports: 'OAuth',
+	},
     }
 });
 
@@ -81,6 +84,9 @@ require(['jquery', 'stacktrace', 'handlebars',
 	    window.Statistics = Statistics;
 	    window.Woodpecker = Woodpecker;
 	    window.JSZip = JSZip;
+	    locache.set('oauth.io', {
+		public_key: 'aV9aEYWyFPInmTnl7iXdJ-VtoKg',
+	    });
 	    $.ready(function() {
 		setInterval(function() {
 		    console.log('flush expire cache');
