@@ -1,8 +1,4 @@
 define("logging", ["when", "locache", "asana"], function() {
-    function rejectHandler(error) {
-	console.log(error);
-    }
-
     Logging = function(date) {
 	this.key = 'logs-' + date;
     }
@@ -30,7 +26,7 @@ define("logging", ["when", "locache", "asana"], function() {
 	    if (log) {
 		return this.apply(log).then(function() {
 		    return this._apply_all(logs);
-		}.bind(this), rejectHandler);
+		}.bind(this));
 	    } else {
 		return true;
 	    }
@@ -65,7 +61,7 @@ define("logging", ["when", "locache", "asana"], function() {
 		    })).then(function(tasks) {
 			record.set_tasks(tasks);
 			return tasks;
-		    }, rejectHandler);
+		    });
 		} else {
 		    console.log('record not found when applying log:',
 				JSON.stringify(log));
@@ -88,7 +84,7 @@ define("logging", ["when", "locache", "asana"], function() {
 		    })).then(function(tags) {
 			record.set('tags', tags);
 			return tags;
-		    }, rejectHandler);
+		    });
 		} else {
 		    console.log('record not found when applying log:',
 				JSON.stringify(log));
