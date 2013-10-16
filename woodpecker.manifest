@@ -1,5 +1,5 @@
 CACHE MANIFEST
-# Wed Oct 16 22:07:12 CST 2013
+# Wed Oct 16 22:13:17 CST 2013
 /woodpecker/css/bootstrap.min.css
 /woodpecker/css/cursor.css
 /woodpecker/css/timepicker.css
@@ -41,6 +41,7 @@ CACHE MANIFEST
 /woodpecker/js/lib/asana/asana.js
 /woodpecker/js/lib/asana/model.js
 /woodpecker/js/lib/asana/remote.js
+/woodpecker/js/lib/asana/store.js
 /woodpecker/js/lib/logging.js
 /woodpecker/js/lib/persistent.js
 /woodpecker/js/lib/index.js
