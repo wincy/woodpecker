@@ -57,7 +57,7 @@ define("logging", ["when", "locache", "asana"], function() {
 		})[0];
 		if (record) {
 		    ret = when.all(log.args.tasks.map(function(id) {
-			return new Asana.Task(id).load();
+			return Asana.Task.create({id: id}).load();
 		    })).then(function(tasks) {
 			record.set_tasks(tasks);
 			return tasks;
@@ -80,7 +80,7 @@ define("logging", ["when", "locache", "asana"], function() {
 		})[0];
 		if (record) {
 		    ret = when.all(log.args.tags.map(function(id) {
-			return new Asana.Tag(id).load();
+			return Asana.Tag.create({id: id}).load();
 		    })).then(function(tags) {
 			record.set('tags', tags);
 			return tags;
