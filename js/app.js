@@ -84,9 +84,16 @@ require(['jquery', 'stacktrace', 'handlebars',
 	    window.Statistics = Statistics;
 	    window.Woodpecker = Woodpecker;
 	    window.JSZip = JSZip;
-	    locache.set('oauth.io', {
-		public_key: 'aV9aEYWyFPInmTnl7iXdJ-VtoKg',
-	    });
+	    if (!locache.get('oauth.io')) {
+		var key = prompt('Please Fill OAuth.io Public Key:');
+		if (key) {
+		    locache.set('oauth.io', {
+			public_key: key,
+		    });
+		} else {
+		    alert('Key is empty.');
+		}
+	    }
 	    $.ready(function() {
 		setInterval(function() {
 		    console.log('flush expire cache');
